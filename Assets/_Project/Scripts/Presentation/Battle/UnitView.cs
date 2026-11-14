@@ -194,7 +194,7 @@ namespace NinjaRealm.Presentation.Battle
             if (flashTime < HitFlashSeconds)
             {
                 flashTime += deltaTime;
-                clothMaterial.color = flashTime < HitFlashSeconds ? Color.white : ClothColor;
+                PrototypeVisuals.SetColor(clothMaterial, flashTime < HitFlashSeconds ? Color.white : ClothColor);
             }
 
             var deathScale = 1f;

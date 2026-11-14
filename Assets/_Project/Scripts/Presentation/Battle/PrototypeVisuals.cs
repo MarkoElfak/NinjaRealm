@@ -31,11 +31,29 @@ namespace NinjaRealm.Presentation.Battle
         /// <summary>A new lit material the caller owns, for colours that change (hit flashes).</summary>
         public static Material NewLit(Color color)
         {
-            var source = GraphicsSettings.currentRenderPipeline != null ? GraphicsSettings.currentRenderPipeline.defaultMaterial : null;
-            var material = source != null ? new Material(source) : new Material(Shader.Find("Standard"));
-            material.color = color;
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            Material material;
+            if (shader != null)
+            {
+                material = new Material(shader);
+            }
+            else
+            {
+                var source = GraphicsSettings.currentRenderPipeline != null ? GraphicsSettings.currentRenderPipeline.defaultMaterial : null;
+                material = source != null ? new Material(source) : new Material(Shader.Find("Standard"));
+            }
+
             material.name = "Prototype Lit";
+            if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0.15f);
+            SetColor(material, color);
             return material;
+        }
+
+        /// <summary>Sets the colour on URP shaders (_BaseColor) and older ones (_Color).</summary>
+        public static void SetColor(Material material, Color color)
+        {
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+            if (material.HasProperty("_Color")) material.SetColor("_Color", color);
         }
 
         /// <summary>A shared unlit material, for health bars that should not be shaded.</summary>
@@ -46,7 +64,8 @@ namespace NinjaRealm.Presentation.Battle
             var shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null) return Lit(color);
 
-            material = new Material(shader) { name = "Prototype Unlit", color = color };
+            material = new Material(shader) { name = "Prototype Unlit" };
+            SetColor(material, color);
             UnlitCache[color] = material;
             return material;
         }

@@ -121,9 +121,13 @@ namespace NinjaRealm.Editor
             if (camera == null) throw new InvalidOperationException("The battle scene has no main camera.");
 
             const int width = 1600, height = 900;
-            var target = new RenderTexture(width, height, 24);
+            var target = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             camera.targetTexture = target;
-            camera.Render();
+
+            // Outside play mode nothing has rendered yet: update the ambient light and render a
+            // few warm-up frames so shadows and lighting are settled before the one we keep.
+            DynamicGI.UpdateEnvironment();
+            for (var i = 0; i < 3; i++) camera.Render();
 
             var previous = RenderTexture.active;
             RenderTexture.active = target;
