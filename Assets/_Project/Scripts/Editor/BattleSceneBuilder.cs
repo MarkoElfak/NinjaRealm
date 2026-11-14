@@ -27,14 +27,16 @@ namespace NinjaRealm.Editor
                 !EditorUtility.DisplayDialog("Create Battle Scene", $"{ScenePath} already exists. Replace it?", "Replace", "Cancel"))
                 return;
 
-            var database = FindDatabase();
-            if (database == null)
+            if (FindDatabase() == null)
             {
                 Debug.LogError("[Battle] No ContentDatabase found. Run Ninja Realm > Content > Create Prototype Content first.");
                 return;
             }
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // Load the database after NewScene: opening a scene unloads assets loaded before it.
+            var database = FindDatabase();
 
             // Angled board camera, like an auto battler: team 0 at the bottom of the screen.
             var cameraObject = new GameObject("Main Camera") { tag = "MainCamera" };
@@ -78,6 +80,9 @@ namespace NinjaRealm.Editor
             var hud = battle.AddComponent<BattleHud>();
             Assign(hud, "demo", demo);
 
+            if (database == null || bootstrap == null)
+                throw new InvalidOperationException("[Battle] The ContentDatabase could not be loaded into the new scene.");
+
             ContentDatabaseMenu.EnsureFolder(Path.GetDirectoryName(ScenePath)?.Replace('\\', '/'));
             EditorSceneManager.SaveScene(scene, ScenePath);
 
@@ -86,7 +91,7 @@ namespace NinjaRealm.Editor
             scenes.Insert(0, new EditorBuildSettingsScene(ScenePath, true));
             EditorBuildSettings.scenes = scenes.ToArray();
 
-            Debug.Log($"[Battle] Created {ScenePath}. Press Play to watch a demo fight.");
+            Debug.Log($"[Battle] Created {ScenePath} using {AssetDatabase.GetAssetPath(database)}. Press Play to watch a demo fight.");
         }
 
         /// <summary>
@@ -101,10 +106,13 @@ namespace NinjaRealm.Editor
             var seconds = float.Parse(Argument("-captureSeconds", "6"), System.Globalization.CultureInfo.InvariantCulture);
 
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            var demo = Object.FindFirstObjectByType<BattleDemo>();
+            var demo = Object.FindAnyObjectByType<BattleDemo>();
             if (demo == null) throw new InvalidOperationException($"No BattleDemo in {ScenePath}.");
 
             demo.StartBattle(seed);
+            if (demo.Playback.Simulation == null)
+                throw new InvalidOperationException("[Battle] The fight did not start. See the errors above.");
+
             const float frame = 1f / 30f;
             for (var time = 0f; time < seconds; time += frame)
                 demo.Playback.Advance(frame);
@@ -145,6 +153,8 @@ namespace NinjaRealm.Editor
             if (property == null) throw new InvalidOperationException($"{target.GetType().Name} has no field '{field}'.");
             property.objectReferenceValue = value;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            if (value != null && new SerializedObject(target).FindProperty(field).objectReferenceValue == null)
+                throw new InvalidOperationException($"Could not assign {field} on {target.GetType().Name}.");
         }
 
         static ContentDatabase FindDatabase()
