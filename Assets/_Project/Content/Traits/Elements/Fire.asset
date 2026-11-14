@@ -19,11 +19,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   tiers:
   - requiredCount: 2
-    description: Fire ninjas' attacks burn for 3% max health over 3s.
+    description: Fire ninjas' attacks burn for 4% max health over 2s.
     effects:
     - rid: 9055203165768253440
   - requiredCount: 3
-    description: Burn for 6%, and burning enemies receive 30% less healing.
+    description: Burn for 8%, and burning enemies receive 40% less healing.
     effects:
     - rid: 9055203165768253441
   references:
@@ -60,8 +60,8 @@ MonoBehaviour:
           count: 1
           radius: 1
         status: 2
-        value: 3
-        durationSeconds: 3
+        value: 4
+        durationSeconds: 2
     - rid: 9055203165768253443
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
@@ -70,8 +70,8 @@ MonoBehaviour:
           count: 1
           radius: 1
         status: 2
-        value: 6
-        durationSeconds: 3
+        value: 8
+        durationSeconds: 2
     - rid: 9055203165768253444
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
@@ -80,5 +80,5 @@ MonoBehaviour:
           count: 1
           radius: 1
         status: 4
-        value: 30
-        durationSeconds: 3
+        value: 40
+        durationSeconds: 2

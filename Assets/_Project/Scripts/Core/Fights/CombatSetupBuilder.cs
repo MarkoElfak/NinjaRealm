@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NinjaRealm.Combat;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
+using NinjaRealm.Core.Lineups;
 
 namespace NinjaRealm.Core.Fights
 {
@@ -38,6 +39,18 @@ namespace NinjaRealm.Core.Fights
             if (ninja == null) throw new ArgumentNullException(nameof(ninja));
             if (team != 0 && team != 1) throw new ArgumentOutOfRangeException(nameof(team), "Team must be 0 or 1.");
             entries.Add(new Entry(team, ninja, position, weapons ?? Array.Empty<WeaponDefinition>()));
+            return this;
+        }
+
+        /// <summary>Adds every ninja in a lineup to a team, at its place on that team's half.</summary>
+        public CombatSetupBuilder AddLineup(int team, IEnumerable<LineupSlot> slots)
+        {
+            foreach (var slot in slots)
+            {
+                if (slot?.ninja == null) continue;
+                Add(team, slot.ninja, TeamPosition(team, slot.column, slot.rowFromBack), slot.weapons.ToArray());
+            }
+
             return this;
         }
 

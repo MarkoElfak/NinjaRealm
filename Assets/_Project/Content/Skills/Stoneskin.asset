@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.SkillDefinition
   id: skill.stoneskin
   displayName: Stoneskin
-  description: Shields the most injured ally for 25% of their max health.
+  description: Shields the most injured ally for 30% of their max health.
   castTimeSeconds: 0.5
   actions:
   - rid: 9055203165768253474
@@ -28,5 +28,5 @@ MonoBehaviour:
           kind: 6
           count: 1
           radius: 1
-        percentOfMaxHealth: 25
+        percentOfMaxHealth: 30
         durationSeconds: 4

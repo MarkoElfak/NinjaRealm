@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3947e19a42ed4311bf11536af891c212, type: 3}
+  m_Name: TideShrine
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Lineups.LineupDefinition
+  id: lineup.tide_shrine
+  displayName: Tide Shrine
+  description: Water healers that outlast you behind a shielded wall.
+  difficulty: 3
+  slots:
+  - ninja: {fileID: 11400000, guid: 82c482e3f22f74e51b146e90b6abf13b, type: 2}
+    column: 3
+    rowFromBack: 3
+    weapons:
+    - {fileID: 11400000, guid: 106452185e12c49709cda856cc3de09b, type: 2}
+  - ninja: {fileID: 11400000, guid: e2f82cf69c9d742b39860c8e1e88f977, type: 2}
+    column: 2
+    rowFromBack: 3
+    weapons:
+    - {fileID: 11400000, guid: 27a65804521d345bc85bed062bca1b74, type: 2}
+  - ninja: {fileID: 11400000, guid: 3ffe0c667350d47b78224745b55c234a, type: 2}
+    column: 4
+    rowFromBack: 1
+    weapons: []
+  - ninja: {fileID: 11400000, guid: e977f33e862674aab8db5468cc09892b, type: 2}
+    column: 2
+    rowFromBack: 0
+    weapons:
+    - {fileID: 11400000, guid: 94a16b508917f49c38a74d1122bd2f8f, type: 2}
+  - ninja: {fileID: 11400000, guid: 964fac9240ffb45faa41c0f532c4ab3d, type: 2}
+    column: 4
+    rowFromBack: 0
+    weapons:
+    - {fileID: 11400000, guid: bb4264379e5bf4a0681a2d2224e3fc80, type: 2}
+    - {fileID: 11400000, guid: 2fa7d1cf17aad44c38a9b8c1a4dc0690, type: 2}

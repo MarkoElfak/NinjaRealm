@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.SkillDefinition
   id: skill.quake_hammer
   displayName: Quake Hammer
-  description: Deals 220% attack damage and stuns the target for 1.5s.
+  description: Deals 200% attack damage and stuns the target for 1s.
   castTimeSeconds: 0.5
   actions:
   - rid: 9055203165768253468
@@ -31,7 +31,7 @@ MonoBehaviour:
           radius: 1
         damageType: 0
         baseDamage: 0
-        attackDamagePercent: 220
+        attackDamagePercent: 200
         scalesWithAbilityPower: 0
     - rid: 9055203165768253469
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
@@ -42,4 +42,4 @@ MonoBehaviour:
           radius: 1
         status: 0
         value: 0
-        durationSeconds: 1.5
+        durationSeconds: 1

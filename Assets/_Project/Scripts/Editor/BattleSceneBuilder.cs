@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using NinjaRealm.Core.Content;
+using NinjaRealm.Core.Lineups;
+using NinjaRealm.Core.Prototype;
 using NinjaRealm.Presentation;
 using NinjaRealm.Presentation.Battle;
 using UnityEditor;
@@ -72,13 +74,13 @@ namespace NinjaRealm.Editor
             var playback = new GameObject("Units").AddComponent<BattlePlayback>();
             playback.transform.SetParent(battle.transform, false);
 
-            var demo = battle.AddComponent<BattleDemo>();
-            Assign(demo, "content", database);
-            Assign(demo, "board", board);
-            Assign(demo, "playback", playback);
+            var controller = battle.AddComponent<BattleController>();
+            Assign(controller, "content", database);
+            Assign(controller, "board", board);
+            Assign(controller, "playback", playback);
 
             var hud = battle.AddComponent<BattleHud>();
-            Assign(hud, "demo", demo);
+            Assign(hud, "controller", controller);
 
             if (database == null || bootstrap == null)
                 throw new InvalidOperationException("[Battle] The ContentDatabase could not be loaded into the new scene.");
@@ -91,13 +93,14 @@ namespace NinjaRealm.Editor
             scenes.Insert(0, new EditorBuildSettingsScene(ScenePath, true));
             EditorBuildSettings.scenes = scenes.ToArray();
 
-            Debug.Log($"[Battle] Created {ScenePath} using {AssetDatabase.GetAssetPath(database)}. Press Play to watch a demo fight.");
+            Debug.Log($"[Battle] Created {ScenePath} using {AssetDatabase.GetAssetPath(database)}. Press Play to set up a lineup and fight.");
         }
 
         /// <summary>
         /// Command line: -executeMethod NinjaRealm.Editor.BattleSceneBuilder.CaptureBattle
-        /// [-captureOut file.png] [-captureSeed 7] [-captureSeconds 6]. Plays a fight in the
-        /// battle scene without entering play mode and saves what the camera sees.
+        /// [-captureOut file.png] [-captureSeed 7] [-captureSeconds 6] [-captureOpponent lineup.ember_clan].
+        /// Plays the first balance build against an enemy lineup in the battle scene without
+        /// entering play mode and saves what the camera sees.
         /// </summary>
         public static void CaptureBattle()
         {
@@ -105,17 +108,23 @@ namespace NinjaRealm.Editor
             var seed = int.Parse(Argument("-captureSeed", "7"));
             var seconds = float.Parse(Argument("-captureSeconds", "6"), System.Globalization.CultureInfo.InvariantCulture);
 
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            var demo = Object.FindAnyObjectByType<BattleDemo>();
-            if (demo == null) throw new InvalidOperationException($"No BattleDemo in {ScenePath}.");
+            var opponentId = Argument("-captureOpponent", "lineup.ember_clan");
 
-            demo.StartBattle(seed);
-            if (demo.Playback.Simulation == null)
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var controller = Object.FindAnyObjectByType<BattleController>();
+            if (controller == null) throw new InvalidOperationException($"No BattleController in {ScenePath}.");
+            if (!controller.Initialize()) throw new InvalidOperationException("[Battle] The battle scene has no content database.");
+
+            var database = controller.Content;
+            var player = PrototypeContent.BalanceArchetypes(database)[0].Slots;
+            var opponent = database.Get<LineupDefinition>(opponentId);
+            controller.StartFight(player, opponent.Slots, seed);
+            if (controller.Playback.Simulation == null)
                 throw new InvalidOperationException("[Battle] The fight did not start. See the errors above.");
 
             const float frame = 1f / 30f;
             for (var time = 0f; time < seconds; time += frame)
-                demo.Playback.Advance(frame);
+                controller.Playback.Advance(frame);
 
             var camera = Camera.main;
             if (camera == null) throw new InvalidOperationException("The battle scene has no main camera.");
@@ -140,9 +149,9 @@ namespace NinjaRealm.Editor
             Directory.CreateDirectory(Path.GetDirectoryName(output) ?? ".");
             File.WriteAllBytes(output, image.EncodeToPNG());
 
-            var simulation = demo.Playback.Simulation;
+            var simulation = controller.Playback.Simulation;
             var alive = simulation.Units.Count(unit => unit.IsAlive);
-            Debug.Log($"[Battle] Captured {output} at {demo.Playback.FightSeconds:0.0}s of seed {seed}: " +
+            Debug.Log($"[Battle] Captured {output} at {controller.Playback.FightSeconds:0.0}s of seed {seed}: " +
                       $"{simulation.Units.Count} units, {alive} alive, {simulation.Events.Count} events.");
 
             Object.DestroyImmediate(target);

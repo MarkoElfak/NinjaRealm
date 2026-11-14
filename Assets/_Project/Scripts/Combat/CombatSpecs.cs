@@ -17,7 +17,10 @@ namespace NinjaRealm.Combat
 
         public int OvertimeStartTicks = 30 * Fixed.TicksPerSecond;
         public int OvertimeStepTicks = 5 * Fixed.TicksPerSecond;
-        public long OvertimeStepBonusPercent = 25 * Fixed.One;
+        public long OvertimeStepBonusPercent = 35 * Fixed.One;
+
+        /// <summary>Healing and shields lose this much per overtime step, so sustain teams can't stall forever.</summary>
+        public long OvertimeStepHealingCutPercent = 25 * Fixed.One;
         public int MaxTicks = 45 * Fixed.TicksPerSecond;
 
         /// <summary>Mana gained per basic attack.</summary>

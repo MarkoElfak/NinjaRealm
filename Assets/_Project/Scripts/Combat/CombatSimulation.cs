@@ -207,6 +207,14 @@ namespace NinjaRealm.Combat
             return steps * setup.OvertimeStepBonusPercent;
         }
 
+        /// <summary>How much weaker healing and shields are, in milli-percent, once overtime starts.</summary>
+        long OvertimeHealingCut()
+        {
+            if (tick < setup.OvertimeStartTicks) return 0;
+            var steps = 1 + (tick - setup.OvertimeStartTicks) / Math.Max(1, setup.OvertimeStepTicks);
+            return Math.Min(Fixed.Hundred, steps * setup.OvertimeStepHealingCutPercent);
+        }
+
         void RunPeriodicTriggers()
         {
             foreach (var trigger in triggers)
@@ -601,6 +609,7 @@ namespace NinjaRealm.Combat
             if (applyHealingPower) amount = Fixed.AddPercent(amount, source.GetStat(StatIds.HealingPower));
             var reduction = Math.Min(target.StatusValue(StatusKind.HealingReduction), Fixed.Hundred);
             amount = Fixed.Percent(amount, Fixed.Hundred - reduction);
+            amount = Fixed.Percent(amount, Fixed.Hundred - OvertimeHealingCut());
             amount = Math.Min(amount, target.MaxHealth - target.Health);
             if (amount <= 0) return;
 
@@ -614,6 +623,9 @@ namespace NinjaRealm.Combat
             if (!target.IsAlive || amount <= 0) return;
 
             amount = Fixed.AddPercent(amount, source.GetStat(StatIds.HealingPower));
+            amount = Fixed.Percent(amount, Fixed.Hundred - OvertimeHealingCut());
+            if (amount <= 0) return;
+
             target.Shields.Add(new ActiveShield { Amount = amount, EndTick = tick + Math.Max(1, durationTicks) });
             source.ShieldingDone += amount;
             events.Add(new CombatEvent(tick, CombatEventType.Shield, source.Index, target.Index, amount));

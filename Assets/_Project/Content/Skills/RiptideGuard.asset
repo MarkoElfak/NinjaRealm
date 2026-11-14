@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.SkillDefinition
   id: skill.riptide_guard
   displayName: Riptide Guard
-  description: Shields self for 30% max health and slows adjacent enemies.
+  description: Shields self for 25% max health and slows adjacent enemies.
   castTimeSeconds: 0.5
   actions:
   - rid: 9055203165768253472
@@ -29,7 +29,7 @@ MonoBehaviour:
           kind: 0
           count: 1
           radius: 1
-        percentOfMaxHealth: 30
+        percentOfMaxHealth: 25
         durationSeconds: 4
     - rid: 9055203165768253473
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}

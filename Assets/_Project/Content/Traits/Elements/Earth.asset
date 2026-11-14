@@ -19,14 +19,17 @@ MonoBehaviour:
   icon: {fileID: 0}
   tiers:
   - requiredCount: 2
-    description: Earth ninjas gain 20 armor.
+    description: Earth ninjas gain 20 armor and 20 magic resist.
     effects:
     - rid: 9055203165768253449
+    - rid: 9055203165768253452
   - requiredCount: 3
-    description: Earth ninjas gain 40 armor, and all other allies gain 10.
+    description: Earth ninjas gain 40 armor and 40 magic resist, and all other allies gain 10 of each.
     effects:
     - rid: 9055203165768253450
+    - rid: 9055203165768253453
     - rid: 9055203165768253451
+    - rid: 9055203165768253454
   references:
     version: 2
     RefIds:
@@ -49,5 +52,26 @@ MonoBehaviour:
       data:
         holders: 3
         stat: {fileID: 11400000, guid: 5b14552f08bab4bf7949b9a1e163e33e, type: 2}
+        operation: 0
+        value: 10
+    - rid: 9055203165768253452
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 1
+        stat: {fileID: 11400000, guid: 5f926ad93d96c4977b8c2e8ffc1cfc83, type: 2}
+        operation: 0
+        value: 20
+    - rid: 9055203165768253453
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 1
+        stat: {fileID: 11400000, guid: 5f926ad93d96c4977b8c2e8ffc1cfc83, type: 2}
+        operation: 0
+        value: 40
+    - rid: 9055203165768253454
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 3
+        stat: {fileID: 11400000, guid: 5f926ad93d96c4977b8c2e8ffc1cfc83, type: 2}
         operation: 0
         value: 10
