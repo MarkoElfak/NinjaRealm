@@ -1,0 +1,20 @@
+{
+    "name": "NinjaRealm.Editor",
+    "rootNamespace": "NinjaRealm.Editor",
+    "references": [
+        "NinjaRealm.Core",
+        "NinjaRealm.Combat",
+        "NinjaRealm.Presentation"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
