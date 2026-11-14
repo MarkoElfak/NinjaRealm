@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NinjaRealm.Combat;
 using UnityEngine;
 
 namespace NinjaRealm.Core.Definitions.Effects
@@ -36,6 +37,14 @@ namespace NinjaRealm.Core.Definitions.Effects
             var percent = operation == ModifierOperation.AddPercent || (stat != null && stat.IsPercentage) ? "%" : "";
             return $"{value:+0.##;-0.##}{percent} {name}";
         }
+
+        public override PassiveSpec ToSpec() => new StatModifierSpec
+        {
+            Holders = holders,
+            StatId = stat != null ? stat.Id : null,
+            Operation = operation,
+            Value = Fixed.FromFloat(value),
+        };
     }
 
     /// <summary>Runs actions when something happens: fight start, an attack hit, a timer, low health.</summary>
@@ -88,6 +97,22 @@ namespace NinjaRealm.Core.Definitions.Effects
                 case EffectTrigger.HealthBelowThreshold: return $"Below {healthThresholdPercent:0}% health: {actions.Count} action(s)";
                 default: return $"{trigger}: {actions.Count} action(s)";
             }
+        }
+
+        public override PassiveSpec ToSpec()
+        {
+            var spec = new TriggeredSpec
+            {
+                Holders = holders,
+                Trigger = trigger,
+                IntervalTicks = Fixed.SecondsToTicks(intervalSeconds),
+                HealthThresholdPercent = Fixed.FromFloat(healthThresholdPercent),
+                EveryNth = Math.Max(1, everyNth),
+                OncePerFight = oncePerFight,
+            };
+            foreach (var action in actions)
+                if (action != null) spec.Actions.Add(action.ToSpec());
+            return spec;
         }
     }
 }

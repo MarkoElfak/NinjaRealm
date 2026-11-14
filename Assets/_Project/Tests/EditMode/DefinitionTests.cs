@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using NinjaRealm.Combat;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Definitions.Effects;

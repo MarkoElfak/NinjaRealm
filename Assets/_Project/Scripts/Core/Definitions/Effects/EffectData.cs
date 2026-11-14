@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NinjaRealm.Combat;
 using UnityEngine;
 
 namespace NinjaRealm.Core.Definitions.Effects
@@ -28,6 +29,9 @@ namespace NinjaRealm.Core.Definitions.Effects
     {
         [Tooltip("Who carries this effect. Weapons use Self; traits usually use TraitMembers or Team.")]
         public EffectScope holders = EffectScope.Self;
+
+        /// <summary>The plain combat data for this effect, with values in fixed-point.</summary>
+        public abstract PassiveSpec ToSpec();
     }
 
     /// <summary>Something that happens once: damage, a heal, a shield, a status. Used by skills and triggers.</summary>
@@ -35,6 +39,12 @@ namespace NinjaRealm.Core.Definitions.Effects
     public abstract class ActionEffect : EffectData
     {
         public TargetSelector target = new TargetSelector();
+
+        /// <summary>The plain combat data for this action, with values in fixed-point.</summary>
+        public abstract ActionSpec ToSpec();
+
+        protected TargetSpec TargetToSpec() =>
+            target != null ? new TargetSpec(target.kind, target.count, target.radius) : new TargetSpec(TargetKind.CurrentTarget);
 
         public override IEnumerable<string> Validate() => ValidateTarget();
 
@@ -49,83 +59,6 @@ namespace NinjaRealm.Core.Definitions.Effects
             foreach (var message in target.Validate())
                 yield return message;
         }
-    }
-
-    public enum EffectScope
-    {
-        /// <summary>The ninja that owns the effect, such as the one holding a weapon.</summary>
-        Self,
-
-        /// <summary>Every ninja on the team that has the trait.</summary>
-        TraitMembers,
-
-        /// <summary>Every ninja on the team.</summary>
-        AllAllies,
-
-        /// <summary>Every ninja on the team that does not have the trait.</summary>
-        OtherAllies,
-
-        /// <summary>The team as a whole, once, for example a periodic team heal.</summary>
-        Team,
-    }
-
-    public enum ModifierOperation
-    {
-        /// <summary>Adds a flat amount, for example +20 armor.</summary>
-        Add,
-
-        /// <summary>Adds a percentage of the base value, for example +10% attack damage.</summary>
-        AddPercent,
-    }
-
-    public enum EffectTrigger
-    {
-        FightStart,
-        OnAttackHit,
-        OnAbilityCast,
-        Periodic,
-        HealthBelowThreshold,
-    }
-
-    public enum TargetKind
-    {
-        Self,
-        CurrentTarget,
-        CurrentTargetAndAdjacent,
-        AdjacentEnemies,
-        EnemiesInRadiusOfTarget,
-        EnemiesInRadiusOfSelf,
-        LowestHealthAllies,
-        AllAllies,
-        RandomEnemies,
-    }
-
-    public enum DamageType
-    {
-        Physical,
-        Magic,
-        True,
-    }
-
-    public enum StatusKind
-    {
-        /// <summary>Cannot move, attack or cast.</summary>
-        Stun,
-
-        /// <summary>Enemies must attack the source.</summary>
-        Taunt,
-
-        /// <summary>Loses value% of max health over the duration.</summary>
-        Burn,
-
-        /// <summary>Attack speed reduced by value%.</summary>
-        Slow,
-
-        /// <summary>Healing received reduced by value%.</summary>
-        HealingReduction,
-
-        /// <summary>Damage taken reduced by value%.</summary>
-        DamageReduction,
     }
 
     [Serializable]
