@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.SkillDefinition
   id: skill.tide_blessing
   displayName: Tide Blessing
-  description: Heals the 2 most injured allies for 20% max health.
+  description: Heals the 2 most injured allies for 15% max health.
   castTimeSeconds: 0.5
   actions:
   - rid: 9055203165768253465
@@ -28,4 +28,4 @@ MonoBehaviour:
           kind: 6
           count: 2
           radius: 1
-        percentOfMaxHealth: 20
+        percentOfMaxHealth: 15

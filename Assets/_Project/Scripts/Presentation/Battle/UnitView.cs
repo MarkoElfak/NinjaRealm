@@ -129,6 +129,17 @@ namespace NinjaRealm.Presentation.Battle
             fill.localPosition = position;
         }
 
+        /// <summary>Puts the unit somewhere at once, without animating, for example while dragging it.</summary>
+        public void Teleport(Vector3 position)
+        {
+            moveFrom = moveTo = position;
+            moveTime = moveDuration;
+            transform.position = position;
+            if (visual != null) visual.position = position;
+        }
+
+        public void SetBarsVisible(bool visible) => bars.gameObject.SetActive(visible && !IsDead);
+
         public void MoveTo(Vector3 position, float seconds)
         {
             moveFrom = transform.position;

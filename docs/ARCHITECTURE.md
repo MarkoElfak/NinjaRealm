@@ -13,7 +13,8 @@ Assets/
   _Project/
     Scripts/
       Core/          NinjaRealm.Core: content IDs, ContentDefinition, ContentDatabase, validation,
-                     and CombatSetupBuilder (content assets into fight setups)
+                     lineups, CombatSetupBuilder (content assets into fight setups), the balance
+                     runner and the prototype content
       Combat/        NinjaRealm.Combat: deterministic fight simulation, pure C# with no UnityEngine
       Presentation/  NinjaRealm.Presentation: MonoBehaviours, scenes, UI, playback of combat events
       Editor/        NinjaRealm.Editor: menus, validation and import tools (editor only)
@@ -30,7 +31,7 @@ Assets/
 Presentation ──> Core
 Presentation ──> Combat
 Editor       ──> Core, Combat, Presentation
-Tests        ──> Core, Combat
+Tests        ──> Core, Combat, Presentation
 Core         ──> Combat
 Combat       ──> nothing (noEngineReferences: true)
 ```
@@ -63,6 +64,7 @@ All live in `NinjaRealm.Core.Definitions` and are created from **Assets > Create
 | `SkillDefinition` | `skill.` | A ninja's active skill: a list of actions |
 | `NinjaDefinition` | `ninja.` | Rarity, element, class, skill and base stats |
 | `WeaponDefinition` | `weapon.` | A component, or a combined weapon naming its two components |
+| `LineupDefinition` | `lineup.` | An enemy lineup: description, difficulty (1 to 5) and slots (ninja, hex, weapons) |
 
 ## Effects
 
@@ -90,7 +92,7 @@ Authoring values are floats for easy editing. Each effect's `ToSpec()` converts 
 * **Mana**: +10 per attack, and up to +15 when hit (scaled by damage taken as a share of max health).
 * **Damage**: physical uses armor and magic uses magic resist (`damage x 100 / (100 + resist)`); true damage ignores both. Shields absorb damage before health. Omnivamp heals the attacker.
 * **Fight start**: weapon passives apply, then each trait counts the distinct ninjas holding it per team and switches on its highest reached tier. Health and starting mana are set after all bonuses.
-* **Overtime**: after 30 seconds, all damage rises by 25% every 5 seconds. At 45 seconds the team with the larger share of its total health left wins; an exact tie is a draw.
+* **Overtime**: after 30 seconds, every 5 seconds all damage rises by 35% and all healing and shields fall by 25% (no healing at all after 20 seconds of overtime), so sustain teams can't stall. At 45 seconds the team with the larger share of its total health left wins; an exact tie is a draw.
 * **Output**: `Events` lists everything that happened (moves, attacks, damage, casts, statuses, deaths, trait activations) for playback and the damage log. `Result` has the winner, duration and per-unit totals.
 
 `NinjaRealm.Core.Fights.CombatSetupBuilder` builds a `FightSetup` from content: add each ninja with a team, a hex (`TeamPosition` flips team 1's half) and its weapons, then call `Build()`.
@@ -102,25 +104,49 @@ builder.Add(1, hana, builder.TeamPosition(1, 3, 3));
 var result = new CombatSimulation(builder.Build(), seed).Run();
 ```
 
+`AddLineup(team, slots)` adds a whole lineup at once, using `TeamPosition` for each slot.
+
 Known limits for now: a timed buff to health does not change max health, and units do not path around blockers (they sidestep one hex at a time).
+
+## Lineups
+
+`NinjaRealm.Core.Lineups` holds what both sides of a fight bring to the board.
+
+* `LineupSlot`: a ninja, a hex on its team's half (column 0 to 6, `rowFromBack` 0 to 3, where 3 is the front row) and up to three weapons.
+* `LineupRules`: the limits (7 columns, 4 rows, 6 ninjas, 3 weapons each) and `Validate`, which lists every problem with a lineup.
+* `LineupSynergies.Count`: counts each trait once per different ninja, the same way the simulation does.
+* `PlayerLineup`: the lineup the player edits. `Place`, `Move` (swaps when the hex is taken), `Remove`, `Equip` and `Unequip` all keep the rules, and `Changed` fires after each edit. `ToJson` and `LoadJson` save it by content ID; unknown IDs are skipped so old saves keep loading.
+* `LineupDefinition`: an enemy lineup as a content asset.
 
 ## Prototype content
 
-**Ninja Realm > Content > Create Prototype Content** creates the combat prototype's assets under `Assets/_Project/Content/`: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas, 6 components and 4 combined weapons. It skips assets that already exist, so it never overwrites edits. It then rebuilds the database.
+`NinjaRealm.Core.Prototype.PrototypeContent` is the source of truth for the combat prototype's numbers: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas, 6 components, 4 combined weapons and 5 enemy lineups. It writes them into an `IContentSink`:
 
-The EditMode test `ProjectContentTests` validates every content asset in the project and checks that the database is up to date.
+* **Ninja Realm > Content > Create Prototype Content** saves them as assets under `Assets/_Project/Content/`. It skips assets that already exist, so it never overwrites edits.
+* **Ninja Realm > Content > Reset Prototype Content to Defaults** overwrites the assets with the values in code.
+* `InMemoryContentSink` and `PrototypeContent.CreateInMemoryDatabase()` keep them in memory, for tests and balance runs.
+
+Both menu items rebuild the database. To change a number, change it in `PrototypeContent` and run Reset. The EditMode test `ProjectContentTests` validates every content asset, checks that the database is up to date, and fails if an asset differs from `PrototypeContent`, naming the field.
+
+## Balance runner
+
+`NinjaRealm.Core.Fights.BalanceRunner` plays many fights headless. `Run(a, b)` plays a matchup with 20 seeds from both sides of the board, `RoundRobin(teams, title)` returns a Markdown win-rate table, and `NinjaReport()` lists damage, healing and survival per ninja. `PrototypeContent.BalanceArchetypes` gives five builds to compare. The latest results and tuning notes are in `docs/BALANCE.md`.
 
 ## Battle scene
 
-`Assets/Scenes/Battle.unity` plays a fight on the board. Create or recreate it with **Ninja Realm > Scenes > Create Battle Scene**, then press Play.
+`Assets/Scenes/Battle.unity` is the combat prototype. Create or recreate it with **Ninja Realm > Scenes > Create Battle Scene**, then press Play. It loops through three phases:
 
-* `BattleDemo` builds a fight from a lineup (its inspector list, or a built-in demo lineup when the list is empty) with `CombatSetupBuilder`. A seed of 0 picks a new seed for each fight; any other seed replays the same fight.
+1. **Setup** (`LineupScreen`): pick an opponent (sorted by difficulty), drag ninjas from the bench onto your half of the board, drag them to move or swap, drag weapons from the armory onto a ninja, and see both teams' synergies. Delete removes the selected ninja. Enter or **Fight!** starts the fight. The lineup and opponent are saved in `PlayerPrefs`.
+2. **Fight** (`BattleHud`): the timer, overtime, speed (1, 2, 3), pause (Space), skip (S) and give up, with synergies, names and floating numbers.
+3. **Result** (`ResultScreen`): victory, defeat or draw, the duration and seed, and a damage log per team (damage dealt and taken, healing and shields). Esc goes back to the lineup, R replays the same fight, N fights again with a new seed.
+
+* `BattleController` owns the phases. It builds each fight from the two lineups with `CombatSetupBuilder.AddLineup`. A seed of 0 picks a new seed for each fight; any other seed replays the same fight.
 * `BattlePlayback` steps the simulation at 20 ticks per second times the speed, and turns new events into animations. It never changes the fight.
-* `HexBoardView` and `UnitView` are placeholder visuals built in code (`PrototypeVisuals`): low poly hex tiles, chibi ninjas in dark cloth with the element colour, a team ring, and health, shield and mana bars. Meshy models replace them later.
-* `BattleHud` is a temporary IMGUI overlay with the timer, speed, synergies, names, floating numbers and the result. Keys: Space pauses, 1, 2 and 3 set the speed, R replays, N starts a new fight.
+* `HexBoardView` and `UnitView` are placeholder visuals built in code (`PrototypeVisuals`): low poly hex tiles, chibi ninjas in dark cloth with the element colour, a team ring, and health, shield and mana bars. Meshy models replace them later. `HexBoardView.TryGetHex` turns a screen point into a hex for drag and drop.
+* The screens are temporary IMGUI, drawn with `PrototypeGui` and scaled to a 900 pixel tall reference screen. They will be replaced by real UI.
 * `HexLayout` maps board hexes to world positions: pointy-top hexes, 0.75 m radius, board centred on the origin, team 0 nearest the camera.
 
-From the command line, `-executeMethod NinjaRealm.Editor.BattleSceneBuilder.CaptureBattle -captureOut <png> -captureSeed 7 -captureSeconds 6` plays a fight without entering play mode and saves a screenshot.
+From the command line, `-executeMethod NinjaRealm.Editor.BattleSceneBuilder.CaptureBattle -captureOut <png> -captureSeed 7 -captureSeconds 6 -captureOpponent lineup.ember_clan` plays a fight without entering play mode and saves a screenshot.
 
 ## Determinism
 

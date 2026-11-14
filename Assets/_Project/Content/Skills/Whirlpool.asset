@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.SkillDefinition
   id: skill.whirlpool
   displayName: Whirlpool
-  description: Deals 150 magic damage around the target and stuns them for 2s.
+  description: Deals 110 magic damage around the target and stuns them for 1.5s.
   castTimeSeconds: 0.5
   actions:
   - rid: 9055203165768253477
@@ -30,7 +30,7 @@ MonoBehaviour:
           count: 1
           radius: 1
         damageType: 1
-        baseDamage: 150
+        baseDamage: 110
         attackDamagePercent: 0
         scalesWithAbilityPower: 1
     - rid: 9055203165768253478
@@ -42,4 +42,4 @@ MonoBehaviour:
           radius: 1
         status: 0
         value: 0
-        durationSeconds: 2
+        durationSeconds: 1.5

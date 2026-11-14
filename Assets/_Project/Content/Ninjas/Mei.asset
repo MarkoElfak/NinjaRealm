@@ -32,7 +32,7 @@ MonoBehaviour:
   - stat: {fileID: 11400000, guid: 5f926ad93d96c4977b8c2e8ffc1cfc83, type: 2}
     value: 20
   - stat: {fileID: 11400000, guid: 2997b6728e63d4b77a55255e8dde3a5d, type: 2}
-    value: 60
+    value: 70
   - stat: {fileID: 11400000, guid: 0ddf73056149a4b4899e3a5cd03c6189, type: 2}
     value: 10
   portrait: {fileID: 0}

@@ -390,6 +390,38 @@ namespace NinjaRealm.Tests
         }
 
         [Test]
+        public void Overtime_CutsHealingStepByStep()
+        {
+            // A healer with a huge health pool heals itself 0.1% of max health every tick while an
+            // enemy keeps hitting it, so every heal is below the missing health.
+            var healer = Unit(0, Front0);
+            healer.Stats[StatIds.AttackDamage] = 0;
+            healer.Stats[StatIds.Health] = 1000000 * Fixed.One;
+            var periodic = new TriggeredSpec { Holders = EffectScope.Self, Trigger = EffectTrigger.Periodic, IntervalTicks = 1 };
+            periodic.Actions.Add(new HealSpec { Target = new TargetSpec(TargetKind.LowestHealthAllies, 1), PercentOfMaxHealth = Fixed.One / 10 });
+            healer.Passives.Add(periodic);
+            var enemy = Unit(1, Front1);
+            enemy.Stats[StatIds.AttackDamage] = 20000 * Fixed.One;
+            enemy.Stats[StatIds.AttackSpeed] = 5 * Fixed.One;
+            enemy.Stats[StatIds.Health] = 1000000 * Fixed.One;
+
+            var setup = Setup(healer, enemy);
+            setup.OvertimeStartTicks = 20;
+            setup.OvertimeStepTicks = 20;
+            var simulation = new CombatSimulation(setup, Seed);
+            for (var i = 0; i < 100; i++) simulation.Step();
+
+            var heals = EventsOf(simulation, CombatEventType.Heal);
+            var before = heals.Where(e => e.Tick < 20).ToList();
+            var firstStep = heals.Where(e => e.Tick >= 20 && e.Tick < 40).ToList();
+            Assert.IsNotEmpty(before);
+            Assert.IsNotEmpty(firstStep);
+            Assert.IsTrue(before.All(e => e.Amount == 1000 * Fixed.One), "full heals before overtime");
+            Assert.IsTrue(firstStep.All(e => e.Amount == 750 * Fixed.One), "25% less in the first overtime step");
+            Assert.IsEmpty(heals.Where(e => e.Tick >= 80), "no healing after four steps");
+        }
+
+        [Test]
         public void EmptyTeam_EndsImmediately()
         {
             var simulation = new CombatSimulation(Setup(Unit(0, Front0)), Seed);

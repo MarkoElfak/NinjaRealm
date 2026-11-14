@@ -13,6 +13,11 @@ MonoBehaviour:
   m_Name: ContentDatabase
   m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Content.ContentDatabase
   definitions:
+  - {fileID: 11400000, guid: 820765dfb2104e0484030d939081f8ff, type: 2}
+  - {fileID: 11400000, guid: 1325203df9ce420bbefa787c2df6b008, type: 2}
+  - {fileID: 11400000, guid: 7822cd9f76bc44d1b13b8d6df5655514, type: 2}
+  - {fileID: 11400000, guid: 382ec86060244e579318cb4e277259fd, type: 2}
+  - {fileID: 11400000, guid: 410c88e455344b79a6a9fe4696d6ef9d, type: 2}
   - {fileID: 11400000, guid: e2f82cf69c9d742b39860c8e1e88f977, type: 2}
   - {fileID: 11400000, guid: 26b32c614cc804a9bb10bb02b7549b8e, type: 2}
   - {fileID: 11400000, guid: e977f33e862674aab8db5468cc09892b, type: 2}

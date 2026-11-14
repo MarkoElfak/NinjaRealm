@@ -19,11 +19,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   tiers:
   - requiredCount: 2
-    description: Every 4s, heal the most injured ally for 8% max health.
+    description: Every 4s, heal the most injured ally for 5% max health.
     effects:
     - rid: 9055203165768253445
   - requiredCount: 3
-    description: Heal for 14% instead.
+    description: Heal for 8% instead.
     effects:
     - rid: 9055203165768253446
   references:
@@ -58,7 +58,7 @@ MonoBehaviour:
           kind: 6
           count: 1
           radius: 1
-        percentOfMaxHealth: 8
+        percentOfMaxHealth: 5
     - rid: 9055203165768253448
       type: {class: HealAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
@@ -66,4 +66,4 @@ MonoBehaviour:
           kind: 6
           count: 1
           radius: 1
-        percentOfMaxHealth: 14
+        percentOfMaxHealth: 8

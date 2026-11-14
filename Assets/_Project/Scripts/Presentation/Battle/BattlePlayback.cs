@@ -80,6 +80,30 @@ namespace NinjaRealm.Presentation.Battle
             accumulator = 0f;
         }
 
+        /// <summary>Runs the rest of the fight at once and shows the final state.</summary>
+        public void SkipToEnd()
+        {
+            if (Simulation == null || Simulation.IsFinished) return;
+
+            while (!Simulation.IsFinished)
+            {
+                Simulation.Step();
+                ProcessNewEvents();
+            }
+
+            floatingTexts.Clear();
+            burnDamage.Clear();
+            accumulator = 0f;
+            SyncBars();
+            for (var i = 0; i < views.Count; i++)
+            {
+                var unit = Simulation.Units[i];
+                views[i].Teleport(board.ToWorld(unit.Position));
+            }
+
+            Finished?.Invoke(Simulation.Result);
+        }
+
         void Update()
         {
             Advance(Time.deltaTime);

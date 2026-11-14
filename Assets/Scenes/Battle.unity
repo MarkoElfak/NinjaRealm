@@ -384,7 +384,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a177e0055534dad9db3f8d36803b4f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: NinjaRealm.Presentation::NinjaRealm.Presentation.Battle.BattleHud
-  demo: {fileID: 1396349316}
+  controller: {fileID: 1396349316}
 --- !u!114 &1396349316
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -396,12 +396,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b68c1622cfd24479a6246e891fe4f65c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: NinjaRealm.Presentation::NinjaRealm.Presentation.Battle.BattleDemo
+  m_EditorClassIdentifier: NinjaRealm.Presentation::NinjaRealm.Presentation.Battle.BattleController
   content: {fileID: 11400000, guid: e09c4bb23bb844baebeb28b1604328c3, type: 2}
   board: {fileID: 770754869}
   playback: {fileID: 1368446658}
   seed: 0
-  lineup: []
 --- !u!4 &1396349317
 Transform:
   m_ObjectHideFlags: 0
