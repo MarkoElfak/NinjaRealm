@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7edf43c63b554d91a94ecbfee41a4fad, type: 3}
+  m_Name: Whirlpool
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.SkillDefinition
+  id: skill.whirlpool
+  displayName: Whirlpool
+  description: Deals 150 magic damage around the target and stuns them for 2s.
+  castTimeSeconds: 0.5
+  actions:
+  - rid: 9055203165768253477
+  - rid: 9055203165768253478
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203165768253477
+      type: {class: DamageAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 4
+          count: 1
+          radius: 1
+        damageType: 1
+        baseDamage: 150
+        attackDamagePercent: 0
+        scalesWithAbilityPower: 1
+    - rid: 9055203165768253478
+      type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 4
+          count: 1
+          radius: 1
+        status: 0
+        value: 0
+        durationSeconds: 2

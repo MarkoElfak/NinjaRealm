@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f8db83404e64d7d868142b633ac95ff, type: 3}
+  m_Name: Earth
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.TraitDefinition
+  id: trait.element.earth
+  displayName: Earth
+  kind: 0
+  color: {r: 0.55, g: 0.42, b: 0.28, a: 1}
+  icon: {fileID: 0}
+  tiers:
+  - requiredCount: 2
+    description: Earth ninjas gain 20 armor.
+    effects:
+    - rid: 9055203165768253449
+  - requiredCount: 3
+    description: Earth ninjas gain 40 armor, and all other allies gain 10.
+    effects:
+    - rid: 9055203165768253450
+    - rid: 9055203165768253451
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203165768253449
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 1
+        stat: {fileID: 11400000, guid: 5b14552f08bab4bf7949b9a1e163e33e, type: 2}
+        operation: 0
+        value: 20
+    - rid: 9055203165768253450
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 1
+        stat: {fileID: 11400000, guid: 5b14552f08bab4bf7949b9a1e163e33e, type: 2}
+        operation: 0
+        value: 40
+    - rid: 9055203165768253451
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 3
+        stat: {fileID: 11400000, guid: 5b14552f08bab4bf7949b9a1e163e33e, type: 2}
+        operation: 0
+        value: 10

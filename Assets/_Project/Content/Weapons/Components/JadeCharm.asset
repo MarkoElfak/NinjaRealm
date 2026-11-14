@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f25758d132bd455bbfe257492c7d2afe, type: 3}
+  m_Name: JadeCharm
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.WeaponDefinition
+  id: weapon.jade_charm
+  displayName: Jade Charm
+  tier: 0
+  componentA: {fileID: 0}
+  componentB: {fileID: 0}
+  description: +10% max health.
+  effects:
+  - rid: 9055203165768253484
+  icon: {fileID: 0}
+  modelPrefab: {fileID: 0}
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203165768253484
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: d8592416d77ff4076b568b187068961f, type: 2}
+        operation: 1
+        value: 10

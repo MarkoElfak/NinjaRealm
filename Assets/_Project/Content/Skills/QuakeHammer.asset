@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7edf43c63b554d91a94ecbfee41a4fad, type: 3}
+  m_Name: QuakeHammer
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.SkillDefinition
+  id: skill.quake_hammer
+  displayName: Quake Hammer
+  description: Deals 220% attack damage and stuns the target for 1.5s.
+  castTimeSeconds: 0.5
+  actions:
+  - rid: 9055203165768253468
+  - rid: 9055203165768253469
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203165768253468
+      type: {class: DamageAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 1
+          count: 1
+          radius: 1
+        damageType: 0
+        baseDamage: 0
+        attackDamagePercent: 220
+        scalesWithAbilityPower: 0
+    - rid: 9055203165768253469
+      type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 1
+          count: 1
+          radius: 1
+        status: 0
+        value: 0
+        durationSeconds: 1.5
