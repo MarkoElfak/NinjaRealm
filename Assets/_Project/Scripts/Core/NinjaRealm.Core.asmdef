@@ -1,7 +1,9 @@
 {
     "name": "NinjaRealm.Core",
     "rootNamespace": "NinjaRealm.Core",
-    "references": [],
+    "references": [
+        "NinjaRealm.Combat"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

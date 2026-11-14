@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using NinjaRealm.Combat;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions.Effects;
 using UnityEngine;

@@ -12,7 +12,8 @@ Ninja Realm is a 3D low poly auto battler built in Unity 6000.4 with URP. The fu
 Assets/
   _Project/
     Scripts/
-      Core/          NinjaRealm.Core: content IDs, ContentDefinition, ContentDatabase, validation
+      Core/          NinjaRealm.Core: content IDs, ContentDefinition, ContentDatabase, validation,
+                     and CombatSetupBuilder (content assets into fight setups)
       Combat/        NinjaRealm.Combat: deterministic fight simulation, pure C# with no UnityEngine
       Presentation/  NinjaRealm.Presentation: MonoBehaviours, scenes, UI, playback of combat events
       Editor/        NinjaRealm.Editor: menus, validation and import tools (editor only)
@@ -30,10 +31,13 @@ Presentation ──> Core
 Presentation ──> Combat
 Editor       ──> Core, Combat, Presentation
 Tests        ──> Core, Combat
+Core         ──> Combat
 Combat       ──> nothing (noEngineReferences: true)
 ```
 
 Combat stays free of UnityEngine so fights can run headless, in tests, in balance scripts and on a server. Presentation turns combat results into visuals and never changes the outcome of a fight.
+
+Core references Combat, not the other way round: the shared effect enums (`EffectScope`, `TargetKind`, `StatusKind`...) live in Combat, and Core converts its assets into Combat's plain data.
 
 ## Content IDs
 
@@ -72,7 +76,33 @@ Behaviour is built from small serialized effect blocks (`NinjaRealm.Core.Definit
 
 A new mechanic means one new effect class plus its handling in the combat simulation. After that, any ninja, trait or weapon can use it from the inspector.
 
-Authoring values are floats for easy editing. The combat simulation converts them to fixed-point integers when a fight starts, so results stay deterministic.
+Authoring values are floats for easy editing. Each effect's `ToSpec()` converts it to the combat simulation's fixed-point data when a fight is built, so results stay deterministic.
+
+## Combat simulation
+
+`NinjaRealm.Combat.CombatSimulation` runs one fight from a `FightSetup` and a seed.
+
+* **Board**: hexes in odd-r offset coordinates (`HexCoord`), 7 columns by 8 rows. Team 0 starts on rows 0 to 3, team 1 on rows 4 to 7.
+* **Time**: 20 ticks per second. `Step()` advances one tick, so presentation can play a fight back at any speed; `Run()` plays it to the end.
+* **Numbers**: integers in thousandths (`Fixed`): 650 health is 650000, 25% is 25000. Durations are in ticks.
+* **Each tick**: burns tick and expired statuses, shields and buffs are removed, overtime is checked, periodic triggers fire, then every living unit acts in index order.
+* **A unit's turn**: stunned units do nothing. Otherwise it continues a cast, or picks a target (a taunter first, then its current target, then the nearest enemy), casts if its mana is full, attacks if the target is in range, or moves one hex closer.
+* **Mana**: +10 per attack, and up to +15 when hit (scaled by damage taken as a share of max health).
+* **Damage**: physical uses armor and magic uses magic resist (`damage x 100 / (100 + resist)`); true damage ignores both. Shields absorb damage before health. Omnivamp heals the attacker.
+* **Fight start**: weapon passives apply, then each trait counts the distinct ninjas holding it per team and switches on its highest reached tier. Health and starting mana are set after all bonuses.
+* **Overtime**: after 30 seconds, all damage rises by 25% every 5 seconds. At 45 seconds the team with the larger share of its total health left wins; an exact tie is a draw.
+* **Output**: `Events` lists everything that happened (moves, attacks, damage, casts, statuses, deaths, trait activations) for playback and the damage log. `Result` has the winner, duration and per-unit totals.
+
+`NinjaRealm.Core.Fights.CombatSetupBuilder` builds a `FightSetup` from content: add each ninja with a team, a hex (`TeamPosition` flips team 1's half) and its weapons, then call `Build()`.
+
+```csharp
+var builder = CombatSetupBuilder.FromDatabase(GameBootstrap.Content);
+builder.Add(0, kaito, builder.TeamPosition(0, 3, 3), shadowKatana);
+builder.Add(1, hana, builder.TeamPosition(1, 3, 3));
+var result = new CombatSimulation(builder.Build(), seed).Run();
+```
+
+Known limits for now: a timed buff to health does not change max health, and units do not path around blockers (they sidestep one hex at a time).
 
 ## Prototype content
 

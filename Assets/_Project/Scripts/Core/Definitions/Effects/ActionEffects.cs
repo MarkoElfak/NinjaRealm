@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NinjaRealm.Combat;
 using UnityEngine;
 
 namespace NinjaRealm.Core.Definitions.Effects
@@ -43,6 +44,15 @@ namespace NinjaRealm.Core.Definitions.Effects
             if (attackDamagePercent > 0f && baseDamage > 0f) amount = $"{baseDamage:0} + {attackDamagePercent:0}% attack damage";
             return $"{amount} {damageType} damage to {target?.Describe()}";
         }
+
+        public override ActionSpec ToSpec() => new DamageSpec
+        {
+            Target = TargetToSpec(),
+            DamageType = damageType,
+            BaseDamage = Fixed.FromFloat(baseDamage),
+            AttackDamagePercent = Fixed.FromFloat(attackDamagePercent),
+            ScalesWithAbilityPower = scalesWithAbilityPower,
+        };
     }
 
     /// <summary>Heals a percentage of each target's max health.</summary>
@@ -68,6 +78,12 @@ namespace NinjaRealm.Core.Definitions.Effects
         }
 
         public override string Describe() => $"Heal {target?.Describe()} for {percentOfMaxHealth:0.#}% max health";
+
+        public override ActionSpec ToSpec() => new HealSpec
+        {
+            Target = TargetToSpec(),
+            PercentOfMaxHealth = Fixed.FromFloat(percentOfMaxHealth),
+        };
     }
 
     /// <summary>Gives each target a shield worth a percentage of their max health.</summary>
@@ -96,6 +112,13 @@ namespace NinjaRealm.Core.Definitions.Effects
         }
 
         public override string Describe() => $"Shield {target?.Describe()} for {percentOfMaxHealth:0.#}% max health, {durationSeconds:0.#}s";
+
+        public override ActionSpec ToSpec() => new ShieldSpec
+        {
+            Target = TargetToSpec(),
+            PercentOfMaxHealth = Fixed.FromFloat(percentOfMaxHealth),
+            DurationTicks = Fixed.SecondsToTicks(durationSeconds),
+        };
     }
 
     /// <summary>Applies a status such as stun, burn or slow.</summary>
@@ -134,6 +157,14 @@ namespace NinjaRealm.Core.Definitions.Effects
             NeedsValue(status)
                 ? $"{status} {value:0.#}% on {target?.Describe()} for {durationSeconds:0.#}s"
                 : $"{status} {target?.Describe()} for {durationSeconds:0.#}s";
+
+        public override ActionSpec ToSpec() => new StatusSpec
+        {
+            Target = TargetToSpec(),
+            Status = status,
+            Value = Fixed.FromFloat(value),
+            DurationTicks = Fixed.SecondsToTicks(durationSeconds),
+        };
     }
 
     /// <summary>Changes a stat for a limited time.</summary>
@@ -171,5 +202,14 @@ namespace NinjaRealm.Core.Definitions.Effects
             var percent = operation == ModifierOperation.AddPercent ? "%" : "";
             return $"{value:+0.##;-0.##}{percent} {(stat != null ? stat.DisplayName : "?")} to {target?.Describe()} for {durationSeconds:0.#}s";
         }
+
+        public override ActionSpec ToSpec() => new StatBuffSpec
+        {
+            Target = TargetToSpec(),
+            StatId = stat != null ? stat.Id : null,
+            Operation = operation,
+            Value = Fixed.FromFloat(value),
+            DurationTicks = Fixed.SecondsToTicks(durationSeconds),
+        };
     }
 }
