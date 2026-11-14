@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using UnityEditor;
+using UnityEditor.AssetImporters;
 using UnityEngine;
 
 namespace NinjaRealm.Editor
@@ -17,7 +18,10 @@ namespace NinjaRealm.Editor
         const string BaseColorSuffix = "_base_color";
 
         // Bump when the settings below change, so Unity reimports the models.
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
+
+        // Run after URP's own material description preprocessor, so these settings win.
+        public override int GetPostprocessOrder() => 100;
 
         public static bool IsMeshyAsset(string path) =>
             path.Replace('\\', '/').StartsWith(Root + "/", StringComparison.Ordinal);
@@ -56,7 +60,8 @@ namespace NinjaRealm.Editor
             importer.maxTextureSize = 2048;
         }
 
-        void OnPostprocessMaterial(Material material)
+        // Model importers hand each material to this callback while it is built from the FBX.
+        void OnPreprocessMaterialDescription(MaterialDescription description, Material material, AnimationClip[] clips)
         {
             if (!IsMeshyAsset(assetPath)) return;
 
