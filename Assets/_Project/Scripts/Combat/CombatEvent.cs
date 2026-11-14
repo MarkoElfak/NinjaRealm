@@ -32,7 +32,7 @@ namespace NinjaRealm.Combat
         /// <summary>Damage, heal or shield amount (fixed-point), or the winning team for FightEnd.</summary>
         public readonly long Amount;
 
-        /// <summary>Extra detail: the hex for Move (column * 100 + row), the StatusKind, a crit flag (1) for Damage, the trait tier count.</summary>
+        /// <summary>Extra detail: the hex for Move (column * 100 + row), the StatusKind, for Damage 1 on a crit and 2 for damage over time (burn), the trait tier count.</summary>
         public readonly int Detail;
 
         /// <summary>A content ID for events that name something, such as the trait for TraitActivated or the skill for Cast.</summary>

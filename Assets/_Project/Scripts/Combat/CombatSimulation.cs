@@ -175,7 +175,7 @@ namespace NinjaRealm.Combat
                 foreach (var status in unit.Statuses.ToArray())
                 {
                     if (status.Kind != StatusKind.Burn || status.DamagePerTick <= 0) continue;
-                    DealDamage(UnitOrNull(status.Source), unit, status.DamagePerTick, DamageType.True, false);
+                    DealDamage(UnitOrNull(status.Source), unit, status.DamagePerTick, DamageType.True, false, true);
                     if (!unit.IsAlive) break;
                 }
 
@@ -525,7 +525,7 @@ namespace NinjaRealm.Combat
 
         // ---------------------------------------------------------------- damage, healing, statuses
 
-        void DealDamage(CombatUnit source, CombatUnit target, long raw, DamageType type, bool crit)
+        void DealDamage(CombatUnit source, CombatUnit target, long raw, DamageType type, bool crit, bool overTime = false)
         {
             if (!target.IsAlive || raw <= 0) return;
 
@@ -556,7 +556,7 @@ namespace NinjaRealm.Combat
 
             if (source != null) source.DamageDealt += total;
             target.DamageTaken += total;
-            events.Add(new CombatEvent(tick, CombatEventType.Damage, source?.Index ?? -1, target.Index, total, crit ? 1 : 0));
+            events.Add(new CombatEvent(tick, CombatEventType.Damage, source?.Index ?? -1, target.Index, total, crit ? 1 : overTime ? 2 : 0));
 
             if (target.IsAlive)
                 GainMana(target, Math.Min(setup.MaxManaFromHit, total * Fixed.Hundred / target.MaxHealth));

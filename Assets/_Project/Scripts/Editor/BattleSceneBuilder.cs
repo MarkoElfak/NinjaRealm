@@ -1,0 +1,163 @@
+using System;
+using System.IO;
+using System.Linq;
+using NinjaRealm.Core.Content;
+using NinjaRealm.Presentation;
+using NinjaRealm.Presentation.Battle;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using Object = UnityEngine.Object;
+
+namespace NinjaRealm.Editor
+{
+    /// <summary>
+    /// Creates the prototype battle scene, and renders a screenshot of a fight for checks run
+    /// from the command line.
+    /// </summary>
+    public static class BattleSceneBuilder
+    {
+        public const string ScenePath = "Assets/Scenes/Battle.unity";
+
+        [MenuItem("Ninja Realm/Scenes/Create Battle Scene")]
+        public static void CreateBattleScene()
+        {
+            if (File.Exists(ScenePath) && !Application.isBatchMode &&
+                !EditorUtility.DisplayDialog("Create Battle Scene", $"{ScenePath} already exists. Replace it?", "Replace", "Cancel"))
+                return;
+
+            var database = FindDatabase();
+            if (database == null)
+            {
+                Debug.LogError("[Battle] No ContentDatabase found. Run Ninja Realm > Content > Create Prototype Content first.");
+                return;
+            }
+
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // Angled board camera, like an auto battler: team 0 at the bottom of the screen.
+            var cameraObject = new GameObject("Main Camera") { tag = "MainCamera" };
+            var camera = cameraObject.AddComponent<Camera>();
+            cameraObject.AddComponent<AudioListener>();
+            camera.fieldOfView = 36f;
+            camera.nearClipPlane = 0.3f;
+            camera.farClipPlane = 100f;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0.55f, 0.68f, 0.84f);
+            cameraObject.transform.position = new Vector3(0f, 12.5f, -12f);
+            cameraObject.transform.LookAt(new Vector3(0f, 0f, -0.5f));
+
+            // Warm late-afternoon sun with soft shadows.
+            var sun = new GameObject("Sun").AddComponent<Light>();
+            sun.type = LightType.Directional;
+            sun.color = new Color(1f, 0.9f, 0.78f);
+            sun.intensity = 1.4f;
+            sun.shadows = LightShadows.Soft;
+            sun.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
+
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.62f, 0.68f, 0.8f);
+            RenderSettings.ambientEquatorColor = new Color(0.56f, 0.52f, 0.46f);
+            RenderSettings.ambientGroundColor = new Color(0.3f, 0.28f, 0.25f);
+
+            var bootstrap = new GameObject("Game Bootstrap").AddComponent<GameBootstrap>();
+            Assign(bootstrap, "content", database);
+
+            var battle = new GameObject("Battle");
+            var board = new GameObject("Board").AddComponent<HexBoardView>();
+            board.transform.SetParent(battle.transform, false);
+            var playback = new GameObject("Units").AddComponent<BattlePlayback>();
+            playback.transform.SetParent(battle.transform, false);
+
+            var demo = battle.AddComponent<BattleDemo>();
+            Assign(demo, "content", database);
+            Assign(demo, "board", board);
+            Assign(demo, "playback", playback);
+
+            var hud = battle.AddComponent<BattleHud>();
+            Assign(hud, "demo", demo);
+
+            ContentDatabaseMenu.EnsureFolder(Path.GetDirectoryName(ScenePath)?.Replace('\\', '/'));
+            EditorSceneManager.SaveScene(scene, ScenePath);
+
+            // The battle scene is the first scene in builds until the village exists.
+            var scenes = EditorBuildSettings.scenes.Where(s => s.path != ScenePath).ToList();
+            scenes.Insert(0, new EditorBuildSettingsScene(ScenePath, true));
+            EditorBuildSettings.scenes = scenes.ToArray();
+
+            Debug.Log($"[Battle] Created {ScenePath}. Press Play to watch a demo fight.");
+        }
+
+        /// <summary>
+        /// Command line: -executeMethod NinjaRealm.Editor.BattleSceneBuilder.CaptureBattle
+        /// [-captureOut file.png] [-captureSeed 7] [-captureSeconds 6]. Plays a fight in the
+        /// battle scene without entering play mode and saves what the camera sees.
+        /// </summary>
+        public static void CaptureBattle()
+        {
+            var output = Argument("-captureOut", Path.GetFullPath("Logs/battle_capture.png"));
+            var seed = int.Parse(Argument("-captureSeed", "7"));
+            var seconds = float.Parse(Argument("-captureSeconds", "6"), System.Globalization.CultureInfo.InvariantCulture);
+
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var demo = Object.FindFirstObjectByType<BattleDemo>();
+            if (demo == null) throw new InvalidOperationException($"No BattleDemo in {ScenePath}.");
+
+            demo.StartBattle(seed);
+            const float frame = 1f / 30f;
+            for (var time = 0f; time < seconds; time += frame)
+                demo.Playback.Advance(frame);
+
+            var camera = Camera.main;
+            if (camera == null) throw new InvalidOperationException("The battle scene has no main camera.");
+
+            const int width = 1600, height = 900;
+            var target = new RenderTexture(width, height, 24);
+            camera.targetTexture = target;
+            camera.Render();
+
+            var previous = RenderTexture.active;
+            RenderTexture.active = target;
+            var image = new Texture2D(width, height, TextureFormat.RGB24, false);
+            image.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+            image.Apply();
+            RenderTexture.active = previous;
+            camera.targetTexture = null;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(output) ?? ".");
+            File.WriteAllBytes(output, image.EncodeToPNG());
+
+            var simulation = demo.Playback.Simulation;
+            var alive = simulation.Units.Count(unit => unit.IsAlive);
+            Debug.Log($"[Battle] Captured {output} at {demo.Playback.FightSeconds:0.0}s of seed {seed}: " +
+                      $"{simulation.Units.Count} units, {alive} alive, {simulation.Events.Count} events.");
+
+            Object.DestroyImmediate(target);
+            Object.DestroyImmediate(image);
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        }
+
+        static void Assign(Object target, string field, Object value)
+        {
+            var serialized = new SerializedObject(target);
+            var property = serialized.FindProperty(field);
+            if (property == null) throw new InvalidOperationException($"{target.GetType().Name} has no field '{field}'.");
+            property.objectReferenceValue = value;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static ContentDatabase FindDatabase()
+        {
+            var guid = AssetDatabase.FindAssets("t:" + nameof(ContentDatabase)).FirstOrDefault();
+            return guid != null ? AssetDatabase.LoadAssetAtPath<ContentDatabase>(AssetDatabase.GUIDToAssetPath(guid)) : null;
+        }
+
+        static string Argument(string name, string fallback)
+        {
+            var args = Environment.GetCommandLineArgs();
+            var index = Array.IndexOf(args, name);
+            return index >= 0 && index + 1 < args.Length ? args[index + 1] : fallback;
+        }
+    }
+}

@@ -286,8 +286,9 @@ namespace NinjaRealm.Tests
             var simulation = new CombatSimulation(Setup(burner, target), Seed);
             for (var i = 0; i < 3 * Fixed.TicksPerSecond; i++) simulation.Step();
 
-            // 20% of 500 over 2 seconds, ignoring armor.
+            // 20% of 500 over 2 seconds, ignoring armor, marked as damage over time.
             Assert.AreEqual(400 * Fixed.One, simulation.Units[1].Health);
+            Assert.IsTrue(EventsOf(simulation, CombatEventType.Damage).All(e => e.Detail == 2));
         }
 
         [Test]
