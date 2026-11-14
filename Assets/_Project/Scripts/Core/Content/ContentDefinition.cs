@@ -38,6 +38,8 @@ namespace NinjaRealm.Core.Content
 
         internal void SetId(string value) => id = value;
 
+        internal void SetDisplayName(string value) => displayName = value;
+
 #if UNITY_EDITOR
         protected virtual void OnValidate()
         {

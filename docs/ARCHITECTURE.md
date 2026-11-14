@@ -48,6 +48,38 @@ Combat stays free of UnityEngine so fights can run headless, in tests, in balanc
 * **Ninja Realm > Content > Validate** reports invalid, duplicate or miscategorized IDs, plus any checks a definition type adds in `ValidateSelf()`.
 * At runtime, `GameBootstrap` in the first scene initializes the database and exposes it as `GameBootstrap.Content`.
 
+## Definition types
+
+All live in `NinjaRealm.Core.Definitions` and are created from **Assets > Create > Ninja Realm**.
+
+| Type | ID prefix | What it holds |
+| --- | --- | --- |
+| `StatDefinition` | `stat.` | A combat stat and its default value |
+| `TraitDefinition` | `trait.` | An element or class, with tiers (required count + effects) |
+| `SkillDefinition` | `skill.` | A ninja's active skill: a list of actions |
+| `NinjaDefinition` | `ninja.` | Rarity, element, class, skill and base stats |
+| `WeaponDefinition` | `weapon.` | A component, or a combined weapon naming its two components |
+
+## Effects
+
+Behaviour is built from small serialized effect blocks (`NinjaRealm.Core.Definitions.Effects`), stored with `[SerializeReference]`. The `[SubclassSelector]` attribute adds a type dropdown in the inspector.
+
+* **Passive effects** (traits, weapons) have `holders` saying who carries them: `Self`, `TraitMembers`, `AllAllies`, `OtherAllies` or `Team`.
+  * `StatModifierEffect`: a flat or percentage stat change.
+  * `TriggeredEffect`: runs actions on fight start, on attack hit, on cast, every N seconds, or below a health threshold.
+* **Action effects** (skills, triggers) have a `TargetSelector`.
+  * `DamageAction`, `HealAction`, `ShieldAction`, `ApplyStatusAction` (stun, taunt, burn, slow, healing reduction, damage reduction) and `StatBuffAction`.
+
+A new mechanic means one new effect class plus its handling in the combat simulation. After that, any ninja, trait or weapon can use it from the inspector.
+
+Authoring values are floats for easy editing. The combat simulation converts them to fixed-point integers when a fight starts, so results stay deterministic.
+
+## Prototype content
+
+**Ninja Realm > Content > Create Prototype Content** creates the combat prototype's assets under `Assets/_Project/Content/`: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas, 6 components and 4 combined weapons. It skips assets that already exist, so it never overwrites edits. It then rebuilds the database.
+
+The EditMode test `ProjectContentTests` validates every content asset in the project and checks that the database is up to date.
+
 ## Determinism
 
 The combat simulation must give the same result for the same lineups and seed on every machine.
