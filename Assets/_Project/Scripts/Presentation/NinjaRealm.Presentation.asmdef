@@ -3,7 +3,8 @@
     "rootNamespace": "NinjaRealm.Presentation",
     "references": [
         "NinjaRealm.Core",
-        "NinjaRealm.Combat"
+        "NinjaRealm.Combat",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

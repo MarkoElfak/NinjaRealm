@@ -110,6 +110,18 @@ Known limits for now: a timed buff to health does not change max health, and uni
 
 The EditMode test `ProjectContentTests` validates every content asset in the project and checks that the database is up to date.
 
+## Battle scene
+
+`Assets/Scenes/Battle.unity` plays a fight on the board. Create or recreate it with **Ninja Realm > Scenes > Create Battle Scene**, then press Play.
+
+* `BattleDemo` builds a fight from a lineup (its inspector list, or a built-in demo lineup when the list is empty) with `CombatSetupBuilder`. A seed of 0 picks a new seed for each fight; any other seed replays the same fight.
+* `BattlePlayback` steps the simulation at 20 ticks per second times the speed, and turns new events into animations. It never changes the fight.
+* `HexBoardView` and `UnitView` are placeholder visuals built in code (`PrototypeVisuals`): low poly hex tiles, chibi ninjas in dark cloth with the element colour, a team ring, and health, shield and mana bars. Meshy models replace them later.
+* `BattleHud` is a temporary IMGUI overlay with the timer, speed, synergies, names, floating numbers and the result. Keys: Space pauses, 1, 2 and 3 set the speed, R replays, N starts a new fight.
+* `HexLayout` maps board hexes to world positions: pointy-top hexes, 0.75 m radius, board centred on the origin, team 0 nearest the camera.
+
+From the command line, `-executeMethod NinjaRealm.Editor.BattleSceneBuilder.CaptureBattle -captureOut <png> -captureSeed 7 -captureSeconds 6` plays a fight without entering play mode and saves a screenshot.
+
 ## Determinism
 
 The combat simulation must give the same result for the same lineups and seed on every machine.

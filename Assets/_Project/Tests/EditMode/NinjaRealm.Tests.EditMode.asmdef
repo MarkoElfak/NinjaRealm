@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "NinjaRealm.Core",
-        "NinjaRealm.Combat"
+        "NinjaRealm.Combat",
+        "NinjaRealm.Presentation"
     ],
     "includePlatforms": [
         "Editor"
