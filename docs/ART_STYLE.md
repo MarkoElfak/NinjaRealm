@@ -73,3 +73,16 @@ How to use it:
 Arena models so far: Fence, Brazier, Banner, StoneLantern, PineTree, Rocks and CherryTree (props), and ToriiGate, VillageHouse, Watchtower and Forge (buildings). Each was made as a Meshy text-to-image concept with the style text, then image-to-3D with smart topology (`meshy-t2`, 3,000 to 8,000 polygons) and the `meshy-n1` texture.
 
 Art files (`.png`, `.fbx`, `.glb` and others) are stored with Git LFS, so Git LFS must be installed on any machine that clones the repo.
+
+## Village buildings
+
+The village (`Assets/Scenes/Village.unity`, see `docs/ARCHITECTURE.md`) uses one Meshy model per building, saved as `Assets/_Project/Art/Meshy/Buildings/<Name>/<Name>.fbx`, plus the arena's houses, trees and lanterns. The Blacksmith reuses `Forge`. Made the same way as the arena buildings: text-to-image concept with the style text, then image-to-3D with smart topology and the `meshy-n1` texture. Then run **Ninja Realm > Scenes > Create Village Scene** again.
+
+| Model | Building | Prompt (then the style text) |
+| --- | --- | --- |
+| `CommandHall` | Command Hall | grand Japanese clan command hall, two-storey pagoda, curved dark-blue tiled roofs, red lacquered pillars, wide stone steps, clan war banners, paper lanterns, front view |
+| `Dojo` | Dojo | Japanese martial arts dojo hall, wooden training building, curved dark-blue tiled roof, red wood frame, open sliding doors, wooden practice dummies by the entrance, front view |
+| `Shrine` | Shrine | small Shinto shrine on a stone base, curved dark-blue roof, red lacquered wood, rope with paper streamers, offering box, glowing lanterns, front view |
+| `Mint` | Mint | Japanese mint building with a treasury storehouse, thick white plaster walls, dark-blue tile roof, gold coin sign, chests of gold coins at the door, front view |
+| `SteelMine` | Steel Mine | mountain mine entrance with a wooden frame in a rocky cliff, mine cart on rails with iron ore, lanterns, small wooden hut with a dark-blue roof, front view |
+

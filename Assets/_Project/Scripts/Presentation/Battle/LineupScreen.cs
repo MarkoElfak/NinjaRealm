@@ -389,6 +389,8 @@ namespace NinjaRealm.Presentation.Battle
 
             GUI.enabled = true;
 
+            if (controller.CanLeaveToVillage && GUI.Button(new Rect(topBar.x - 110f, topBar.y, 100f, 34f), "< Village")) controller.LeaveToVillage();
+
             var profile = controller.Profile;
             if (profile == null) return;
 

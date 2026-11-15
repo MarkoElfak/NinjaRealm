@@ -304,6 +304,16 @@ namespace NinjaRealm.Presentation.Battle
         /// <summary>Plays the last matchup again with a new seed. It pays like any fight.</summary>
         public void FightAgain() => StartFight(lastPlayerSlots, lastOpponent, seed != 0 ? seed : NewSeed(), true);
 
+        /// <summary>True when the village scene can be loaded, so the screens show a way back.</summary>
+        public bool CanLeaveToVillage => Application.isPlaying && GameScenes.CanLoad(GameScenes.Village);
+
+        /// <summary>Saves the lineup and goes back to the village.</summary>
+        public void LeaveToVillage()
+        {
+            Save();
+            GameScenes.Load(GameScenes.Village);
+        }
+
         /// <summary>Jumps straight to the end of the fight.</summary>
         public void SkipFight()
         {
