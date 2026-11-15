@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NinjaRealm.Core.Definitions;
+using NinjaRealm.Core.Progression;
 using NinjaRealm.Presentation.Village;
 using NUnit.Framework;
 using UnityEngine;
@@ -8,7 +9,7 @@ using Object = UnityEngine.Object;
 
 namespace NinjaRealm.Tests
 {
-    /// <summary>Village buildings get a placeholder and a collider, and can be clicked.</summary>
+    /// <summary>Village buildings and plaza ninjas can be clicked, and the preview stage shows one ninja.</summary>
     public class VillageTests
     {
         GameObject building;
@@ -129,7 +130,94 @@ namespace NinjaRealm.Tests
             }
 
             Assert.That(VillageBuilding.IsOpenKind(VillageBuildingKind.Dojo), Is.True);
-            Assert.That(VillageBuilding.IsOpenKind(VillageBuildingKind.Mint), Is.False);
+            Assert.That(VillageBuilding.IsOpenKind(VillageBuildingKind.Mint), Is.True, "The Mint is open now that it makes Gold.");
+        }
+
+        [Test]
+        public void OnlyTheMintAndTheSteelMineHaveIncome()
+        {
+            Assert.That(VillageBuilding.IncomeIdOf(VillageBuildingKind.Mint), Is.EqualTo(IncomeIds.Mint));
+            Assert.That(VillageBuilding.IncomeIdOf(VillageBuildingKind.SteelMine), Is.EqualTo(IncomeIds.SteelMine));
+            foreach (VillageBuildingKind kind in Enum.GetValues(typeof(VillageBuildingKind)))
+                if (kind != VillageBuildingKind.Mint && kind != VillageBuildingKind.SteelMine)
+                    Assert.That(VillageBuilding.IncomeIdOf(kind), Is.Null, kind.ToString());
+        }
+
+        [Test]
+        public void WaitingTimesReadInHoursAndMinutes()
+        {
+            Assert.That(VillageScreen.Duration(TimeSpan.FromSeconds(20)), Is.EqualTo("less than a minute"));
+            Assert.That(VillageScreen.Duration(TimeSpan.FromMinutes(42)), Is.EqualTo("42 min"));
+            Assert.That(VillageScreen.Duration(new TimeSpan(7, 5, 59)), Is.EqualTo("7 h 5 min"));
+        }
+
+        [Test]
+        public void APlazaNinjaCanBeClicked()
+        {
+            var holder = new GameObject("Ninjas");
+            created.Add(holder);
+            var ninjas = holder.AddComponent<VillageNinjas>();
+            var roster = new List<NinjaDefinition>();
+            for (var i = 0; i < 2; i++)
+            {
+                var ninja = ScriptableObject.CreateInstance<NinjaDefinition>();
+                created.Add(ninja);
+                roster.Add(ninja);
+            }
+
+            // Two ninjas stand either side of the centre, in front of a camera looking along +z.
+            ninjas.Show(roster, new Vector3(0f, 0f, 10f));
+            cameraObject = new GameObject("Camera");
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 1.5f, 0f), Quaternion.identity);
+            Physics.SyncTransforms();
+
+            var capsule = ninjas.Views[1].GetComponent<CapsuleCollider>();
+            Assert.That(capsule, Is.Not.Null);
+            var under = VillageController.ColliderAt(camera, camera.WorldToScreenPoint(capsule.bounds.center));
+
+            Assert.That(ninjas.NinjaOf(under), Is.SameAs(roster[1]));
+            Assert.That(ninjas.NinjaOf(null), Is.Null);
+            Assert.That(VillageController.BuildingAt(camera, camera.WorldToScreenPoint(capsule.bounds.center)), Is.Null, "A ninja is not a building.");
+        }
+
+        [Test]
+        public void ThePreviewShowsOneNinjaAtATime()
+        {
+            var holder = new GameObject("Preview");
+            created.Add(holder);
+            var preview = holder.AddComponent<NinjaPreview>();
+            var first = ScriptableObject.CreateInstance<NinjaDefinition>();
+            var second = ScriptableObject.CreateInstance<NinjaDefinition>();
+            created.Add(first);
+            created.Add(second);
+
+            preview.Show(first);
+            var view = preview.View;
+            preview.Show(first);
+
+            Assert.That(preview.Shown, Is.SameAs(first));
+            Assert.That(preview.View, Is.SameAs(view), "Showing the same ninja again keeps it.");
+            Assert.That(preview.Texture, Is.Not.Null);
+            Assert.That(preview.Texture.width, Is.EqualTo(NinjaPreview.TextureWidth));
+            Assert.That(Vector3.Distance(view.transform.position, NinjaPreview.StagePosition), Is.LessThan(0.001f), "The stage is far from the village.");
+
+            // It turns by itself, and by hand.
+            preview.Tick(1f);
+            Assert.That(preview.Yaw, Is.EqualTo(NinjaPreview.StartYaw + NinjaPreview.TurnSpeed).Within(0.001f));
+            preview.Turn(90f);
+            preview.Tick(1f);
+            Assert.That(preview.Yaw, Is.EqualTo(NinjaPreview.StartYaw + NinjaPreview.TurnSpeed + 90f).Within(0.001f), "It holds still after a turn by hand.");
+
+            preview.Show(second);
+            Assert.That(preview.Shown, Is.SameAs(second));
+            Assert.That(preview.View, Is.Not.SameAs(view));
+            Assert.That(preview.Yaw, Is.EqualTo(NinjaPreview.StartYaw));
+
+            preview.Hide();
+            Assert.That(preview.Shown, Is.Null);
+            Assert.That(preview.View, Is.Null);
+            preview.Release();
         }
     }
 }

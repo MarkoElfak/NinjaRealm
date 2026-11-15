@@ -1,3 +1,4 @@
+using NinjaRealm.Core.Progression;
 using NinjaRealm.Presentation.Battle;
 using UnityEngine;
 
@@ -9,7 +10,7 @@ namespace NinjaRealm.Presentation.Village
         /// <summary>Pick a lineup and an opponent, and go to battle.</summary>
         CommandHall,
 
-        /// <summary>Recruit new ninjas.</summary>
+        /// <summary>Recruit new ninjas, and see every ninja there is.</summary>
         Dojo,
 
         /// <summary>Level up ninjas with Karma.</summary>
@@ -18,10 +19,10 @@ namespace NinjaRealm.Presentation.Village
         /// <summary>Forge combined weapons.</summary>
         Blacksmith,
 
-        /// <summary>Makes Gold. Not open yet.</summary>
+        /// <summary>Makes Gold over time, to collect.</summary>
         Mint,
 
-        /// <summary>Makes Steel. Not open yet.</summary>
+        /// <summary>Makes Steel over time, to collect.</summary>
         SteelMine,
     }
 
@@ -46,8 +47,11 @@ namespace NinjaRealm.Presentation.Village
 
         public string Description => DescriptionOf(kind);
 
-        /// <summary>False for buildings that are not open yet (the Mint and the Steel Mine).</summary>
+        /// <summary>False for a building that is not open yet. Every kind is open now.</summary>
         public bool IsOpen => IsOpenKind(kind);
+
+        /// <summary>The income source this building collects from (see <see cref="IncomeIds"/>), or null.</summary>
+        public string IncomeId => IncomeIdOf(kind);
 
         /// <summary>Where the name label goes: just above the top of the building.</summary>
         public Vector3 LabelPosition
@@ -124,7 +128,14 @@ namespace NinjaRealm.Presentation.Village
             PrototypeVisuals.Part(PrimitiveType.Cube, root, new Vector3(0f, h * 0.5f, -h * 0.28f), new Vector3(h * 0.3f, h * 0.12f, 0.05f), sign, "Sign");
         }
 
-        public static bool IsOpenKind(VillageBuildingKind kind) => kind != VillageBuildingKind.Mint && kind != VillageBuildingKind.SteelMine;
+        public static bool IsOpenKind(VillageBuildingKind kind) => true;
+
+        public static string IncomeIdOf(VillageBuildingKind kind) => kind switch
+        {
+            VillageBuildingKind.Mint => IncomeIds.Mint,
+            VillageBuildingKind.SteelMine => IncomeIds.SteelMine,
+            _ => null,
+        };
 
         public static string NameOf(VillageBuildingKind kind) => kind switch
         {
@@ -136,11 +147,11 @@ namespace NinjaRealm.Presentation.Village
         public static string DescriptionOf(VillageBuildingKind kind) => kind switch
         {
             VillageBuildingKind.CommandHall => "Set up your lineup, choose an opponent and fight.",
-            VillageBuildingKind.Dojo => "Recruit new ninjas. Four new recruits every day.",
+            VillageBuildingKind.Dojo => "Recruit new ninjas, four new every day, and see every ninja there is.",
             VillageBuildingKind.Shrine => "Spend Karma to level up your ninjas.",
             VillageBuildingKind.Blacksmith => "Forge combined weapons from two components and Steel.",
-            VillageBuildingKind.Mint => "Will mint Gold over time. Still being built.",
-            VillageBuildingKind.SteelMine => "Will dig Steel over time. Still being built.",
+            VillageBuildingKind.Mint => "Mints Gold while you are away. Come back to collect it.",
+            VillageBuildingKind.SteelMine => "Digs Steel while you are away. Come back to collect it.",
             _ => "",
         };
 

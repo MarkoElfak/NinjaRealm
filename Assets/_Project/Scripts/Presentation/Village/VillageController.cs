@@ -10,8 +10,9 @@ namespace NinjaRealm.Presentation.Village
 {
     /// <summary>
     /// The village hub, where the game starts. It loads the save, moves the camera (drag to pan,
-    /// scroll to zoom), and opens a building when it is clicked: the Command Hall goes to battle,
-    /// the Dojo, Shrine and Blacksmith open their panels (<see cref="VillageScreen"/>).
+    /// scroll to zoom), and opens what is clicked: a building's panel (the Command Hall goes to
+    /// battle; the Dojo, Shrine, Blacksmith, Mint and Steel Mine have their own) or the details
+    /// of a ninja on the plaza. <see cref="VillageScreen"/> draws the panels.
     /// </summary>
     public sealed class VillageController : MonoBehaviour
     {
@@ -55,13 +56,25 @@ namespace NinjaRealm.Presentation.Village
 
         public Camera ViewCamera => viewCamera != null ? viewCamera : Camera.main;
 
+        /// <summary>The stage that shows one ninja's model in a panel.</summary>
+        public NinjaPreview Preview { get; private set; }
+
         /// <summary>The building under the mouse, if any.</summary>
         public VillageBuilding Hovered { get; private set; }
+
+        /// <summary>The plaza ninja under the mouse, if any.</summary>
+        public NinjaDefinition HoveredNinja { get; private set; }
 
         /// <summary>The building whose panel is open, or null.</summary>
         public VillageBuilding Opened { get; private set; }
 
-        /// <summary>Raised when a building opens or closes (null).</summary>
+        /// <summary>The plaza ninja whose details are open, or null.</summary>
+        public NinjaDefinition OpenedNinja { get; private set; }
+
+        /// <summary>True while a building's panel or a ninja's details cover the village.</summary>
+        public bool PanelOpen => Opened != null || OpenedNinja != null;
+
+        /// <summary>Raised when a panel opens or closes, with the building (null for a ninja's details or a close).</summary>
         public event Action<VillageBuilding> OpenedChanged;
 
         void Awake()
@@ -94,6 +107,7 @@ namespace NinjaRealm.Presentation.Village
             {
                 Profile = GameProfile.Load(database);
                 Profile?.RefreshDojoIfNewDay(DateTime.Now);
+                Profile?.StartIncome(DateTime.UtcNow);
             }
 
             buildings.Clear();
@@ -105,6 +119,12 @@ namespace NinjaRealm.Presentation.Village
             {
                 Ninjas = new GameObject("Ninjas").AddComponent<VillageNinjas>();
                 Ninjas.transform.SetParent(transform, false);
+            }
+
+            if (Preview == null)
+            {
+                Preview = new GameObject("Ninja Preview").AddComponent<NinjaPreview>();
+                Preview.transform.SetParent(transform, false);
             }
 
             initialized = true;
@@ -119,22 +139,55 @@ namespace NinjaRealm.Presentation.Village
         public void RefreshNinjas()
         {
             if (!initialized || Ninjas == null) return;
-            var roster = Profile != null ? Profile.OwnedNinjas() : new List<NinjaDefinition>(Content.GetAll<NinjaDefinition>());
+            var roster = Profile != null ? Profile.OwnedNinjas() : AllNinjas();
             Ninjas.Show(roster, plazaCentre);
+        }
+
+        /// <summary>Every ninja in the content, owned or not, sorted by rarity then ID. For the Dojo's hall.</summary>
+        public List<NinjaDefinition> AllNinjas()
+        {
+            var all = new List<NinjaDefinition>();
+            var database = Content;
+            if (database == null) return all;
+            all.AddRange(database.GetAll<NinjaDefinition>());
+            all.Sort((a, b) => a.Rarity != b.Rarity ? a.Rarity.CompareTo(b.Rarity) : string.CompareOrdinal(a.Id, b.Id));
+            return all;
         }
 
         /// <summary>The first building of a kind, or null.</summary>
         public VillageBuilding Find(VillageBuildingKind kind) => buildings.Find(b => b != null && b.Kind == kind);
 
+        /// <summary>Opens a building's panel. Null closes whatever is open.</summary>
         public void Open(VillageBuilding building)
         {
-            if (building == Opened) return;
+            if (building == Opened && OpenedNinja == null) return;
             Opened = building;
+            OpenedNinja = null;
             if (building != null && building.Kind == VillageBuildingKind.Dojo) Profile?.RefreshDojoIfNewDay(DateTime.Now);
 
-            // Closing a building: a recruit from the Dojo joins the others on the plaza.
-            if (building == null) RefreshNinjas();
+            // Closing: a recruit from the Dojo joins the others on the plaza, and the stage empties.
+            if (building == null)
+            {
+                RefreshNinjas();
+                if (Preview != null) Preview.Hide();
+            }
+
             OpenedChanged?.Invoke(building);
+        }
+
+        /// <summary>Opens the details of a ninja on the plaza. Null closes whatever is open.</summary>
+        public void OpenNinja(NinjaDefinition ninja)
+        {
+            if (ninja == null)
+            {
+                Close();
+                return;
+            }
+
+            if (ninja == OpenedNinja) return;
+            Opened = null;
+            OpenedNinja = ninja;
+            OpenedChanged?.Invoke(null);
         }
 
         public void Close() => Open(null);
@@ -152,12 +205,13 @@ namespace NinjaRealm.Presentation.Village
         {
             if (!initialized) return;
             var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame && Opened != null) Close();
+            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame && PanelOpen) Close();
 
             // A panel is open: the village waits behind it.
-            if (Opened != null)
+            if (PanelOpen)
             {
                 Hovered = null;
+                HoveredNinja = null;
                 pressing = dragging = false;
                 return;
             }
@@ -167,7 +221,9 @@ namespace NinjaRealm.Presentation.Village
             if (mouse == null || cam == null) return;
 
             var position = mouse.position.ReadValue();
-            Hovered = BuildingAt(cam, position);
+            var under = ColliderAt(cam, position);
+            Hovered = under != null ? under.GetComponentInParent<VillageBuilding>() : null;
+            HoveredNinja = Hovered == null && Ninjas != null ? Ninjas.NinjaOf(under) : null;
 
             var scrollY = mouse.scroll.ReadValue().y;
             if (Mathf.Abs(scrollY) > 0.01f)
@@ -193,7 +249,8 @@ namespace NinjaRealm.Presentation.Village
             if (pressing && mouse.leftButton.wasReleasedThisFrame)
             {
                 pressing = false;
-                if (!dragging && Hovered != null) Open(Hovered);
+                if (!dragging && HoveredNinja != null) OpenNinja(HoveredNinja);
+                else if (!dragging && Hovered != null) Open(Hovered);
                 dragging = false;
             }
         }
@@ -224,12 +281,19 @@ namespace NinjaRealm.Presentation.Village
             startFocus.y,
             Mathf.Clamp(value.z, startFocus.z - panLimit.y, startFocus.z + panLimit.y));
 
-        /// <summary>The clickable building under a screen point.</summary>
-        public static VillageBuilding BuildingAt(Camera cam, Vector2 screen)
+        /// <summary>The nearest collider under a screen point: a building's or a plaza ninja's.</summary>
+        public static Collider ColliderAt(Camera cam, Vector2 screen)
         {
             if (cam == null) return null;
             var ray = cam.ScreenPointToRay(screen);
-            return Physics.Raycast(ray, out var hit, 500f) ? hit.collider.GetComponentInParent<VillageBuilding>() : null;
+            return Physics.Raycast(ray, out var hit, 500f) ? hit.collider : null;
+        }
+
+        /// <summary>The clickable building under a screen point.</summary>
+        public static VillageBuilding BuildingAt(Camera cam, Vector2 screen)
+        {
+            var under = ColliderAt(cam, screen);
+            return under != null ? under.GetComponentInParent<VillageBuilding>() : null;
         }
 
         /// <summary>Places the camera at its pitch and distance from the focus point.</summary>

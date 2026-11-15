@@ -86,6 +86,19 @@ Before the pass, Water sustain won 82% overall and beat Fire burn every time, wh
 | Quake Hammer damage and stun | 220%, 1.5s | 200%, 1s | Same for Goro. |
 | Mei and Nami max mana | 60 | 70 | Fewer casts per fight. |
 
+## Income
+
+The Mint and the Steel Mine pay for coming back, not for waiting. The numbers are in `PrototypeContent` and the Progression asset.
+
+| Building | Per hour at clan level 1 | Per clan level | Stores | Full store at clan level 1 |
+| --- | --- | --- | --- | --- |
+| Mint | 40 Gold | +5 | 8 hours | 320 Gold |
+| Steel Mine | 4 Steel | +1 | 8 hours | 32 Steel |
+
+* A win against the first opponent pays 90 Gold and 5 Steel, so a full Mint is worth about three and a half easy wins and a full Steel Mine about six.
+* A full Mint buys one Common recruit (200 Gold) with some left over. A full Steel Mine pays for one forge (20 Steel) and most of a second.
+* Fights should stay the main source of Gold. If players stop fighting between collections, lower the Mint before raising fight pay.
+
 ## Next
 
 * Water sustain against Medics still times out often. A third sustain counter (for example a class with anti-heal) would help once there are more ninjas.

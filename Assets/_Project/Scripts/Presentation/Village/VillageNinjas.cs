@@ -21,6 +21,9 @@ namespace NinjaRealm.Presentation.Village
         /// <summary>Ninjas in a full row. The plaza is about 13 m across.</summary>
         public const int PerRow = 5;
 
+        /// <summary>Radius of a ninja's click capsule, before <see cref="Scale"/>.</summary>
+        public const float ClickRadius = 0.4f;
+
         readonly List<NinjaDefinition> ninjas = new List<NinjaDefinition>();
         readonly List<UnitView> views = new List<UnitView>();
 
@@ -57,6 +60,12 @@ namespace NinjaRealm.Presentation.Village
                 // The village camera looks along +z, so the ninjas face -z to look at it.
                 view.transform.rotation = Quaternion.LookRotation(Vector3.back);
                 view.transform.localScale = Vector3.one * Scale;
+
+                // A capsule round the model, so the ninja can be clicked.
+                var capsule = view.gameObject.AddComponent<CapsuleCollider>();
+                capsule.center = new Vector3(0f, UnitView.ModelHeight * 0.5f, 0f);
+                capsule.height = UnitView.ModelHeight;
+                capsule.radius = ClickRadius;
                 views.Add(view);
             }
         }
@@ -85,6 +94,15 @@ namespace NinjaRealm.Presentation.Village
             var inRow = row < rows - 1 ? PerRow : count - (rows - 1) * PerRow;
             var column = index % PerRow;
             return centre + new Vector3((column - (inRow - 1) * 0.5f) * Spacing, 0f, (row - (rows - 1) * 0.5f) * Spacing);
+        }
+
+        /// <summary>The ninja a collider belongs to, or null. For clicks on the plaza.</summary>
+        public NinjaDefinition NinjaOf(Collider collider)
+        {
+            if (collider == null) return null;
+            var view = collider.GetComponentInParent<UnitView>();
+            var index = view != null ? views.IndexOf(view) : -1;
+            return index >= 0 ? ninjas[index] : null;
         }
 
         /// <summary>Where a ninja's name goes: above its head.</summary>

@@ -107,6 +107,10 @@ namespace NinjaRealm.Core.Progression
         [SerializeField, Tooltip("From which clan level each team size applies, lowest first.")]
         internal List<TeamSizeStep> teamSizes = new List<TeamSizeStep>();
 
+        [Header("Income")]
+        [SerializeField, Tooltip("Buildings that make a resource over time, such as the Mint.")]
+        internal List<IncomeSource> incomes = new List<IncomeSource>();
+
         public override string IdCategory => "progression";
 
         public ResourceDefinition Gold => gold;
@@ -134,6 +138,16 @@ namespace NinjaRealm.Core.Progression
         public int DojoRefreshCost => dojoRefreshCost;
 
         public int ForgeCost => forgeCost;
+
+        public IReadOnlyList<IncomeSource> Incomes => incomes;
+
+        /// <summary>The income source with this ID (see <see cref="IncomeIds"/>), or null.</summary>
+        public IncomeSource Income(string id)
+        {
+            foreach (var income in incomes)
+                if (income != null && income.id == id) return income;
+            return null;
+        }
 
         /// <summary>Karma to raise a ninja from this level to the next, or -1 at the cap.</summary>
         public int LevelCost(int level) => level >= 1 && level < MaxLevel ? levelCosts[level - 1] : -1;
@@ -243,6 +257,17 @@ namespace NinjaRealm.Core.Progression
             foreach (var offer in rarities)
                 if (offer == null || offer.weight < 0 || offer.price <= 0)
                     yield return "has a Dojo rarity with a negative weight or no price.";
+
+            var incomeIds = new HashSet<string>();
+            foreach (var income in incomes)
+            {
+                if (income == null || string.IsNullOrEmpty(income.id))
+                    yield return "has an income source with no ID.";
+                else if (!incomeIds.Add(income.id))
+                    yield return $"lists income source '{income.id}' more than once.";
+                else if (income.resource == null || income.perHour <= 0 || income.storageHours <= 0)
+                    yield return $"income source '{income.id}' needs a resource, an hourly amount and storage hours.";
+            }
 
             if (teamSizes.Count == 0)
                 yield return "has no team sizes.";
