@@ -60,7 +60,7 @@ Example prompts:
 
 How to use it:
 
-1. **Characters:** first make a clean full-body front view image of the ninja (Meshy text-to-image, using the reference as a style guide). Then use Image to 3D, which matches the style much better than text alone. Then rig it in Meshy and save the rigged FBX as the character's model.
+1. **Characters:** first make a clean full-body front view image of the ninja (Meshy text-to-image, using the reference as a style guide). Then use Image to 3D, which matches the style much better than text alone. Then rig it in Meshy and save the rigged FBX as the character's model. Meshy only gives rigged models and animations as links: list them in `Logs/meshy/downloads.txt` (a project path, a tab, then the link, one file per line) and run **Ninja Realm > Art > Download Meshy Files**.
 2. **Animations:** every ninja shares one set of humanoid clips. Animate one rigged ninja in Meshy and save each clip as `Assets/_Project/Art/Meshy/Animations/<Clip>.fbx`: `Idle` and `Run` (looping), `Attack`, `Cast`, `Hit` and `Death`. Unity plays them on any rigged ninja.
 3. **Buildings and props:** text-to-3D or image-to-3D, with the same style text.
 4. **Keep it consistent:** use Meshy's retexture with `art/style-reference.png`, or with an approved model's texture, as the style image.
