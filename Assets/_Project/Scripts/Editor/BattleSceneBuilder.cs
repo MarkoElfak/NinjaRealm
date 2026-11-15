@@ -104,11 +104,11 @@ namespace NinjaRealm.Editor
         /// </summary>
         public static void CaptureBattle()
         {
-            var output = Argument("-captureOut", Path.GetFullPath("Logs/battle_capture.png"));
-            var seed = int.Parse(Argument("-captureSeed", "7"));
-            var seconds = float.Parse(Argument("-captureSeconds", "6"), System.Globalization.CultureInfo.InvariantCulture);
+            var output = CameraCapture.Argument("-captureOut", Path.GetFullPath("Logs/battle_capture.png"));
+            var seed = int.Parse(CameraCapture.Argument("-captureSeed", "7"));
+            var seconds = float.Parse(CameraCapture.Argument("-captureSeconds", "6"), System.Globalization.CultureInfo.InvariantCulture);
 
-            var opponentId = Argument("-captureOpponent", "lineup.ember_clan");
+            var opponentId = CameraCapture.Argument("-captureOpponent", "lineup.ember_clan");
 
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var controller = Object.FindAnyObjectByType<BattleController>();
@@ -129,33 +129,13 @@ namespace NinjaRealm.Editor
             var camera = Camera.main;
             if (camera == null) throw new InvalidOperationException("The battle scene has no main camera.");
 
-            const int width = 1600, height = 900;
-            var target = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
-            camera.targetTexture = target;
-
-            // Outside play mode nothing has rendered yet: update the ambient light and render a
-            // few warm-up frames so shadows and lighting are settled before the one we keep.
-            DynamicGI.UpdateEnvironment();
-            for (var i = 0; i < 3; i++) camera.Render();
-
-            var previous = RenderTexture.active;
-            RenderTexture.active = target;
-            var image = new Texture2D(width, height, TextureFormat.RGB24, false);
-            image.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-            image.Apply();
-            RenderTexture.active = previous;
-            camera.targetTexture = null;
-
-            Directory.CreateDirectory(Path.GetDirectoryName(output) ?? ".");
-            File.WriteAllBytes(output, image.EncodeToPNG());
+            CameraCapture.Render(camera, output, 1600, 900);
 
             var simulation = controller.Playback.Simulation;
             var alive = simulation.Units.Count(unit => unit.IsAlive);
             Debug.Log($"[Battle] Captured {output} at {controller.Playback.FightSeconds:0.0}s of seed {seed}: " +
                       $"{simulation.Units.Count} units, {alive} alive, {simulation.Events.Count} events.");
 
-            Object.DestroyImmediate(target);
-            Object.DestroyImmediate(image);
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         }
 
@@ -174,13 +154,6 @@ namespace NinjaRealm.Editor
         {
             var guid = AssetDatabase.FindAssets("t:" + nameof(ContentDatabase)).FirstOrDefault();
             return guid != null ? AssetDatabase.LoadAssetAtPath<ContentDatabase>(AssetDatabase.GUIDToAssetPath(guid)) : null;
-        }
-
-        static string Argument(string name, string fallback)
-        {
-            var args = Environment.GetCommandLineArgs();
-            var index = Array.IndexOf(args, name);
-            return index >= 0 && index + 1 < args.Length ? args[index + 1] : fallback;
         }
     }
 }

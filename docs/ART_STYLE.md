@@ -63,6 +63,7 @@ How to use it:
 1. **Characters:** first make a clean full-body front view image of the ninja (Meshy text-to-image, using the reference as a style guide). Then use Image to 3D, which matches the style much better than text alone. Rig and animate in Meshy, or use Mixamo. Keep one shared humanoid rig so animations are reusable.
 2. **Buildings and props:** text-to-3D or image-to-3D, with the same style text.
 3. **Keep it consistent:** use Meshy's retexture with `art/style-reference.png`, or with an approved model's texture, as the style image.
-4. **Clean up:** check the triangle count and pose, set the scale (1 unit = 1 metre, ninja about 1.2 m tall), then import into `Assets/_Project/Art/`.
+4. **Import:** save each model as FBX to `Assets/_Project/Art/Meshy/<Characters|Buildings|Props>/<Name>/<Name>.fbx`, with Meshy's `<Name>_base_color.png` next to it (the Meshy download tool does this). `MeshyArtImporter` then gives it a matte URP Lit material with that texture, with no manual setup.
+5. **Check it:** **Ninja Realm > Art > Open Meshy Showcase** lines up every Meshy model at game scale (ninjas 1.2 m, props 3 m, buildings 4.5 m) in the board lighting. Check the triangle count and pose there.
 
 Art files (`.png`, `.fbx`, `.glb` and others) are stored with Git LFS, so Git LFS must be installed on any machine that clones the repo.
