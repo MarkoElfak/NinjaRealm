@@ -4,6 +4,7 @@ using NinjaRealm.Combat;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Lineups;
+using NinjaRealm.Core.Progression;
 
 namespace NinjaRealm.Core.Fights
 {
@@ -26,29 +27,41 @@ namespace NinjaRealm.Core.Fights
             this.stats.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
         }
 
+        /// <summary>A builder with every stat in the database, and its progression settings for level and star scaling.</summary>
         public static CombatSetupBuilder FromDatabase(ContentDatabase database) =>
-            new CombatSetupBuilder(database.GetAll<StatDefinition>());
+            new CombatSetupBuilder(database.GetAll<StatDefinition>()) { Progression = ProfileService.FindProgression(database) };
+
+        /// <summary>How levels and stars scale health and attack damage. Without it, every ninja fights at its base stats.</summary>
+        public ProgressionDefinition Progression { get; set; }
 
         public int BoardColumns { get; set; } = 7;
 
         public int BoardRows { get; set; } = 8;
 
         /// <summary>Adds a ninja at a board position. Weapons are optional.</summary>
-        public CombatSetupBuilder Add(int team, NinjaDefinition ninja, HexCoord position, params WeaponDefinition[] weapons)
+        public CombatSetupBuilder Add(int team, NinjaDefinition ninja, HexCoord position, params WeaponDefinition[] weapons) =>
+            Add(team, ninja, position, NinjaRank.Base, weapons);
+
+        /// <summary>Adds a ninja at a level and star rank, which scale its health and attack damage.</summary>
+        public CombatSetupBuilder Add(int team, NinjaDefinition ninja, HexCoord position, NinjaRank rank, params WeaponDefinition[] weapons)
         {
             if (ninja == null) throw new ArgumentNullException(nameof(ninja));
             if (team != 0 && team != 1) throw new ArgumentOutOfRangeException(nameof(team), "Team must be 0 or 1.");
-            entries.Add(new Entry(team, ninja, position, weapons ?? Array.Empty<WeaponDefinition>()));
+            entries.Add(new Entry(team, ninja, position, rank, weapons ?? Array.Empty<WeaponDefinition>()));
             return this;
         }
 
-        /// <summary>Adds every ninja in a lineup to a team, at its place on that team's half.</summary>
-        public CombatSetupBuilder AddLineup(int team, IEnumerable<LineupSlot> slots)
+        /// <summary>
+        /// Adds every ninja in a lineup to a team, at its place on that team's half.
+        /// <paramref name="rankOf"/> gives each ninja's level and stars; without it they fight at the base rank.
+        /// </summary>
+        public CombatSetupBuilder AddLineup(int team, IEnumerable<LineupSlot> slots, Func<NinjaDefinition, NinjaRank> rankOf = null)
         {
             foreach (var slot in slots)
             {
                 if (slot?.ninja == null) continue;
-                Add(team, slot.ninja, TeamPosition(team, slot.column, slot.rowFromBack), slot.weapons.ToArray());
+                var rank = rankOf != null ? rankOf(slot.ninja) : NinjaRank.Base;
+                Add(team, slot.ninja, TeamPosition(team, slot.column, slot.rowFromBack), rank, slot.weapons.ToArray());
             }
 
             return this;
@@ -105,6 +118,13 @@ namespace NinjaRealm.Core.Fights
                 if (entryStat.stat != null && !unit.Stats.ContainsKey(entryStat.stat.Id))
                     unit.Stats[entryStat.stat.Id] = Fixed.FromFloat(entryStat.value);
 
+            // Levels and stars scale the base health and attack damage, before any bonuses.
+            var multiplier = Progression != null ? Progression.StatMultiplier(entry.Rank.Level, entry.Rank.Stars) : ProgressionDefinition.BasisPoints;
+            if (multiplier != ProgressionDefinition.BasisPoints)
+                foreach (var id in new[] { StatIds.Health, StatIds.AttackDamage })
+                    if (unit.Stats.TryGetValue(id, out var value))
+                        unit.Stats[id] = value * multiplier / ProgressionDefinition.BasisPoints;
+
             foreach (var trait in ninja.Traits)
                 unit.TraitIds.Add(trait.Id);
 
@@ -148,13 +168,15 @@ namespace NinjaRealm.Core.Fights
             public readonly int Team;
             public readonly NinjaDefinition Ninja;
             public readonly HexCoord Position;
+            public readonly NinjaRank Rank;
             public readonly WeaponDefinition[] Weapons;
 
-            public Entry(int team, NinjaDefinition ninja, HexCoord position, WeaponDefinition[] weapons)
+            public Entry(int team, NinjaDefinition ninja, HexCoord position, NinjaRank rank, WeaponDefinition[] weapons)
             {
                 Team = team;
                 Ninja = ninja;
                 Position = position;
+                Rank = rank;
                 Weapons = weapons;
             }
         }

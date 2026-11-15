@@ -16,6 +16,9 @@ namespace NinjaRealm.Core.Lineups
         [SerializeField, Range(1, 5), Tooltip("Shown as stars when picking an opponent.")]
         int difficulty = 1;
 
+        [SerializeField, Range(1, 60), Tooltip("The level every ninja in this lineup fights at.")]
+        int level = 1;
+
         [SerializeField] List<LineupSlot> slots = new List<LineupSlot>();
 
         public override string IdCategory => "lineup";
@@ -24,14 +27,17 @@ namespace NinjaRealm.Core.Lineups
 
         public int Difficulty => difficulty;
 
+        public int Level => level;
+
         public IReadOnlyList<LineupSlot> Slots => slots;
 
         public override IEnumerable<string> ValidateSelf() => LineupRules.Validate(slots);
 
-        internal void Configure(string description, int difficulty, IEnumerable<LineupSlot> slots)
+        internal void Configure(string description, int difficulty, int level, IEnumerable<LineupSlot> slots)
         {
             this.description = description;
             this.difficulty = difficulty;
+            this.level = level;
             this.slots = new List<LineupSlot>(slots);
         }
     }

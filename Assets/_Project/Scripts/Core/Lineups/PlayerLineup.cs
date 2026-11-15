@@ -19,7 +19,8 @@ namespace NinjaRealm.Core.Lineups
             MaxUnits = maxUnits;
         }
 
-        public int MaxUnits { get; }
+        /// <summary>How many ninjas the lineup can hold. Lowering it doesn't remove anyone; call <see cref="TrimTo"/> for that.</summary>
+        public int MaxUnits { get; set; }
 
         public IReadOnlyList<LineupSlot> Slots => slots;
 
@@ -87,6 +88,25 @@ namespace NinjaRealm.Core.Lineups
             return false;
         }
 
+        /// <summary>How many copies of this weapon the lineup's ninjas hold.</summary>
+        public int EquippedCount(WeaponDefinition weapon)
+        {
+            var count = 0;
+            foreach (var slot in slots)
+                foreach (var held in slot.weapons)
+                    if (held == weapon) count++;
+            return count;
+        }
+
+        /// <summary>Removes ninjas from the end of the lineup until it holds at most this many.</summary>
+        public bool TrimTo(int count)
+        {
+            if (slots.Count <= count) return false;
+            slots.RemoveRange(System.Math.Max(0, count), slots.Count - System.Math.Max(0, count));
+            Changed?.Invoke();
+            return true;
+        }
+
         public bool Equip(LineupSlot slot, WeaponDefinition weapon)
         {
             if (slot == null || weapon == null || !slots.Contains(slot) || slot.weapons.Count >= LineupRules.MaxWeaponsPerNinja)
@@ -134,31 +154,43 @@ namespace NinjaRealm.Core.Lineups
         [Serializable]
         sealed class SavedLineup
         {
-            public List<SavedSlot> slots = new List<SavedSlot>();
+            public List<SavedLineupSlot> slots = new List<SavedLineupSlot>();
         }
 
-        [Serializable]
-        sealed class SavedSlot
+        /// <summary>The lineup by content ID, for the save file.</summary>
+        public List<SavedLineupSlot> ToSaved()
         {
-            public string ninja;
-            public int column;
-            public int row;
-            public List<string> weapons = new List<string>();
-        }
-
-        /// <summary>The lineup as JSON with content IDs, for saving.</summary>
-        public string ToJson()
-        {
-            var saved = new SavedLineup();
+            var saved = new List<SavedLineupSlot>(slots.Count);
             foreach (var slot in slots)
             {
-                var entry = new SavedSlot { ninja = slot.ninja.Id, column = slot.column, row = slot.rowFromBack };
+                var entry = new SavedLineupSlot { ninja = slot.ninja.Id, column = slot.column, row = slot.rowFromBack };
                 foreach (var weapon in slot.weapons) entry.weapons.Add(weapon.Id);
-                saved.slots.Add(entry);
+                saved.Add(entry);
             }
 
-            return JsonUtility.ToJson(saved);
+            return saved;
         }
+
+        /// <summary>Loads a lineup saved with ToSaved. Unknown IDs are skipped, so old saves keep working.</summary>
+        public void LoadSaved(IEnumerable<SavedLineupSlot> saved, ContentDatabase database)
+        {
+            var loaded = new List<LineupSlot>();
+            if (saved != null && database != null)
+                foreach (var entry in saved)
+                {
+                    if (entry == null || !database.TryGet<NinjaDefinition>(entry.ninja, out var ninja)) continue;
+                    var slot = new LineupSlot(ninja, entry.column, entry.row);
+                    if (entry.weapons != null)
+                        foreach (var id in entry.weapons)
+                            if (database.TryGet<WeaponDefinition>(id, out var weapon)) slot.weapons.Add(weapon);
+                    loaded.Add(slot);
+                }
+
+            SetSlots(loaded);
+        }
+
+        /// <summary>The lineup as JSON with content IDs.</summary>
+        public string ToJson() => JsonUtility.ToJson(new SavedLineup { slots = ToSaved() });
 
         /// <summary>Loads a lineup saved with ToJson. Unknown IDs are skipped, so old saves keep working.</summary>
         public bool LoadJson(string json, ContentDatabase database)
@@ -176,19 +208,7 @@ namespace NinjaRealm.Core.Lineups
             }
 
             if (saved?.slots == null) return false;
-
-            var loaded = new List<LineupSlot>();
-            foreach (var entry in saved.slots)
-            {
-                if (entry == null || !database.TryGet<NinjaDefinition>(entry.ninja, out var ninja)) continue;
-                var slot = new LineupSlot(ninja, entry.column, entry.row);
-                if (entry.weapons != null)
-                    foreach (var id in entry.weapons)
-                        if (database.TryGet<WeaponDefinition>(id, out var weapon)) slot.weapons.Add(weapon);
-                loaded.Add(slot);
-            }
-
-            SetSlots(loaded);
+            LoadSaved(saved.slots, database);
             return true;
         }
     }

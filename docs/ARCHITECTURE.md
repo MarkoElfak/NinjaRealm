@@ -14,7 +14,7 @@ Assets/
     Scripts/
       Core/          NinjaRealm.Core: content IDs, ContentDefinition, ContentDatabase, validation,
                      lineups, CombatSetupBuilder (content assets into fight setups), the balance
-                     runner and the prototype content
+                     runner, progression and the save file, and the prototype content
       Combat/        NinjaRealm.Combat: deterministic fight simulation, pure C# with no UnityEngine
       Presentation/  NinjaRealm.Presentation: MonoBehaviours, scenes, UI, playback of combat events
       Editor/        NinjaRealm.Editor: menus, validation and import tools (editor only)
@@ -64,7 +64,9 @@ All live in `NinjaRealm.Core.Definitions` and are created from **Assets > Create
 | `SkillDefinition` | `skill.` | A ninja's active skill: a list of actions |
 | `NinjaDefinition` | `ninja.` | Rarity, element, class, skill and base stats |
 | `WeaponDefinition` | `weapon.` | A component, or a combined weapon naming its two components |
-| `LineupDefinition` | `lineup.` | An enemy lineup: description, difficulty (1 to 5) and slots (ninja, hex, weapons) |
+| `LineupDefinition` | `lineup.` | An enemy lineup: description, difficulty (1 to 5), the level its ninjas fight at, and slots (ninja, hex, weapons) |
+| `ResourceDefinition` | `resource.` | A currency: Gold, Karma, Steel (in `NinjaRealm.Core.Progression`) |
+| `ProgressionDefinition` | `progression.` | Every progression number: the new save, level costs, belts, stars, the Dojo, forging, fight rewards, clan levels and team sizes (in `NinjaRealm.Core.Progression`) |
 
 ## Effects
 
@@ -104,7 +106,7 @@ builder.Add(1, hana, builder.TeamPosition(1, 3, 3));
 var result = new CombatSimulation(builder.Build(), seed).Run();
 ```
 
-`AddLineup(team, slots)` adds a whole lineup at once, using `TeamPosition` for each slot.
+`AddLineup(team, slots, rankOf)` adds a whole lineup at once, using `TeamPosition` for each slot. A ninja's `NinjaRank` (level and stars) multiplies its base health and attack damage by `ProgressionDefinition.StatMultiplier`, in whole basis points; `FromDatabase` picks up the progression asset, and without one every ninja fights at its base stats.
 
 Known limits for now: a timed buff to health does not change max health, and units do not path around blockers (they sidestep one hex at a time).
 
@@ -118,9 +120,21 @@ Known limits for now: a timed buff to health does not change max health, and uni
 * `PlayerLineup`: the lineup the player edits. `Place`, `Move` (swaps when the hex is taken), `Remove`, `Equip` and `Unequip` all keep the rules, and `Changed` fires after each edit. `ToJson` and `LoadJson` save it by content ID; unknown IDs are skipped so old saves keep loading.
 * `LineupDefinition`: an enemy lineup as a content asset.
 
+## Progression and the save file
+
+`NinjaRealm.Core.Progression` holds the persistent roster.
+
+* `PlayerProfile` is everything the save holds, by content ID: the `Wallet` (balances by resource ID), owned ninjas (level, stars, shards), weapon counts, clan level and XP, the lineup and opponent, beaten lineups, and the Dojo's offers, date and random seed.
+* `SaveFile` writes it as JSON with a `version`, and runs older files through `Migrations` in order. To change the format, raise `CurrentVersion` and add one migration. A file from a newer version, or one that isn't JSON, is refused.
+* `ISaveStorage` is where it lives: `FileSaveStorage` writes to a temporary file and then replaces the old one; `MemorySaveStorage` is for tests.
+* `ProfileService` is the only thing that changes a profile: `TryLevelUp`, `TryRecruitOffer`, `TryRefreshDojo`, `RefreshDojoIfNewDay`, `TryBuyDirect`, `TryForge`, `ApplyFightResult` and `SaveLineup`. Each checks its cost, changes the profile and saves; a refusal changes nothing and says why. `FitLineup` keeps a lineup to what the player owns and the team size. On load it drops unknown IDs and duplicates and keeps numbers in range, so old or damaged saves still load; an unreadable file is set aside and a new save starts.
+* Dojo offers use `DeterministicRandom` with the profile's seed and roll count, and fight drops use the fight's seed, so tests can check exact results.
+
+In the game, `GameProfile` (Presentation) loads the save from `Application.persistentDataPath/profile.json` once and shares it. **Ninja Realm > Save** shows or deletes the file, and gives test resources in play mode.
+
 ## Prototype content
 
-`NinjaRealm.Core.Prototype.PrototypeContent` is the source of truth for the combat prototype's numbers: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas, 6 components, 4 combined weapons and 5 enemy lineups. It writes them into an `IContentSink`:
+`NinjaRealm.Core.Prototype.PrototypeContent` is the source of truth for the prototype's numbers: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas, 6 components, 4 combined weapons, 5 enemy lineups, 3 resources and the progression settings. It writes them into an `IContentSink`:
 
 * **Ninja Realm > Content > Create Prototype Content** saves them as assets under `Assets/_Project/Content/`. It skips assets that already exist, so it never overwrites edits.
 * **Ninja Realm > Content > Reset Prototype Content to Defaults** overwrites the assets with the values in code.
@@ -136,11 +150,12 @@ Both menu items rebuild the database. To change a number, change it in `Prototyp
 
 `Assets/Scenes/Battle.unity` is the combat prototype. Create or recreate it with **Ninja Realm > Scenes > Create Battle Scene**, then press Play. It loops through three phases:
 
-1. **Setup** (`LineupScreen`): pick an opponent (sorted by difficulty), drag ninjas from the bench onto your half of the board, drag them to move or swap, drag weapons from the armory onto a ninja, and see both teams' synergies. Delete removes the selected ninja. Enter or **Fight!** starts the fight. The lineup and opponent are saved in `PlayerPrefs`.
-2. **Fight** (`BattleHud`): the timer, overtime, speed (1, 2, 3), pause (Space), skip (S) and give up, with synergies, names and floating numbers.
-3. **Result** (`ResultScreen`): victory, defeat or draw, the duration and seed, and a damage log per team (damage dealt and taken, healing and shields). Esc goes back to the lineup, R replays the same fight, N fights again with a new seed.
+1. **Setup** (`LineupScreen`): pick an opponent (sorted by difficulty, with its level and what a win pays), drag ninjas you own from the bench onto your half of the board, drag them to move or swap, drag weapons you own from the armory onto a ninja, and see both teams' synergies. The lineup holds as many ninjas as your clan level allows. Delete removes the selected ninja. Enter or **Fight!** starts the fight. The lineup and opponent are kept in the save.
+2. **Roster** (`RosterScreen`, Tab from setup): level up ninjas with Karma, recruit from the Dojo's four daily offers or buy Common and Rare ninjas directly with Gold, and forge combined weapons from two components and Steel.
+3. **Fight** (`BattleHud`): the timer, overtime, speed (1, 2, 3), pause (Space), skip (S) and give up, with synergies, names and floating numbers.
+4. **Result** (`ResultScreen`): victory, defeat or draw, the duration and seed, what the fight paid (Gold, Steel, clan XP, a first-win bonus, a weapon drop, clan levels), and a damage log per team (damage dealt and taken, healing and shields). Esc goes back to the lineup, R replays the same fight to watch it (a replay pays nothing), N fights again with a new seed.
 
-* `BattleController` owns the phases. It builds each fight from the two lineups with `CombatSetupBuilder.AddLineup`. A seed of 0 picks a new seed for each fight; any other seed replays the same fight.
+* `BattleController` owns the phases. It builds each fight from the two lineups with `CombatSetupBuilder.AddLineup`, the player's ninjas at their rank in the save and the enemy's at the lineup's level, and pays the result into the save. Outside play mode, or without a progression asset, there is no save and every ninja and weapon is available at the base rank. A seed of 0 picks a new seed for each fight; any other seed replays the same fight.
 * `BattlePlayback` steps the simulation at 20 ticks per second times the speed, and turns new events into animations. It never changes the fight.
 * `HexBoardView` is built in code (`PrototypeVisuals`): low poly hex tiles with a stone texture, grass ground, and the arena prefab (fences, braziers, banners and the village behind the board) placed around it. The art is linked by **Ninja Realm > Art > Set Up Battle Arena**; without it the board falls back to plain colours. `HexBoardView.TryGetHex` turns a screen point into a hex for drag and drop.
 * `UnitView` shows a ninja's `ModelPrefab` (see `docs/ART_STYLE.md`), scaled to 1.2 m, with a team ring and health, shield and mana bars. Combat events become animator triggers (`NinjaAnimation`: `Attack`, `Cast`, `Hit`, `Die`, and the `Moving` bool). A ninja without a model gets a placeholder chibi body built in code, in dark cloth with the element colour.

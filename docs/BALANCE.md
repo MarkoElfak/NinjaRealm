@@ -24,6 +24,8 @@ Average fight: 32.8s (matchup averages from 21.6s to 44.5s). Timeouts: 32 of 400
 
 ## Enemy lineups
 
+> Since the persistent roster, Bandit Patrol has three ninjas (the new save's starting three, without weapons), and the enemy lineups fight at levels 1, 2, 4, 7 and 10. The tables below are from before that change. `ProgressionTests.StarterTeam_UsuallyBeatsTheFirstOpponent` checks that a new save's team beats Bandit Patrol at least 60% of the time.
+
 The five enemy lineups played against each other:
 
 | | Bandit Patrol | Ember Clan | Tide Shrine | Stone Fortress | Shogun's Guard | Overall |
