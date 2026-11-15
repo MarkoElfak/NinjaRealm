@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NinjaRealm.Core.Content;
+using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Progression;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -28,6 +29,10 @@ namespace NinjaRealm.Presentation.Village
         [SerializeField, Tooltip("How far the focus may move from its start, in metres (x and z).")]
         Vector2 panLimit = new Vector2(12f, 9f);
 
+        [Header("Ninjas")]
+        [SerializeField, Tooltip("The middle of the plaza, where the player's ninjas stand.")]
+        Vector3 plazaCentre = new Vector3(0f, 0.02f, 2f);
+
         const float DragThreshold = 6f;
 
         readonly List<VillageBuilding> buildings = new List<VillageBuilding>();
@@ -44,6 +49,9 @@ namespace NinjaRealm.Presentation.Village
         public ProfileService Profile { get; private set; }
 
         public IReadOnlyList<VillageBuilding> Buildings => buildings;
+
+        /// <summary>The player's ninjas standing on the plaza.</summary>
+        public VillageNinjas Ninjas { get; private set; }
 
         public Camera ViewCamera => viewCamera != null ? viewCamera : Camera.main;
 
@@ -92,8 +100,27 @@ namespace NinjaRealm.Presentation.Village
             buildings.AddRange(FindObjectsByType<VillageBuilding>(FindObjectsSortMode.None));
             buildings.Sort((a, b) => a.Kind.CompareTo(b.Kind));
             foreach (var building in buildings) building.EnsureBuilt();
+
+            if (Ninjas == null)
+            {
+                Ninjas = new GameObject("Ninjas").AddComponent<VillageNinjas>();
+                Ninjas.transform.SetParent(transform, false);
+            }
+
             initialized = true;
+            RefreshNinjas();
             return true;
+        }
+
+        /// <summary>
+        /// Stands the player's ninjas on the plaza: the ones they own, or every ninja when there
+        /// is no save (outside play mode). Call after the roster changes.
+        /// </summary>
+        public void RefreshNinjas()
+        {
+            if (!initialized || Ninjas == null) return;
+            var roster = Profile != null ? Profile.OwnedNinjas() : new List<NinjaDefinition>(Content.GetAll<NinjaDefinition>());
+            Ninjas.Show(roster, plazaCentre);
         }
 
         /// <summary>The first building of a kind, or null.</summary>
@@ -104,6 +131,9 @@ namespace NinjaRealm.Presentation.Village
             if (building == Opened) return;
             Opened = building;
             if (building != null && building.Kind == VillageBuildingKind.Dojo) Profile?.RefreshDojoIfNewDay(DateTime.Now);
+
+            // Closing a building: a recruit from the Dojo joins the others on the plaza.
+            if (building == null) RefreshNinjas();
             OpenedChanged?.Invoke(building);
         }
 

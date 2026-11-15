@@ -27,7 +27,11 @@ namespace NinjaRealm.Presentation.Village
             if (controller == null) return;
             PrototypeGui.Begin();
 
-            if (controller.Opened == null) DrawNames();
+            if (controller.Opened == null)
+            {
+                DrawNinjaNames();
+                DrawNames();
+            }
             DrawTopBar();
             if (controller.Opened != null) DrawPanel(controller.Opened);
         }
@@ -43,6 +47,26 @@ namespace NinjaRealm.Presentation.Village
             var profile = controller.Profile;
             var line = profile != null ? LineupScreen.WalletLine(profile) : "No save outside play mode.";
             GUI.Label(new Rect(bar.x + 14f, bar.y + 32f, bar.width - 28f, 20f), line, PrototypeGui.Small);
+        }
+
+        /// <summary>A small name and level over each ninja on the plaza.</summary>
+        void DrawNinjaNames()
+        {
+            var cam = controller.ViewCamera;
+            var ninjas = controller.Ninjas;
+            if (cam == null || ninjas == null) return;
+            var scale = PrototypeGui.Scale;
+            var profile = controller.Profile;
+            for (var i = 0; i < ninjas.Ninjas.Count; i++)
+            {
+                if (ninjas.Views[i] == null) continue;
+                var screen = cam.WorldToScreenPoint(ninjas.LabelPosition(i));
+                if (screen.z <= 0f) continue;
+                var point = new Vector2(screen.x / scale, (Screen.height - screen.y) / scale);
+                var ninja = ninjas.Ninjas[i];
+                var level = profile != null ? $"  <color=#{PrototypeGui.Hex(PrototypeGui.Gold)}>Lv {profile.RankOf(ninja).Level}</color>" : "";
+                GUI.Label(new Rect(point.x - 70f, point.y - 18f, 140f, 18f), $"<b>{ninja.DisplayName}</b>{level}", PrototypeGui.NameStyle);
+            }
         }
 
         void DrawNames()

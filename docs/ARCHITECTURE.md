@@ -152,8 +152,9 @@ Both menu items rebuild the database. To change a number, change it in `Prototyp
 
 * `VillageController` loads the save (`GameProfile`), moves the camera (drag to pan, scroll to zoom) and opens a building when it is clicked. Esc closes it.
 * `VillageBuilding` marks a clickable building and says what it is (`VillageBuildingKind`): the **Command Hall** goes to the battle scene, the **Dojo** recruits, the **Shrine** levels up ninjas and the **Blacksmith** forges. The **Mint** and **Steel Mine** stand in the village but are not open yet. A building without a Meshy model gets a placeholder house built in code in play mode, and a box collider round whatever it shows.
+* `VillageNinjas` stands the player's ninjas on the plaza in rows: every ninja they own, so every ninja they can put in a fight (every ninja in the content when there is no save). Each is a `UnitView` without its ring and bars, 1.5 times its board size, facing the camera. A new recruit joins them when the Dojo closes.
 * `VillageScreen` draws the wallet, a name over each building, and the open building's panel. The Dojo, Shrine and Blacksmith panels are `RosterPanels`, the same panels as the battle scene's roster screen (Tab).
-* `GameScenes` names the scenes and loads them. The battle scene's lineup screen has a **Village** button back; the save stays loaded between scenes.
+* `GameScenes` names the scenes and loads them. The battle scene's lineup screen and result screen have a **Back to village** button; the save stays loaded between scenes.
 * The layout (buildings, houses, trees, lanterns) is in `VillageSceneBuilder.Layout`. Models come from `Art/Meshy/Buildings` and `Art/Meshy/Props` (see `docs/ART_STYLE.md`), placed with `MeshyPlacement` like the battle arena. Run the menu item again after adding a model.
 
 From the command line, `-executeMethod NinjaRealm.Editor.VillageSceneBuilder.CaptureVillage -captureOut <png>` saves a screenshot of the village.

@@ -102,10 +102,13 @@ namespace NinjaRealm.Presentation.Battle
             }
 
             var buttonY = panel.yMax - 44f;
-            var buttonWidth = (inner - 20f) / 3f;
+            var toVillage = controller.CanLeaveToVillage;
+            var buttons = toVillage ? 4 : 3;
+            var buttonWidth = (inner - (buttons - 1) * 10f) / buttons;
             if (GUI.Button(new Rect(x, buttonY, buttonWidth, 32f), "Back to lineup (Esc)")) controller.EnterSetup();
             if (GUI.Button(new Rect(x + buttonWidth + 10f, buttonY, buttonWidth, 32f), "Replay (R)")) controller.Replay();
-            if (GUI.Button(new Rect(x + 2f * (buttonWidth + 10f), buttonY, buttonWidth, 32f), "Fight again, new seed (N)")) controller.FightAgain();
+            if (GUI.Button(new Rect(x + 2f * (buttonWidth + 10f), buttonY, buttonWidth, 32f), toVillage ? "Fight again (N)" : "Fight again, new seed (N)")) controller.FightAgain();
+            if (toVillage && GUI.Button(new Rect(x + 3f * (buttonWidth + 10f), buttonY, buttonWidth, 32f), "Back to village")) controller.LeaveToVillage();
         }
 
         /// <summary>What the fight paid, one line each. Null without a save.</summary>
