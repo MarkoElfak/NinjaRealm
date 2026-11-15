@@ -6,6 +6,7 @@ using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Definitions.Effects;
 using NinjaRealm.Core.Fights;
 using NinjaRealm.Core.Lineups;
+using NinjaRealm.Core.Progression;
 using UnityEngine;
 
 namespace NinjaRealm.Core.Prototype
@@ -54,9 +55,10 @@ namespace NinjaRealm.Core.Prototype
     }
 
     /// <summary>
-    /// The combat prototype's content: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas,
-    /// 6 components, 4 combined weapons and 5 enemy lineups. This is the source of truth for
-    /// prototype numbers; the content assets are created from it.
+    /// The prototype's content: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas,
+    /// 6 components, 4 combined weapons, 5 enemy lineups, 3 resources and the progression
+    /// settings. This is the source of truth for prototype numbers; the content assets are
+    /// created from it.
     /// </summary>
     public sealed class PrototypeContent
     {
@@ -237,28 +239,97 @@ namespace NinjaRealm.Core.Prototype
             var windBoots = Combined("wind_boots", "Wind Boots", "+10% dodge.", swiftSandals, swiftSandals, Mod(dodge, ModifierOperation.Add, 10f));
 
             // Enemy lineups, from easiest to hardest. Positions are seen from the enemy's side: row 3 is their front row.
-            Lineup("bandit_patrol", "Bandit Patrol", 1, "Four ninjas and no weapons. A warm-up.",
-                Slot(daichi, 3, 3), Slot(kaito, 2, 3), Slot(hana, 3, 0), Slot(mei, 5, 1));
+            Lineup("bandit_patrol", "Bandit Patrol", 1, 1, "Three ninjas and no weapons. A warm-up.",
+                Slot(daichi, 3, 3), Slot(kaito, 2, 3), Slot(hana, 3, 0));
 
-            Lineup("ember_clan", "Ember Clan", 2, "Three Fire ninjas set everything they hit burning.",
+            Lineup("ember_clan", "Ember Clan", 2, 2, "Three Fire ninjas set everything they hit burning.",
                 Slot(jiro, 3, 3, ironPlate), Slot(kaito, 2, 3), Slot(goro, 4, 3), Slot(mei, 3, 1), Slot(daichi, 1, 3));
 
-            Lineup("tide_shrine", "Tide Shrine", 3, "Water healers that outlast you behind a shielded wall.",
+            Lineup("tide_shrine", "Tide Shrine", 3, 4, "Water healers that outlast you behind a shielded wall.",
                 Slot(takeshi, 3, 3, jadeCharm), Slot(daichi, 2, 3, ironPlate), Slot(saya, 4, 1), Slot(hana, 2, 0, chakraScroll),
                 Slot(nami, 4, 0, dragonFan, windBoots));
 
-            Lineup("stone_fortress", "Stone Fortress", 4, "Three Vanguards and three Earth ninjas. Hard to break, slow to kill you.",
+            Lineup("stone_fortress", "Stone Fortress", 4, 7, "Three Vanguards and three Earth ninjas. Hard to break, slow to kill you.",
                 Slot(daichi, 3, 3, ironPlate, jadeCharm), Slot(jiro, 2, 3, ironPlate), Slot(takeshi, 4, 3, jadeCharm),
                 Slot(goro, 3, 2, kusarigama), Slot(saya, 2, 1), Slot(mei, 4, 0, chakraScroll));
 
-            Lineup("shogun_guard", "Shogun's Guard", 5, "The Shogun's elite: every synergy they can field, and the best weapons.",
+            Lineup("shogun_guard", "Shogun's Guard", 5, 10, "The Shogun's elite: every synergy they can field, and the best weapons.",
                 Slot(jiro, 3, 3, ironPlate, jadeCharm), Slot(goro, 2, 3, shadowKatana, kusarigama), Slot(kaito, 4, 3, shadowKatana),
                 Slot(takeshi, 1, 3, jadeCharm), Slot(nami, 3, 0, dragonFan, chakraScroll), Slot(mei, 5, 1, dragonFan, windBoots));
+
+            // Resources
+            var gold = Resource("gold", "Gold", new Color(1f, 0.82f, 0.35f), "Earned in every fight. Recruits ninjas.");
+            var karma = Resource("karma", "Karma", new Color(0.7f, 0.55f, 1f), "Earned from clan levels. Levels up ninjas.");
+            var steel = Resource("steel", "Steel", new Color(0.72f, 0.78f, 0.84f), "Earned from wins. Forges weapons.");
+
+            // Progression: levels cost 20 Karma, growing 8% a level; each level adds 4% health and attack damage.
+            var levelCosts = new List<int>();
+            for (var level = 1; level < 60; level++)
+                levelCosts.Add((int)Math.Round(20.0 * Math.Pow(1.08, level - 1), MidpointRounding.AwayFromZero));
+
+            sink.Provide<ProgressionDefinition>("Economy", "progression.default", "Progression", p =>
+            {
+                p.gold = gold;
+                p.karma = karma;
+                p.steel = steel;
+                p.startingResources = new List<ResourceAmount> { new ResourceAmount(gold, 500), new ResourceAmount(karma, 100), new ResourceAmount(steel, 0) };
+                p.startingNinjas = new List<NinjaDefinition> { kaito, hana, daichi };
+                p.startingWeapons = new List<WeaponDefinition> { kunai, ironPlate };
+                p.rosterLimit = 20;
+                p.levelCosts = levelCosts;
+                p.statGrowthPerLevel = 400;
+                p.levelsPerBelt = 5;
+                p.beltNames = new List<string>
+                {
+                    "White", "Yellow", "Orange", "Green", "Blue", "Brown",
+                    "Black, 1st dan", "Black, 2nd dan", "Black, 3rd dan", "Black, 4th dan", "Black, 5th dan", "Black, 6th dan",
+                };
+                p.stars = new List<ProgressionDefinition.StarRank>
+                {
+                    new ProgressionDefinition.StarRank { shards = 0, statBasisPoints = 10000 },
+                    new ProgressionDefinition.StarRank { shards = 3, statBasisPoints = 16000 },
+                    new ProgressionDefinition.StarRank { shards = 6, statBasisPoints = 25600 },
+                };
+                p.dojoOfferCount = 4;
+                p.rarities = new List<ProgressionDefinition.RarityOffer>
+                {
+                    new ProgressionDefinition.RarityOffer { rarity = Rarity.Common, weight = 60, price = 200, directBuy = true },
+                    new ProgressionDefinition.RarityOffer { rarity = Rarity.Rare, weight = 30, price = 500, directBuy = true },
+                    new ProgressionDefinition.RarityOffer { rarity = Rarity.Epic, weight = 9, price = 1200, directBuy = false },
+                    new ProgressionDefinition.RarityOffer { rarity = Rarity.Legendary, weight = 1, price = 3000, directBuy = false },
+                };
+                p.dojoRefreshCost = 50;
+                p.directBuyPrice = 15000;
+                p.forgeCost = 20;
+                p.winGold = 60;
+                p.winGoldPerDifficulty = 30;
+                p.winSteelPerDifficulty = 5;
+                p.winClanXp = 20;
+                p.winClanXpPerDifficulty = 10;
+                p.lossGold = 2500;
+                p.lossClanXp = 5000;
+                p.firstWinGoldPerDifficulty = 200;
+                p.dropChance = 3000;
+                p.dropChancePerDifficulty = 1000;
+                p.clanXpPerLevel = 100;
+                p.clanLevelKarma = 50;
+                p.clanLevelKarmaPerLevel = 10;
+                p.teamSizes = new List<ProgressionDefinition.TeamSizeStep>
+                {
+                    new ProgressionDefinition.TeamSizeStep { clanLevel = 1, teamSize = 3 },
+                    new ProgressionDefinition.TeamSizeStep { clanLevel = 3, teamSize = 4 },
+                    new ProgressionDefinition.TeamSizeStep { clanLevel = 6, teamSize = 5 },
+                    new ProgressionDefinition.TeamSizeStep { clanLevel = 10, teamSize = 6 },
+                };
+            });
         }
 
 
-        LineupDefinition Lineup(string id, string name, int difficulty, string description, params LineupSlot[] slots) =>
-            sink.Provide<LineupDefinition>("Lineups", "lineup." + id, name, l => l.Configure(description, difficulty, slots));
+        LineupDefinition Lineup(string id, string name, int difficulty, int level, string description, params LineupSlot[] slots) =>
+            sink.Provide<LineupDefinition>("Lineups", "lineup." + id, name, l => l.Configure(description, difficulty, level, slots));
+
+        ResourceDefinition Resource(string id, string name, Color color, string description) =>
+            sink.Provide<ResourceDefinition>("Economy", "resource." + id, name, r => r.Configure(description, color));
 
         static LineupSlot Slot(NinjaDefinition ninja, int column, int rowFromBack, params WeaponDefinition[] weapons) =>
             new LineupSlot(ninja, column, rowFromBack, weapons);

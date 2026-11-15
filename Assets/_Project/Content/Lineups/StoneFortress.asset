@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Lineups.LineupDefinition
   id: lineup.stone_fortress
   displayName: Stone Fortress
-  description: Three Vanguards and three Earth ninjas. Hard to break, slow to kill you.
+  description: Three Vanguards and three Earth ninjas. Hard to break, slow to kill
+    you.
   difficulty: 4
+  level: 7
   slots:
   - ninja: {fileID: 11400000, guid: e2f82cf69c9d742b39860c8e1e88f977, type: 2}
     column: 3

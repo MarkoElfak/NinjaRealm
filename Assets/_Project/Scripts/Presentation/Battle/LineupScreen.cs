@@ -3,6 +3,7 @@ using System.Text;
 using NinjaRealm.Combat;
 using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Lineups;
+using NinjaRealm.Core.Progression;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,7 +12,8 @@ namespace NinjaRealm.Presentation.Battle
     /// <summary>
     /// Prototype lineup screen: drag ninjas from the bench onto your half of the board, drag
     /// them around or off the board, drag weapons onto them, pick an opponent and start the
-    /// fight. Drawn with IMGUI; input is read from the Input System.
+    /// fight. The bench and armory hold what the player owns. Drawn with IMGUI; input is read
+    /// from the Input System.
     /// </summary>
     [RequireComponent(typeof(BattleController))]
     public sealed class LineupScreen : MonoBehaviour
@@ -53,16 +55,46 @@ namespace NinjaRealm.Presentation.Battle
 
         void Start()
         {
+            if (!controller.Initialize()) return;
             var database = controller.Content;
-            if (database == null) return;
+
+            foreach (var id in new[] { StatIds.Health, StatIds.AttackDamage, StatIds.AttackSpeed, StatIds.Range, StatIds.Armor, StatIds.MagicResist, StatIds.MaxMana })
+                if (database.TryGet<StatDefinition>(id, out var stat)) shownStats.Add(stat);
+
+            RefreshLists();
+            if (controller.Profile != null) controller.Profile.Changed += RefreshLists;
+        }
+
+        void OnDestroy()
+        {
+            if (controller != null && controller.Profile != null) controller.Profile.Changed -= RefreshLists;
+        }
+
+        /// <summary>Fills the bench and armory with what the player owns, or with all content without a save.</summary>
+        void RefreshLists()
+        {
+            var database = controller.Content;
+            var profile = controller.Profile;
+            roster.Clear();
+            armory.Clear();
+            if (profile != null)
+            {
+                roster.AddRange(profile.OwnedNinjas());
+                armory.AddRange(profile.OwnedWeapons());
+                return;
+            }
 
             roster.AddRange(database.GetAll<NinjaDefinition>());
             roster.Sort((a, b) => a.Rarity != b.Rarity ? a.Rarity.CompareTo(b.Rarity) : string.CompareOrdinal(a.Id, b.Id));
             armory.AddRange(database.GetAll<WeaponDefinition>());
             armory.Sort((a, b) => a.Tier != b.Tier ? a.Tier.CompareTo(b.Tier) : string.CompareOrdinal(a.Id, b.Id));
+        }
 
-            foreach (var id in new[] { StatIds.Health, StatIds.AttackDamage, StatIds.AttackSpeed, StatIds.Range, StatIds.Armor, StatIds.MagicResist, StatIds.MaxMana })
-                if (database.TryGet<StatDefinition>(id, out var stat)) shownStats.Add(stat);
+        /// <summary>Copies of a weapon not yet held by a ninja in the lineup. Without a save there is one of each.</summary>
+        int FreeCount(WeaponDefinition weapon)
+        {
+            var owned = controller.Profile != null ? controller.Profile.WeaponCount(weapon) : 1;
+            return owned - controller.Lineup.EquippedCount(weapon);
         }
 
         void Layout()
@@ -71,7 +103,7 @@ namespace NinjaRealm.Presentation.Battle
             var height = PrototypeGui.Height;
             leftPanel = new Rect(10f, 10f, 250f, height - 210f);
             rightPanel = new Rect(width - 280f, 10f, 270f, height - 210f);
-            topBar = new Rect(width / 2f - 230f, 10f, 460f, 74f);
+            topBar = new Rect(width / 2f - 230f, 10f, 460f, controller.Profile != null ? 100f : 74f);
             bottomPanel = new Rect(10f, height - 190f, width - 20f, 180f);
 
             rosterCards.Clear();
@@ -99,7 +131,7 @@ namespace NinjaRealm.Presentation.Battle
 
         void Update()
         {
-            if (controller.Phase != BattlePhase.Setup || controller.Lineup == null)
+            if (controller.Phase != BattlePhase.Setup || controller.Lineup == null || controller.RosterOpen)
             {
                 drag = DragKind.None;
                 return;
@@ -185,9 +217,9 @@ namespace NinjaRealm.Presentation.Battle
             if (weaponCard >= 0)
             {
                 var weapon = armory[weaponCard];
-                if (lineup.IsEquipped(weapon))
+                if (FreeCount(weapon) <= 0)
                 {
-                    Say($"{weapon.DisplayName} is already equipped. Remove it from that ninja first.");
+                    Say($"Every {weapon.DisplayName} you own is equipped. Remove one from a ninja first.");
                     return;
                 }
 
@@ -303,7 +335,7 @@ namespace NinjaRealm.Presentation.Battle
 
         void OnGUI()
         {
-            if (controller == null || controller.Phase != BattlePhase.Setup || controller.Lineup == null) return;
+            if (controller == null || controller.Phase != BattlePhase.Setup || controller.Lineup == null || controller.RosterOpen) return;
 
             PrototypeGui.Begin();
             Layout();
@@ -356,6 +388,22 @@ namespace NinjaRealm.Presentation.Battle
             }
 
             GUI.enabled = true;
+
+            var profile = controller.Profile;
+            if (profile == null) return;
+
+            if (GUI.Button(new Rect(topBar.xMax - 130f, topBar.y + 72f, 118f, 22f), "Roster (Tab)")) controller.RosterOpen = true;
+            GUI.Label(new Rect(topBar.x + 14f, topBar.y + 74f, topBar.width - 160f, 20f), WalletLine(profile), PrototypeGui.Small);
+        }
+
+        /// <summary>The clan level and the three balances, for the screens' top bars.</summary>
+        public static string WalletLine(ProfileService profile)
+        {
+            var progression = profile.Progression;
+            string Amount(ResourceDefinition resource) => resource == null ? "" :
+                $"<color=#{PrototypeGui.Hex(resource.Color)}>{resource.DisplayName}</color> <b>{profile.Balance(resource)}</b>   ";
+            return $"Clan <b>{profile.ClanLevel}</b> ({profile.ClanXp} / {profile.ClanXpToNext} XP)   " +
+                   Amount(progression.Gold) + Amount(progression.Karma) + Amount(progression.Steel);
         }
 
         void DrawOpponents()
@@ -373,7 +421,9 @@ namespace NinjaRealm.Presentation.Battle
                 var isSelected = opponent == controller.Opponent;
                 PrototypeGui.Fill(rect, isSelected ? new Color(0.32f, 0.27f, 0.12f, 0.95f) : PrototypeGui.CardColor, isSelected);
                 if (GUI.Button(rect, GUIContent.none, GUIStyle.none)) controller.SelectOpponent(opponent);
-                GUI.Label(new Rect(rect.x + 8f, rect.y + 2f, rect.width - 16f, 20f), opponent.DisplayName, PrototypeGui.Label);
+                var beaten = controller.Profile != null && controller.Profile.HasBeaten(opponent) ? "  <color=#9a9a9a>beaten</color>" : "";
+                GUI.Label(new Rect(rect.x + 8f, rect.y + 2f, rect.width - 16f, 20f), $"{opponent.DisplayName}{beaten}", PrototypeGui.Label);
+                GUI.Label(new Rect(rect.xMax - 52f, rect.y + 18f, 46f, 16f), $"Lv {opponent.Level}", PrototypeGui.Small);
                 PrototypeGui.Pips(new Vector2(rect.x + 9f, rect.y + 23f), opponent.Difficulty, 5, PrototypeGui.Gold);
                 y += 40f;
             }
@@ -384,7 +434,20 @@ namespace NinjaRealm.Presentation.Battle
             var description = controller.Opponent.Description;
             var descriptionHeight = PrototypeGui.Wrap.CalcHeight(new GUIContent(description), width);
             GUI.Label(new Rect(x, y, width, descriptionHeight), description, PrototypeGui.Wrap);
-            y += descriptionHeight + 10f;
+            y += descriptionHeight + 6f;
+
+            var profile = controller.Profile;
+            if (profile != null)
+            {
+                var opponent = controller.Opponent;
+                profile.Progression.FightPay(opponent.Difficulty, true, out var gold, out var steel, out var xp);
+                var pay = $"<b>Win:</b> {gold} Gold, {steel} Steel, {xp} clan XP, {profile.Progression.DropChance(opponent.Difficulty) / 100}% weapon drop.";
+                if (!profile.HasBeaten(opponent))
+                    pay += $" <color=#{PrototypeGui.Hex(PrototypeGui.Gold)}>First win: +{profile.Progression.FirstWinGold(opponent.Difficulty)} Gold and a weapon.</color>";
+                var payHeight = PrototypeGui.Wrap.CalcHeight(new GUIContent(pay), width);
+                GUI.Label(new Rect(x, y, width, payHeight), pay, PrototypeGui.Wrap);
+                y += payHeight + 10f;
+            }
 
             GUI.Label(new Rect(x, y, width, 22f), "Their synergies", PrototypeGui.Title);
             y += 26f;
@@ -460,6 +523,13 @@ namespace NinjaRealm.Presentation.Battle
             var ninja = slot.ninja;
             GUI.Label(new Rect(x, y, width, 22f), $"<b>{ninja.DisplayName}</b>  <color=#{PrototypeGui.Hex(RarityColor(ninja.Rarity))}>{ninja.Rarity}</color>", PrototypeGui.Title);
             y += 22f;
+            var rank = controller.RankOf(ninja);
+            var multiplier = controller.Profile != null ? controller.Profile.Progression.StatMultiplier(rank.Level, rank.Stars) : ProgressionDefinition.BasisPoints;
+            if (controller.Profile != null)
+            {
+                GUI.Label(new Rect(x, y, width, 18f), $"{RankText(rank)}  {controller.Profile.Progression.Belt(rank.Level)} belt", PrototypeGui.Small);
+                y += 18f;
+            }
             GUI.Label(new Rect(x, y, width, 18f),
                 $"<color=#{PrototypeGui.Hex(ninja.Element != null ? ninja.Element.Color : Color.grey)}>{ninja.Element?.DisplayName}</color>  {ninja.Class?.DisplayName}",
                 PrototypeGui.Small);
@@ -470,7 +540,9 @@ namespace NinjaRealm.Presentation.Battle
                 var stat = shownStats[i];
                 var column = i % 2;
                 var rect = new Rect(x + column * (width / 2f), y + (i / 2) * 17f, width / 2f, 17f);
-                GUI.Label(rect, $"{stat.DisplayName}: <b>{ninja.GetBaseStat(stat):0.##}</b>", PrototypeGui.Small);
+                var value = ninja.GetBaseStat(stat);
+                if (stat.Id == StatIds.Health || stat.Id == StatIds.AttackDamage) value = value * multiplier / ProgressionDefinition.BasisPoints;
+                GUI.Label(rect, $"{stat.DisplayName}: <b>{value:0.##}</b>", PrototypeGui.Small);
             }
 
             y += ((shownStats.Count + 1) / 2) * 17f + 6f;
@@ -517,7 +589,7 @@ namespace NinjaRealm.Presentation.Battle
             var lineup = controller.Lineup;
             PrototypeGui.Panel(bottomPanel);
             GUI.Label(new Rect(bottomPanel.x + 12f, bottomPanel.y + 6f, 600f, 20f), "<b>Ninjas</b>  drag onto your half", PrototypeGui.Label);
-            GUI.Label(new Rect(bottomPanel.x + 12f, bottomPanel.y + 98f, 600f, 20f), "<b>Armory</b>  one of each weapon, drag onto a ninja", PrototypeGui.Label);
+            GUI.Label(new Rect(bottomPanel.x + 12f, bottomPanel.y + 98f, 600f, 20f), controller.Profile != null ? "<b>Armory</b>  the weapons you own, drag onto a ninja" : "<b>Armory</b>  one of each weapon, drag onto a ninja", PrototypeGui.Label);
 
             var point = PrototypeGui.MouseGuiPosition;
             string tooltip = null;
@@ -532,8 +604,8 @@ namespace NinjaRealm.Presentation.Battle
                 GUI.Label(new Rect(rect.x + 10f, rect.y + 4f, rect.width - 12f, 20f),
                     $"<b>{ninja.DisplayName}</b>", PrototypeGui.Label);
                 GUI.Label(new Rect(rect.x + 10f, rect.y + 22f, rect.width - 12f, 16f), $"{ninja.Element?.DisplayName} {ninja.Class?.DisplayName}", PrototypeGui.Small);
-                GUI.Label(new Rect(rect.x + 10f, rect.y + 37f, rect.width - 12f, 16f),
-                    placed ? "On the board" : $"<color=#{PrototypeGui.Hex(RarityColor(ninja.Rarity))}>{ninja.Rarity}</color>", PrototypeGui.Small);
+                var detail = controller.Profile != null ? RankText(controller.RankOf(ninja)) : $"<color=#{PrototypeGui.Hex(RarityColor(ninja.Rarity))}>{ninja.Rarity}</color>";
+                GUI.Label(new Rect(rect.x + 10f, rect.y + 37f, rect.width - 12f, 16f), placed ? "On the board" : detail, PrototypeGui.Small);
 
                 if (rect.Contains(point) && ninja.Skill != null)
                     tooltip = $"<b>{ninja.DisplayName}</b>: {ninja.Skill.DisplayName}. {ninja.Skill.Description}";
@@ -543,11 +615,14 @@ namespace NinjaRealm.Presentation.Battle
             {
                 var weapon = armory[i];
                 var rect = armoryCards[i];
-                var used = lineup.IsEquipped(weapon);
+                var free = FreeCount(weapon);
+                var used = free <= 0;
                 var combined = weapon.Tier == WeaponTier.Combined;
                 PrototypeGui.Fill(rect, used ? PrototypeGui.DisabledColor : combined ? new Color(0.26f, 0.22f, 0.14f, 0.95f) : PrototypeGui.CardColor, true);
                 GUI.Label(new Rect(rect.x + 8f, rect.y + 4f, rect.width - 10f, 20f), $"<b>{weapon.DisplayName}</b>", PrototypeGui.Label);
-                GUI.Label(new Rect(rect.x + 8f, rect.y + 23f, rect.width - 10f, 16f), used ? "Equipped" : combined ? "Combined" : "Component", PrototypeGui.Small);
+                var kind = combined ? "Combined" : "Component";
+                var state = controller.Profile != null ? $"{kind}, {Mathf.Max(0, free)} free" : used ? "Equipped" : kind;
+                GUI.Label(new Rect(rect.x + 8f, rect.y + 23f, rect.width - 10f, 16f), state, PrototypeGui.Small);
 
                 if (rect.Contains(point))
                     tooltip = $"<b>{weapon.DisplayName}</b>: {weapon.Description}";
@@ -574,7 +649,11 @@ namespace NinjaRealm.Presentation.Battle
             GUI.Label(rect, text, PrototypeGui.Centered);
         }
 
-        static Color RarityColor(Rarity rarity)
+        /// <summary>A ninja's level and stars, such as "Lv 5  ★★".</summary>
+        public static string RankText(NinjaRank rank) =>
+            $"Lv {rank.Level}  <color=#{PrototypeGui.Hex(PrototypeGui.Gold)}>{new string('★', rank.Stars)}</color>";
+
+        public static Color RarityColor(Rarity rarity)
         {
             switch (rarity)
             {

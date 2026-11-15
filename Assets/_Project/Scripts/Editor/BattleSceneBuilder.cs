@@ -143,7 +143,7 @@ namespace NinjaRealm.Editor
             var database = controller.Content;
             var player = PrototypeContent.BalanceArchetypes(database)[0].Slots;
             var opponent = database.Get<LineupDefinition>(opponentId);
-            controller.StartFight(player, opponent.Slots, seed);
+            controller.StartFight(player, opponent, seed);
             if (controller.Playback.Simulation == null)
                 throw new InvalidOperationException("[Battle] The fight did not start. See the errors above.");
 

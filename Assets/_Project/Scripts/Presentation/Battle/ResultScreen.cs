@@ -8,8 +8,8 @@ using UnityEngine.InputSystem;
 namespace NinjaRealm.Presentation.Battle
 {
     /// <summary>
-    /// Prototype result screen: who won, how long it took, and a damage log with each ninja's
-    /// damage dealt and taken, healing and shielding.
+    /// Prototype result screen: who won, how long it took, what the fight paid into the save,
+    /// and a damage log with each ninja's damage dealt and taken, healing and shielding.
     /// </summary>
     [RequireComponent(typeof(BattleController))]
     public sealed class ResultScreen : MonoBehaviour
@@ -55,7 +55,9 @@ namespace NinjaRealm.Presentation.Battle
                 team.Sort((a, b) => b.DamageDealt.CompareTo(a.DamageDealt));
 
             var rows = teams[0].Count + teams[1].Count;
-            var height = 150f + rows * rowHeight + 2 * 34f;
+            var rewardLines = RewardLines();
+            var rewardsHeight = rewardLines == null ? 0f : 12f + rewardLines.Count * 20f;
+            var height = 150f + rewardsHeight + rows * rowHeight + 2 * 34f;
             var panel = new Rect((PrototypeGui.Width - width) / 2f, Mathf.Max(20f, (PrototypeGui.Height - height) / 2f), width, height);
             PrototypeGui.Panel(panel);
 
@@ -71,6 +73,18 @@ namespace NinjaRealm.Presentation.Battle
             var y = panel.y + 92f;
             var x = panel.x + 16f;
             var inner = panel.width - 32f;
+            if (rewardLines != null)
+            {
+                PrototypeGui.Fill(new Rect(x, y - 4f, inner, rewardsHeight - 4f), new Color(1f, 1f, 1f, 0.05f));
+                foreach (var line in rewardLines)
+                {
+                    GUI.Label(new Rect(x + 10f, y, inner - 20f, 20f), line, PrototypeGui.Label);
+                    y += 20f;
+                }
+
+                y += 12f;
+            }
+
             DrawHeader(x, y, inner);
             y += 22f;
 
@@ -92,6 +106,34 @@ namespace NinjaRealm.Presentation.Battle
             if (GUI.Button(new Rect(x, buttonY, buttonWidth, 32f), "Back to lineup (Esc)")) controller.EnterSetup();
             if (GUI.Button(new Rect(x + buttonWidth + 10f, buttonY, buttonWidth, 32f), "Replay (R)")) controller.Replay();
             if (GUI.Button(new Rect(x + 2f * (buttonWidth + 10f), buttonY, buttonWidth, 32f), "Fight again, new seed (N)")) controller.FightAgain();
+        }
+
+        /// <summary>What the fight paid, one line each. Null without a save.</summary>
+        List<string> RewardLines()
+        {
+            var profile = controller.Profile;
+            if (profile == null) return null;
+
+            var rewards = controller.LastRewards;
+            if (rewards == null) return new List<string> { "<color=#9a9a9a>Replays don't pay rewards.</color>" };
+
+            var gold = PrototypeGui.Hex(profile.Progression.Gold != null ? profile.Progression.Gold.Color : PrototypeGui.Gold);
+            var lines = new List<string>
+            {
+                $"<b>Rewards</b>   <color=#{gold}>+{rewards.Gold} Gold</color>" +
+                (rewards.Steel > 0 ? $"   +{rewards.Steel} Steel" : "") +
+                $"   +{rewards.ClanXp} clan XP   <color=#9a9a9a>(clan {profile.ClanLevel}: {profile.ClanXp} / {profile.ClanXpToNext} XP)</color>",
+            };
+            if (rewards.FirstWin) lines.Add($"<color=#{gold}>First win against them: +{rewards.FirstWinGold} Gold</color>");
+            if (rewards.Drop != null) lines.Add($"Found a weapon: <b>{rewards.Drop.DisplayName}</b>");
+            if (rewards.ClanLevelsGained > 0)
+            {
+                var line = $"<color=#{gold}>Clan level {profile.ClanLevel}!</color>  +{rewards.Karma} Karma";
+                if (rewards.TeamSizeAfter > rewards.TeamSizeBefore) line += $". Your team can now hold {rewards.TeamSizeAfter} ninjas.";
+                lines.Add(line);
+            }
+
+            return lines;
         }
 
         static void DrawHeader(float x, float y, float width)

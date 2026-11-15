@@ -35,4 +35,14 @@ namespace NinjaRealm.Core.Lineups
 
         public LineupSlot Clone() => new LineupSlot(ninja, column, rowFromBack, weapons.ToArray());
     }
+
+    /// <summary>One lineup slot in a save file: content IDs instead of asset references.</summary>
+    [Serializable]
+    public sealed class SavedLineupSlot
+    {
+        public string ninja;
+        public int column;
+        public int row;
+        public List<string> weapons = new List<string>();
+    }
 }
