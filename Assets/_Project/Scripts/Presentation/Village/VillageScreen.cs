@@ -49,7 +49,7 @@ namespace NinjaRealm.Presentation.Village
             GUI.Label(new Rect(bar.x + 14f, bar.y + 32f, bar.width - 28f, 20f), line, PrototypeGui.Small);
         }
 
-        /// <summary>A small name and level over each ninja on the plaza.</summary>
+        /// <summary>A name, with the level under it, over each ninja on the plaza.</summary>
         void DrawNinjaNames()
         {
             var cam = controller.ViewCamera;
@@ -64,8 +64,10 @@ namespace NinjaRealm.Presentation.Village
                 if (screen.z <= 0f) continue;
                 var point = new Vector2(screen.x / scale, (Screen.height - screen.y) / scale);
                 var ninja = ninjas.Ninjas[i];
-                var level = profile != null ? $"  <color=#{PrototypeGui.Hex(PrototypeGui.Gold)}>Lv {profile.RankOf(ninja).Level}</color>" : "";
-                GUI.Label(new Rect(point.x - 70f, point.y - 18f, 140f, 18f), $"<b>{ninja.DisplayName}</b>{level}", PrototypeGui.NameStyle);
+                GUI.Label(new Rect(point.x - 70f, point.y - 34f, 140f, 18f), $"<b>{ninja.DisplayName}</b>", PrototypeGui.NameStyle);
+                if (profile == null) continue;
+                var level = $"<color=#{PrototypeGui.Hex(PrototypeGui.Gold)}>Lv {profile.RankOf(ninja).Level}</color>";
+                GUI.Label(new Rect(point.x - 70f, point.y - 18f, 140f, 18f), level, PrototypeGui.NameStyle);
             }
         }
 

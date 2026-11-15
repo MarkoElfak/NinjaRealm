@@ -13,10 +13,10 @@ namespace NinjaRealm.Presentation.Village
     public sealed class VillageNinjas : MonoBehaviour
     {
         /// <summary>How much bigger a ninja stands in the village than on the battle board.</summary>
-        public const float Scale = 1.5f;
+        public const float Scale = 2.4f;
 
         /// <summary>Metres between ninjas, and between rows.</summary>
-        public const float Spacing = 1.8f;
+        public const float Spacing = 2.8f;
 
         /// <summary>Ninjas in a full row. The plaza is about 13 m across.</summary>
         public const int PerRow = 5;
