@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using NinjaRealm.Core.Definitions;
 using NinjaRealm.Presentation.Village;
 using NUnit.Framework;
 using UnityEngine;
@@ -12,9 +14,14 @@ namespace NinjaRealm.Tests
         GameObject building;
         GameObject cameraObject;
 
+        readonly List<UnityEngine.Object> created = new List<UnityEngine.Object>();
+
         [TearDown]
         public void DestroyObjects()
         {
+            foreach (var item in created)
+                if (item != null) Object.DestroyImmediate(item);
+            created.Clear();
             if (building != null) Object.DestroyImmediate(building);
             if (cameraObject != null) Object.DestroyImmediate(cameraObject);
         }
@@ -66,6 +73,50 @@ namespace NinjaRealm.Tests
 
             Assert.That(VillageController.BuildingAt(camera, centre), Is.SameAs(hall));
             Assert.That(VillageController.BuildingAt(camera, new Vector2(1f, 1f)), Is.Null);
+        }
+
+        [Test]
+        public void NinjasStandInCentredRows()
+        {
+            var centre = new Vector3(0f, 0f, 2f);
+
+            // Seven ninjas: a full row of five in front, two behind.
+            Assert.That(VillageNinjas.PositionOf(2, 7, centre).x, Is.EqualTo(0f).Within(0.001f), "The middle of the front row is on the centre line.");
+            Assert.That(VillageNinjas.PositionOf(0, 7, centre).x, Is.EqualTo(-2f * VillageNinjas.Spacing).Within(0.001f));
+            Assert.That(VillageNinjas.PositionOf(0, 7, centre).z, Is.LessThan(centre.z), "The first row is nearest the camera.");
+            Assert.That(VillageNinjas.PositionOf(5, 7, centre).z, Is.GreaterThan(centre.z));
+            Assert.That(VillageNinjas.PositionOf(5, 7, centre).x, Is.EqualTo(-VillageNinjas.PositionOf(6, 7, centre).x).Within(0.001f), "The short row is centred too.");
+
+            // One ninja stands on the centre.
+            Assert.That(VillageNinjas.PositionOf(0, 1, centre), Is.EqualTo(centre));
+        }
+
+        [Test]
+        public void TheVillageShowsEachNinjaOnceFacingTheCamera()
+        {
+            var holder = new GameObject("Ninjas");
+            created.Add(holder);
+            var ninjas = holder.AddComponent<VillageNinjas>();
+            var roster = new List<NinjaDefinition>();
+            for (var i = 0; i < 3; i++)
+            {
+                var ninja = ScriptableObject.CreateInstance<NinjaDefinition>();
+                created.Add(ninja);
+                roster.Add(ninja);
+            }
+
+            ninjas.Show(roster, Vector3.zero);
+            var first = ninjas.Views[0];
+            ninjas.Show(roster, Vector3.zero);
+
+            Assert.That(ninjas.Views.Count, Is.EqualTo(3));
+            Assert.That(ninjas.Views[0], Is.SameAs(first), "Showing the same ninjas again keeps them.");
+            Assert.That(Vector3.Dot(first.transform.forward, Vector3.back), Is.EqualTo(1f).Within(0.001f));
+            Assert.That(holder.transform.childCount, Is.EqualTo(3));
+
+            roster.RemoveAt(2);
+            ninjas.Show(roster, Vector3.zero);
+            Assert.That(ninjas.Views.Count, Is.EqualTo(2));
         }
 
         [Test]

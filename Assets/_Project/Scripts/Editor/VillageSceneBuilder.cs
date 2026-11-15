@@ -309,6 +309,7 @@ namespace NinjaRealm.Editor
             if (controller == null) throw new InvalidOperationException($"No VillageController in {ScenePath}.");
             if (!controller.Initialize()) throw new InvalidOperationException("[Village] The village scene has no content database.");
             controller.ApplyCamera();
+            if (controller.Ninjas != null) controller.Ninjas.Tick(0.5f);
             CameraCapture.Render(controller.ViewCamera, output, 1600, 900);
             Debug.Log($"[Village] Captured {output} with {controller.Buildings.Count} buildings.");
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);

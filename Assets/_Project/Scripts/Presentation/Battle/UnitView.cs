@@ -225,6 +225,9 @@ namespace NinjaRealm.Presentation.Battle
 
         public void SetBarsVisible(bool visible) => bars.gameObject.SetActive(visible && !IsDead);
 
+        /// <summary>Shows or hides the team ring under the unit. The village shows ninjas without it.</summary>
+        public void SetRingVisible(bool visible) => ring.gameObject.SetActive(visible);
+
         public void MoveTo(Vector3 position, float seconds)
         {
             moveFrom = transform.position;

@@ -103,7 +103,7 @@ namespace NinjaRealm.Presentation.Battle
             var height = PrototypeGui.Height;
             leftPanel = new Rect(10f, 10f, 250f, height - 210f);
             rightPanel = new Rect(width - 280f, 10f, 270f, height - 210f);
-            topBar = new Rect(width / 2f - 230f, 10f, 460f, controller.Profile != null ? 100f : 74f);
+            topBar = new Rect(width / 2f - 290f, 10f, 580f, controller.Profile != null ? 100f : 74f);
             bottomPanel = new Rect(10f, height - 190f, width - 20f, 180f);
 
             rosterCards.Clear();
@@ -375,8 +375,11 @@ namespace NinjaRealm.Presentation.Battle
             var lineup = controller.Lineup;
             PrototypeGui.Panel(topBar);
             GUI.Label(new Rect(topBar.x + 14f, topBar.y + 8f, 220f, 24f), $"Your lineup  {lineup.Slots.Count} / {lineup.MaxUnits}", PrototypeGui.Title);
-            GUI.Label(new Rect(topBar.x + 14f, topBar.y + 34f, 300f, 36f),
+            GUI.Label(new Rect(topBar.x + 14f, topBar.y + 34f, 290f, 36f),
                 "Drag ninjas onto the near half. Drag one off the board to remove it.", PrototypeGui.Wrap);
+
+            // The way back to the village, next to Fight so it is easy to find.
+            if (controller.CanLeaveToVillage && GUI.Button(new Rect(topBar.xMax - 262f, topBar.y + 10f, 124f, 34f), "Back to village")) controller.LeaveToVillage();
 
             GUI.enabled = controller.CanFight;
             if (GUI.Button(new Rect(topBar.xMax - 130f, topBar.y + 10f, 118f, 34f), "Fight! (Enter)")) controller.StartFight();
@@ -388,8 +391,6 @@ namespace NinjaRealm.Presentation.Battle
             }
 
             GUI.enabled = true;
-
-            if (controller.CanLeaveToVillage && GUI.Button(new Rect(topBar.x - 110f, topBar.y, 100f, 34f), "< Village")) controller.LeaveToVillage();
 
             var profile = controller.Profile;
             if (profile == null) return;
