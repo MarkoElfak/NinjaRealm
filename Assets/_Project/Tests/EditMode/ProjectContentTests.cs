@@ -107,7 +107,9 @@ namespace NinjaRealm.Tests
                 var enterChildren = true;
                 while (property.Next(enterChildren))
                 {
-                    enterChildren = property.propertyType != SerializedPropertyType.String;
+                    // A reference is written as the ID it points to, not as its in-memory file and path IDs.
+                    enterChildren = property.propertyType != SerializedPropertyType.String &&
+                                    property.propertyType != SerializedPropertyType.ObjectReference;
                     if (property.propertyPath == "m_Script" || property.propertyPath == "m_Name" ||
                         property.propertyPath == "m_EditorClassIdentifier") continue;
 
