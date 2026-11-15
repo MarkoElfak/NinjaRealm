@@ -36,4 +36,4 @@ MonoBehaviour:
   - stat: {fileID: 11400000, guid: 0ddf73056149a4b4899e3a5cd03c6189, type: 2}
     value: 20
   portrait: {fileID: 0}
-  modelPrefab: {fileID: 0}
+  modelPrefab: {fileID: 5955568130131095836, guid: 9aed4d0c82433462ea76d2cbf87330b3, type: 3}

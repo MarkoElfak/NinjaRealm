@@ -135,7 +135,10 @@ namespace NinjaRealm.Presentation.Battle
 
             var viewCamera = Camera.main;
             foreach (var view in views)
+            {
+                view.AnimationSpeed = speed;
                 view.Tick(deltaTime, viewCamera);
+            }
 
             for (var i = floatingTexts.Count - 1; i >= 0; i--)
             {

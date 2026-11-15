@@ -95,6 +95,8 @@ namespace NinjaRealm.Tests
             return values.FirstOrDefault(value => value.StartsWith(path, System.StringComparison.Ordinal)) ?? "nothing";
         }
 
+        static readonly HashSet<string> ArtReferenceTypes = new HashSet<string> { "PPtr<$GameObject>", "PPtr<$Sprite>" };
+
         /// <summary>Every serialized value of an object as path=value lines. References to content are written as IDs.</summary>
         static List<string> Describe(Object target)
         {
@@ -105,9 +107,14 @@ namespace NinjaRealm.Tests
                 var enterChildren = true;
                 while (property.Next(enterChildren))
                 {
-                    enterChildren = property.propertyType != SerializedPropertyType.String;
+                    // A reference is written as the ID it points to, not as its in-memory file and path IDs.
+                    enterChildren = property.propertyType != SerializedPropertyType.String &&
+                                    property.propertyType != SerializedPropertyType.ObjectReference;
                     if (property.propertyPath == "m_Script" || property.propertyPath == "m_Name" ||
                         property.propertyPath == "m_EditorClassIdentifier") continue;
+
+                    // Art (models, portraits) is linked in the editor, not in PrototypeContent.
+                    if (property.propertyType == SerializedPropertyType.ObjectReference && ArtReferenceTypes.Contains(property.type)) continue;
 
                     var value = Value(property);
                     if (value != null) lines.Add(property.propertyPath + "=" + value);

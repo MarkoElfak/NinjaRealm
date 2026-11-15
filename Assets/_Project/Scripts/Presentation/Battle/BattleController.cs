@@ -192,7 +192,7 @@ namespace NinjaRealm.Presentation.Battle
         UnitView CreateView(int index, int team, NinjaDefinition ninja, HexCoord hex)
         {
             var accent = ninja.Element != null ? ninja.Element.Color : Color.grey;
-            return UnitView.Create(playback.transform, index, team, ninja.DisplayName, accent, board.ToWorld(hex));
+            return UnitView.Create(playback.transform, index, team, ninja.DisplayName, accent, board.ToWorld(hex), ninja.ModelPrefab);
         }
 
         // ---------------------------------------------------------------- fight
