@@ -148,6 +148,7 @@ namespace NinjaRealm.Tests
             var offers = service.DojoOffers();
             Assert.AreEqual(4, offers.Count);
             Assert.That(offers, Has.All.Not.Null);
+            Assert.That(offers, Is.Unique, "a ninja is offered once per roll");
 
             Assert.IsFalse(service.RefreshDojoIfNewDay(Today), "same day");
             CollectionAssert.AreEqual(offers, service.DojoOffers());

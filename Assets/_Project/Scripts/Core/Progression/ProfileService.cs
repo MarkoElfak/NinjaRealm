@@ -316,7 +316,10 @@ namespace NinjaRealm.Core.Progression
             return true;
         }
 
-        /// <summary>Picks the offers: a rarity by weight, then a ninja of that rarity. Rarities with no ninjas are skipped.</summary>
+        /// <summary>
+        /// Picks the offers: a rarity by weight, then a ninja of that rarity. A ninja is offered at
+        /// most once per roll, and rarities with no ninjas left are skipped.
+        /// </summary>
         void RollDojo()
         {
             var byRarity = new Dictionary<Rarity, List<NinjaDefinition>>();
@@ -326,19 +329,19 @@ namespace NinjaRealm.Core.Progression
                 list.Add(ninja);
             }
 
-            var choices = new List<ProgressionDefinition.RarityOffer>();
-            var totalWeight = 0;
-            foreach (var offer in Progression.Rarities)
-            {
-                if (offer == null || offer.weight <= 0 || !byRarity.ContainsKey(offer.rarity)) continue;
-                choices.Add(offer);
-                totalWeight += offer.weight;
-            }
-
             var random = NextRandom();
             Profile.dojoOffers.Clear();
             for (var i = 0; i < Progression.DojoOfferCount; i++)
             {
+                var choices = new List<ProgressionDefinition.RarityOffer>();
+                var totalWeight = 0;
+                foreach (var offer in Progression.Rarities)
+                {
+                    if (offer == null || offer.weight <= 0 || !byRarity.TryGetValue(offer.rarity, out var left) || left.Count == 0) continue;
+                    choices.Add(offer);
+                    totalWeight += offer.weight;
+                }
+
                 if (totalWeight <= 0)
                 {
                     Profile.dojoOffers.Add(string.Empty);
@@ -359,7 +362,9 @@ namespace NinjaRealm.Core.Progression
                 }
 
                 var pool = byRarity[chosen.rarity];
-                Profile.dojoOffers.Add(pool[random.Range(0, pool.Count)].Id);
+                var pick = random.Range(0, pool.Count);
+                Profile.dojoOffers.Add(pool[pick].Id);
+                pool.RemoveAt(pick);
             }
         }
 
