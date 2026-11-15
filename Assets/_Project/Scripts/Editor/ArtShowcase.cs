@@ -31,6 +31,7 @@ namespace NinjaRealm.Editor
 
             var modelPaths = AssetDatabase.FindAssets("t:Model", new[] { MeshyArtImporter.Root })
                 .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(path => !path.StartsWith(MeshyArtImporter.AnimationsRoot + "/", System.StringComparison.Ordinal))
                 .OrderBy(path => path, System.StringComparer.Ordinal)
                 .ToList();
             if (modelPaths.Count == 0)

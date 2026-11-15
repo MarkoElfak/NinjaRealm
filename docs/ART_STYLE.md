@@ -60,10 +60,12 @@ Example prompts:
 
 How to use it:
 
-1. **Characters:** first make a clean full-body front view image of the ninja (Meshy text-to-image, using the reference as a style guide). Then use Image to 3D, which matches the style much better than text alone. Rig and animate in Meshy, or use Mixamo. Keep one shared humanoid rig so animations are reusable.
-2. **Buildings and props:** text-to-3D or image-to-3D, with the same style text.
-3. **Keep it consistent:** use Meshy's retexture with `art/style-reference.png`, or with an approved model's texture, as the style image.
-4. **Import:** save each model as FBX to `Assets/_Project/Art/Meshy/<Characters|Buildings|Props>/<Name>/<Name>.fbx`, with Meshy's `<Name>_base_color.png` next to it (the Meshy download tool does this). `MeshyArtImporter` then gives it a matte URP Lit material with that texture, with no manual setup.
-5. **Check it:** **Ninja Realm > Art > Open Meshy Showcase** lines up every Meshy model at game scale (ninjas 1.2 m, props 3 m, buildings 4.5 m) in the board lighting. Check the triangle count and pose there.
+1. **Characters:** first make a clean full-body front view image of the ninja (Meshy text-to-image, using the reference as a style guide). Then use Image to 3D, which matches the style much better than text alone. Then rig it in Meshy and save the rigged FBX as the character's model.
+2. **Animations:** every ninja shares one set of humanoid clips. Animate one rigged ninja in Meshy and save each clip as `Assets/_Project/Art/Meshy/Animations/<Clip>.fbx`: `Idle` and `Run` (looping), `Attack`, `Cast`, `Hit` and `Death`. Unity plays them on any rigged ninja.
+3. **Buildings and props:** text-to-3D or image-to-3D, with the same style text.
+4. **Keep it consistent:** use Meshy's retexture with `art/style-reference.png`, or with an approved model's texture, as the style image.
+5. **Import:** save each model as FBX to `Assets/_Project/Art/Meshy/<Characters|Buildings|Props>/<Name>/<Name>.fbx`, with Meshy's `<Name>_base_color.png` next to it (the Meshy download tool does this). `MeshyArtImporter` then gives it a matte URP Lit material with that texture, with no manual setup. Rigged characters and the clips import as Humanoid.
+6. **Check it:** **Ninja Realm > Art > Open Meshy Showcase** lines up every Meshy model at game scale (ninjas 1.2 m, props 3 m, buildings 4.5 m) in the board lighting. Check the triangle count and pose there.
+7. **Put ninjas in fights:** **Ninja Realm > Art > Set Up Ninja Models** builds `Animations/NinjaAnimator.controller` from the clips, saves a `<Name>.prefab` next to each ninja's model with that controller, and sets it as the ninja's model. Fights then show the model instead of the placeholder. Run it again after adding a ninja or a clip.
 
 Art files (`.png`, `.fbx`, `.glb` and others) are stored with Git LFS, so Git LFS must be installed on any machine that clones the repo.

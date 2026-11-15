@@ -3,9 +3,10 @@ using UnityEngine;
 namespace NinjaRealm.Presentation.Battle
 {
     /// <summary>
-    /// A placeholder ninja on the board: a chibi body in dark cloth with the element colour
-    /// on the scarf and headband, a team ring, and health, shield and mana bars. It only
-    /// animates what the simulation already decided.
+    /// A ninja on the board: its model (or, without one, a placeholder chibi body in dark cloth
+    /// with the element colour on the scarf and headband), a team ring, and health, shield and
+    /// mana bars. It only animates what the simulation already decided. A model with an
+    /// <see cref="Animator"/> plays the <see cref="NinjaAnimation"/> states.
     /// </summary>
     public sealed class UnitView : MonoBehaviour
     {
@@ -15,10 +16,17 @@ namespace NinjaRealm.Presentation.Battle
         const float AttackSeconds = 0.25f;
         const float CastSeconds = 0.45f;
         const float DeathSeconds = 0.6f;
+        const float ModelDeathSeconds = 1.6f;
+        const float ModelSinkSeconds = 0.5f;
+
+        /// <summary>A model's height on the board in metres (docs/ART_STYLE.md).</summary>
+        public const float ModelHeight = 1.2f;
 
         static readonly Color ClothColor = new Color(0.16f, 0.16f, 0.2f);
         static readonly Color SkinColor = new Color(0.96f, 0.8f, 0.66f);
         static readonly Color SteelColor = new Color(0.75f, 0.77f, 0.8f);
+        static readonly Color ModelHitTint = new Color(1f, 0.55f, 0.5f);
+        static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
         public int Index { get; private set; }
 
@@ -27,6 +35,15 @@ namespace NinjaRealm.Presentation.Battle
         public string DisplayName { get; private set; }
 
         public bool IsDead { get; private set; }
+
+        /// <summary>True when the ninja shows its model instead of the placeholder body.</summary>
+        public bool HasModel => model != null;
+
+        /// <summary>The model's animator, if it has one.</summary>
+        public Animator Animator => animator;
+
+        /// <summary>Speeds up model animations along with the fight's playback speed.</summary>
+        public float AnimationSpeed { get; set; } = 1f;
 
         /// <summary>Where the bars sit, for labels and floating numbers.</summary>
         public Vector3 BarsPosition => bars.position;
@@ -38,6 +55,12 @@ namespace NinjaRealm.Presentation.Battle
         Transform shieldFill;
         Transform manaFill;
         Material clothMaterial;
+        Transform model;
+        Animator animator;
+        Renderer[] modelRenderers;
+        MaterialPropertyBlock tintBlock;
+        readonly System.Collections.Generic.HashSet<int> animatorParameters = new System.Collections.Generic.HashSet<int>();
+        bool animatorParametersRead;
 
         Vector3 moveFrom;
         Vector3 moveTo;
@@ -50,7 +73,9 @@ namespace NinjaRealm.Presentation.Battle
         float castTime = CastSeconds;
         float deathTime;
 
-        public static UnitView Create(Transform parent, int index, int team, string displayName, Color accent, Vector3 position)
+        /// <summary>Creates a unit. With a model prefab it shows that model; without one, the placeholder body.</summary>
+        public static UnitView Create(Transform parent, int index, int team, string displayName, Color accent, Vector3 position,
+            GameObject modelPrefab = null)
         {
             var root = new GameObject($"{index} {displayName}");
             root.transform.SetParent(parent, false);
@@ -62,21 +87,81 @@ namespace NinjaRealm.Presentation.Battle
             view.Team = team;
             view.DisplayName = displayName;
             view.moveFrom = view.moveTo = position;
-            view.BuildBody(accent);
+            view.BuildRing();
+            if (modelPrefab != null) view.BuildModel(modelPrefab);
+            else view.BuildBody(accent);
             view.BuildBars();
             return view;
         }
 
-        void BuildBody(Color accent)
+        void BuildRing()
         {
             visual = new GameObject("Visual").transform;
             visual.SetParent(transform, false);
 
-            clothMaterial = PrototypeVisuals.NewLit(ClothColor);
-            var accentMaterial = PrototypeVisuals.Lit(accent);
-
             ring = PrototypeVisuals.Part(PrimitiveType.Cylinder, transform, new Vector3(0f, 0.01f, 0f), new Vector3(0.95f, 0.01f, 0.95f),
                 PrototypeVisuals.Lit(PrototypeVisuals.TeamColor(Team)), "Team Ring").transform;
+        }
+
+        /// <summary>
+        /// Puts a copy of the model under the visual, scaled to <see cref="ModelHeight"/>, standing
+        /// on the ground and centred on the unit. Meshy models face +Z, which is the unit's forward.
+        /// </summary>
+        void BuildModel(GameObject prefab)
+        {
+            model = Instantiate(prefab, visual, false).transform;
+            model.name = "Model";
+            model.localPosition = Vector3.zero;
+            model.localRotation = Quaternion.identity;
+
+            modelRenderers = model.GetComponentsInChildren<Renderer>();
+            foreach (var renderer in modelRenderers)
+            {
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+                if (renderer is SkinnedMeshRenderer skinned) skinned.updateWhenOffscreen = true;
+            }
+
+            if (modelRenderers.Length > 0)
+            {
+                var bounds = LocalBounds();
+                if (bounds.size.y > 0.0001f) model.localScale *= ModelHeight / bounds.size.y;
+                bounds = LocalBounds();
+                model.localPosition -= new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
+            }
+
+            animator = model.GetComponentInChildren<Animator>();
+            if (animator != null)
+            {
+                animator.applyRootMotion = false;
+                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            }
+        }
+
+        /// <summary>The model's renderer bounds in the visual's space.</summary>
+        Bounds LocalBounds()
+        {
+            var first = true;
+            var bounds = new Bounds();
+            foreach (var renderer in modelRenderers)
+            {
+                var world = renderer.bounds;
+                for (var i = 0; i < 8; i++)
+                {
+                    var corner = world.center + Vector3.Scale(world.extents, new Vector3(i & 1, (i >> 1) & 1, (i >> 2) & 1) * 2f - Vector3.one);
+                    var local = visual.InverseTransformPoint(corner);
+                    if (first) bounds = new Bounds(local, Vector3.zero);
+                    else bounds.Encapsulate(local);
+                    first = false;
+                }
+            }
+
+            return bounds;
+        }
+
+        void BuildBody(Color accent)
+        {
+            clothMaterial = PrototypeVisuals.NewLit(ClothColor);
+            var accentMaterial = PrototypeVisuals.Lit(accent);
 
             // Chibi proportions: a short body and a big head.
             PrototypeVisuals.Part(PrimitiveType.Capsule, visual, new Vector3(0f, 0.42f, 0f), new Vector3(0.5f, 0.38f, 0.42f), clothMaterial, "Body");
@@ -156,18 +241,75 @@ namespace NinjaRealm.Presentation.Battle
             attackDirection.y = 0f;
             attackDirection = attackDirection.sqrMagnitude > 0.0001f ? attackDirection.normalized : transform.forward;
             attackTime = 0f;
+            Trigger(NinjaAnimation.AttackHash);
         }
 
-        public void Hit() => flashTime = 0f;
+        public void Hit()
+        {
+            flashTime = 0f;
 
-        public void Cast() => castTime = 0f;
+            // Only flinch from Idle or Run, so a hit doesn't cut an attack or cast short.
+            if (HasParameter(NinjaAnimation.HitHash) && !animator.IsInTransition(0))
+            {
+                var state = animator.GetCurrentAnimatorStateInfo(0);
+                if (state.IsName(NinjaAnimation.IdleState) || state.IsName(NinjaAnimation.RunState)) Trigger(NinjaAnimation.HitHash);
+            }
+        }
+
+        public void Cast()
+        {
+            castTime = 0f;
+            Trigger(NinjaAnimation.CastHash);
+        }
 
         public void Die()
         {
+            if (IsDead) return;
             IsDead = true;
             deathTime = 0f;
+            Trigger(NinjaAnimation.DieHash);
             bars.gameObject.SetActive(false);
             ring.gameObject.SetActive(false);
+        }
+
+        /// <summary>Animated models only: sets a trigger the controller has. Others ignore it. The dead only die.</summary>
+        void Trigger(int parameter)
+        {
+            if (!HasParameter(parameter)) return;
+            if (IsDead && parameter != NinjaAnimation.DieHash) return;
+            animator.SetTrigger(parameter);
+        }
+
+        /// <summary>
+        /// True when the model's controller has this parameter. The animator only lists its
+        /// parameters once it is initialized, so they are read on first use.
+        /// </summary>
+        bool HasParameter(int parameter)
+        {
+            if (animator == null || animator.runtimeAnimatorController == null || !animator.isInitialized) return false;
+            if (!animatorParametersRead)
+            {
+                foreach (var entry in animator.parameters) animatorParameters.Add(entry.nameHash);
+                animatorParametersRead = true;
+            }
+
+            return animatorParameters.Contains(parameter);
+        }
+
+        /// <summary>The hit flash: the placeholder turns white, a model takes a red tint.</summary>
+        void SetHitFlash(bool on)
+        {
+            if (clothMaterial != null) PrototypeVisuals.SetColor(clothMaterial, on ? Color.white : ClothColor);
+            if (modelRenderers == null) return;
+
+            tintBlock ??= new MaterialPropertyBlock();
+            foreach (var renderer in modelRenderers)
+            {
+                if (renderer == null) continue;
+                renderer.GetPropertyBlock(tintBlock);
+                tintBlock.SetColor(BaseColorId, on ? ModelHitTint : Color.white);
+                renderer.SetPropertyBlock(tintBlock);
+            }
         }
 
         void Face(Vector3 position)
@@ -180,6 +322,12 @@ namespace NinjaRealm.Presentation.Battle
         /// <summary>Advances the animations. Called by BattlePlayback, so it also works outside play mode.</summary>
         public void Tick(float deltaTime, Camera viewCamera)
         {
+            if (model != null)
+            {
+                TickModel(deltaTime, viewCamera);
+                return;
+            }
+
             moveTime = Mathf.Min(moveDuration, moveTime + deltaTime);
             var t = moveTime / moveDuration;
             var position = Vector3.Lerp(moveFrom, moveTo, t);
@@ -205,7 +353,7 @@ namespace NinjaRealm.Presentation.Battle
             if (flashTime < HitFlashSeconds)
             {
                 flashTime += deltaTime;
-                PrototypeVisuals.SetColor(clothMaterial, flashTime < HitFlashSeconds ? Color.white : ClothColor);
+                SetHitFlash(flashTime < HitFlashSeconds);
             }
 
             var deathScale = 1f;
@@ -220,6 +368,53 @@ namespace NinjaRealm.Presentation.Battle
 
             visual.position = transform.position + lunge + Vector3.up * hop;
             visual.localScale = Vector3.one * (castScale * deathScale);
+
+            if (viewCamera != null) bars.rotation = viewCamera.transform.rotation;
+        }
+
+        /// <summary>
+        /// A model moves with the animator's Run state and a small lunge on attacks. Its clips do
+        /// the rest. After death it lies down, then sinks into the board.
+        /// </summary>
+        void TickModel(float deltaTime, Camera viewCamera)
+        {
+            moveTime = Mathf.Min(moveDuration, moveTime + deltaTime);
+            transform.position = Vector3.Lerp(moveFrom, moveTo, moveTime / moveDuration);
+
+            var lunge = Vector3.zero;
+            if (attackTime < AttackSeconds)
+            {
+                attackTime += deltaTime;
+                lunge = attackDirection * (Mathf.Sin(Mathf.Clamp01(attackTime / AttackSeconds) * Mathf.PI) * 0.15f);
+            }
+
+            if (flashTime < HitFlashSeconds)
+            {
+                flashTime += deltaTime;
+                SetHitFlash(flashTime < HitFlashSeconds);
+            }
+
+            var sink = 0f;
+            if (IsDead)
+            {
+                deathTime += deltaTime;
+                var lying = HasParameter(NinjaAnimation.DieHash) ? ModelDeathSeconds : DeathSeconds;
+                var sunk = Mathf.Clamp01((deathTime - lying) / ModelSinkSeconds);
+                sink = sunk * ModelHeight;
+                if (sunk >= 1f && visual.gameObject.activeSelf) visual.gameObject.SetActive(false);
+            }
+
+            visual.position = transform.position + lunge + Vector3.down * sink;
+
+            if (animator != null && animator.runtimeAnimatorController != null && visual.gameObject.activeSelf)
+            {
+                if (HasParameter(NinjaAnimation.MovingHash))
+                    animator.SetBool(NinjaAnimation.MovingHash, !IsDead && moveTime < moveDuration);
+
+                // Play mode updates the animator by itself; captures outside play mode step it here.
+                animator.speed = AnimationSpeed;
+                if (!Application.isPlaying) animator.Update(deltaTime);
+            }
 
             if (viewCamera != null) bars.rotation = viewCamera.transform.rotation;
         }
