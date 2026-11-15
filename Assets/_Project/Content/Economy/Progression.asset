@@ -1,0 +1,100 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa4027e21ef94775b1f6d6594b09e91c, type: 3}
+  m_Name: Progression
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Progression.ProgressionDefinition
+  id: progression.default
+  displayName: Progression
+  gold: {fileID: 11400000, guid: 78def9f59f9534804ae1254ec50a037b, type: 2}
+  karma: {fileID: 11400000, guid: 7c172890be6944685bff662dc547cee2, type: 2}
+  steel: {fileID: 11400000, guid: 427ce70c419774a1f94fc91164b0bdfb, type: 2}
+  startingResources:
+  - resource: {fileID: 11400000, guid: 78def9f59f9534804ae1254ec50a037b, type: 2}
+    amount: 500
+  - resource: {fileID: 11400000, guid: 7c172890be6944685bff662dc547cee2, type: 2}
+    amount: 100
+  - resource: {fileID: 11400000, guid: 427ce70c419774a1f94fc91164b0bdfb, type: 2}
+    amount: 0
+  startingNinjas:
+  - {fileID: 11400000, guid: 772a516b0b8d74a88a95196f41487d77, type: 2}
+  - {fileID: 11400000, guid: e977f33e862674aab8db5468cc09892b, type: 2}
+  - {fileID: 11400000, guid: e2f82cf69c9d742b39860c8e1e88f977, type: 2}
+  startingWeapons:
+  - {fileID: 11400000, guid: 0932c9c722112441085e0f804bbb046e, type: 2}
+  - {fileID: 11400000, guid: 27a65804521d345bc85bed062bca1b74, type: 2}
+  rosterLimit: 20
+  levelCosts: 140000001600000017000000190000001b0000001d000000200000002200000025000000280000002b0000002f00000032000000360000003b0000003f000000450000004a00000050000000560000005d000000650000006d000000750000007f0000008900000094000000a0000000ad000000ba000000c9000000d9000000eb000000fe00000012010000280100003f010000590100007501000092010000b2010000d5010000fb010000230200004f0200007e020000b1020000e90200002403000065030000aa030000f5030000460400009e040000fc04000062050000d105000048060000c8060000
+  statGrowthPerLevel: 400
+  levelsPerBelt: 5
+  beltNames:
+  - White
+  - Yellow
+  - Orange
+  - Green
+  - Blue
+  - Brown
+  - Black, 1st dan
+  - Black, 2nd dan
+  - Black, 3rd dan
+  - Black, 4th dan
+  - Black, 5th dan
+  - Black, 6th dan
+  stars:
+  - shards: 0
+    statBasisPoints: 10000
+  - shards: 3
+    statBasisPoints: 16000
+  - shards: 6
+    statBasisPoints: 25600
+  dojoOfferCount: 4
+  rarities:
+  - rarity: 0
+    weight: 60
+    price: 200
+    directBuy: 1
+  - rarity: 1
+    weight: 30
+    price: 500
+    directBuy: 1
+  - rarity: 2
+    weight: 9
+    price: 1200
+    directBuy: 0
+  - rarity: 3
+    weight: 1
+    price: 3000
+    directBuy: 0
+  dojoRefreshCost: 50
+  directBuyPrice: 15000
+  forgeCost: 20
+  winGold: 60
+  winGoldPerDifficulty: 30
+  winSteelPerDifficulty: 5
+  winClanXp: 20
+  winClanXpPerDifficulty: 10
+  lossGold: 2500
+  lossClanXp: 5000
+  firstWinGoldPerDifficulty: 200
+  dropChance: 3000
+  dropChancePerDifficulty: 1000
+  clanXpPerLevel: 100
+  clanLevelKarma: 50
+  clanLevelKarmaPerLevel: 10
+  teamSizes:
+  - clanLevel: 1
+    teamSize: 3
+  - clanLevel: 3
+    teamSize: 4
+  - clanLevel: 6
+    teamSize: 5
+  - clanLevel: 10
+    teamSize: 6
