@@ -68,4 +68,8 @@ How to use it:
 6. **Check it:** **Ninja Realm > Art > Open Meshy Showcase** lines up every Meshy model at game scale (ninjas 1.2 m, props 3 m, buildings 4.5 m) in the board lighting. Check the triangle count and pose there.
 7. **Put ninjas in fights:** **Ninja Realm > Art > Set Up Ninja Models** builds `Animations/NinjaAnimator.controller` from the clips, saves a `<Name>.prefab` next to each ninja's model with that controller, and sets it as the ninja's model. Fights then show the model instead of the placeholder. Run it again after adding a ninja or a clip.
 
+8. **Dress the battle board:** save props to `Props/<Name>/` and buildings to `Buildings/<Name>/` as in step 5, and the tile and ground textures to `Assets/_Project/Art/Arena/StoneTile.png` and `Grass.png` (the grass must tile seamlessly). **Ninja Realm > Art > Set Up Battle Arena** then builds `Art/Arena/BattleArena.prefab` from the layout in `BattleArenaSetup` (each model fitted to its size and stood on the ground), links the prefab and textures to the board in `Battle.unity`, and sets the battle camera. Models that are missing are left out, so run it again after adding one. To move things around, change the layout in `BattleArenaSetup` and run it again, since the prefab is rebuilt each time.
+
+Arena models so far: Fence, Brazier, Banner, StoneLantern, PineTree, Rocks and CherryTree (props), and ToriiGate, VillageHouse, Watchtower and Forge (buildings). Each was made as a Meshy text-to-image concept with the style text, then image-to-3D with smart topology (`meshy-t2`, 3,000 to 8,000 polygons) and the `meshy-n1` texture.
+
 Art files (`.png`, `.fbx`, `.glb` and others) are stored with Git LFS, so Git LFS must be installed on any machine that clones the repo.
