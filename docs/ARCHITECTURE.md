@@ -146,9 +146,21 @@ Both menu items rebuild the database. To change a number, change it in `Prototyp
 
 `NinjaRealm.Core.Fights.BalanceRunner` plays many fights headless. `Run(a, b)` plays a matchup with 20 seeds from both sides of the board, `RoundRobin(teams, title)` returns a Markdown win-rate table, and `NinjaReport()` lists damage, healing and survival per ninja. `PrototypeContent.BalanceArchetypes` gives five builds to compare. The latest results and tuning notes are in `docs/BALANCE.md`.
 
+## Village scene
+
+`Assets/Scenes/Village.unity` is the hub the game starts in. Create or recreate it with **Ninja Realm > Scenes > Create Village Scene**, which also puts it first in the build settings with the battle scene after it.
+
+* `VillageController` loads the save (`GameProfile`), moves the camera (drag to pan, scroll to zoom) and opens a building when it is clicked. Esc closes it.
+* `VillageBuilding` marks a clickable building and says what it is (`VillageBuildingKind`): the **Command Hall** goes to the battle scene, the **Dojo** recruits, the **Shrine** levels up ninjas and the **Blacksmith** forges. The **Mint** and **Steel Mine** stand in the village but are not open yet. A building without a Meshy model gets a placeholder house built in code in play mode, and a box collider round whatever it shows.
+* `VillageScreen` draws the wallet, a name over each building, and the open building's panel. The Dojo, Shrine and Blacksmith panels are `RosterPanels`, the same panels as the battle scene's roster screen (Tab).
+* `GameScenes` names the scenes and loads them. The battle scene's lineup screen has a **Village** button back; the save stays loaded between scenes.
+* The layout (buildings, houses, trees, lanterns) is in `VillageSceneBuilder.Layout`. Models come from `Art/Meshy/Buildings` and `Art/Meshy/Props` (see `docs/ART_STYLE.md`), placed with `MeshyPlacement` like the battle arena. Run the menu item again after adding a model.
+
+From the command line, `-executeMethod NinjaRealm.Editor.VillageSceneBuilder.CaptureVillage -captureOut <png>` saves a screenshot of the village.
+
 ## Battle scene
 
-`Assets/Scenes/Battle.unity` is the combat prototype. Create or recreate it with **Ninja Realm > Scenes > Create Battle Scene**, then press Play. It loops through three phases:
+`Assets/Scenes/Battle.unity` is the combat prototype, reached from the village's Command Hall. Create or recreate it with **Ninja Realm > Scenes > Create Battle Scene**, then press Play (in the village, or in this scene directly). It loops through three phases:
 
 1. **Setup** (`LineupScreen`): pick an opponent (sorted by difficulty, with its level and what a win pays), drag ninjas you own from the bench onto your half of the board, drag them to move or swap, drag weapons you own from the armory onto a ninja, and see both teams' synergies. The lineup holds as many ninjas as your clan level allows. Delete removes the selected ninja. Enter or **Fight!** starts the fight. The lineup and opponent are kept in the save.
 2. **Roster** (`RosterScreen`, Tab from setup): level up ninjas with Karma, recruit from the Dojo's four daily offers or buy Common and Rare ninjas directly with Gold, and forge combined weapons from two components and Steel.

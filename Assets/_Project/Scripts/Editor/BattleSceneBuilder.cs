@@ -80,9 +80,9 @@ namespace NinjaRealm.Editor
             ContentDatabaseMenu.EnsureFolder(Path.GetDirectoryName(ScenePath)?.Replace('\\', '/'));
             EditorSceneManager.SaveScene(scene, ScenePath);
 
-            // The battle scene is the first scene in builds until the village exists.
+            // The game starts in the village when there is one, so the battle goes right after it.
             var scenes = EditorBuildSettings.scenes.Where(s => s.path != ScenePath).ToList();
-            scenes.Insert(0, new EditorBuildSettingsScene(ScenePath, true));
+            scenes.Insert(scenes.FindIndex(s => s.path == VillageSceneBuilder.ScenePath) + 1, new EditorBuildSettingsScene(ScenePath, true));
             EditorBuildSettings.scenes = scenes.ToArray();
 
             Debug.Log($"[Battle] Created {ScenePath} using {AssetDatabase.GetAssetPath(database)}. Press Play to set up a lineup and fight.");

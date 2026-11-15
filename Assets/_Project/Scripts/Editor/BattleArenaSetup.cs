@@ -22,15 +22,6 @@ namespace NinjaRealm.Editor
         public const string TileTexturePath = ArtRoot + "/StoneTile.png";
         public const string GroundTexturePath = ArtRoot + "/Grass.png";
 
-        enum Fit
-        {
-            /// <summary>Scale so the model is this tall.</summary>
-            Height,
-
-            /// <summary>Scale so the model's long side is this long, turned to run along x. For fences.</summary>
-            Length,
-        }
-
         readonly struct Piece
         {
             public readonly string Model;
@@ -38,9 +29,9 @@ namespace NinjaRealm.Editor
             public readonly float Z;
             public readonly float Yaw;
             public readonly float Size;
-            public readonly Fit Fit;
+            public readonly MeshyPlacement.Fit Fit;
 
-            public Piece(string model, float x, float z, float size, float yaw = 0f, Fit fit = Fit.Height)
+            public Piece(string model, float x, float z, float size, float yaw = 0f, MeshyPlacement.Fit fit = MeshyPlacement.Fit.Height)
             {
                 Model = model;
                 X = x;
@@ -61,9 +52,9 @@ namespace NinjaRealm.Editor
             // Fences down both sides and along the back, with a gap for the gate.
             foreach (var side in new[] { -1f, 1f })
             {
-                for (var z = -2.8f; z <= 3.7f; z += 1.6f) yield return new Piece("Fence", side * 5.7f, z, 1.6f, 90f, Fit.Length);
-                yield return new Piece("Fence", side * 4f, 5.6f, 1.6f, 0f, Fit.Length);
-                yield return new Piece("Fence", side * 2.4f, 5.6f, 1.6f, 0f, Fit.Length);
+                for (var z = -2.8f; z <= 3.7f; z += 1.6f) yield return new Piece("Fence", side * 5.7f, z, 1.6f, 90f, MeshyPlacement.Fit.Length);
+                yield return new Piece("Fence", side * 4f, 5.6f, 1.6f, 0f, MeshyPlacement.Fit.Length);
+                yield return new Piece("Fence", side * 2.4f, 5.6f, 1.6f, 0f, MeshyPlacement.Fit.Length);
             }
 
             // Braziers at the corners, banners by the gate and halfway down the sides, lanterns between.
@@ -149,12 +140,6 @@ namespace NinjaRealm.Editor
             }
         }
 
-        /// <summary>Path of a Meshy model by name: Props/Name/Name.fbx or Buildings/Name/Name.fbx.</summary>
-        static string ModelPath(string name) =>
-            new[] { "Props", "Buildings" }
-                .Select(folder => $"{MeshyArtImporter.Root}/{folder}/{name}/{name}.fbx")
-                .FirstOrDefault(path => AssetDatabase.LoadAssetAtPath<GameObject>(path) != null);
-
         static GameObject BuildArena(out int placed, out List<string> missing)
         {
             placed = 0;
@@ -165,7 +150,7 @@ namespace NinjaRealm.Editor
                 var counts = new Dictionary<string, int>();
                 foreach (var piece in Layout())
                 {
-                    var path = ModelPath(piece.Model);
+                    var path = MeshyPlacement.ModelPath(piece.Model);
                     if (path == null)
                     {
                         if (!missing.Contains(piece.Model)) missing.Add(piece.Model);
@@ -173,7 +158,7 @@ namespace NinjaRealm.Editor
                     }
 
                     counts[piece.Model] = counts.TryGetValue(piece.Model, out var count) ? count + 1 : 1;
-                    Place(root.transform, AssetDatabase.LoadAssetAtPath<GameObject>(path), piece, $"{piece.Model} {counts[piece.Model]}");
+                    MeshyPlacement.Place(root.transform, AssetDatabase.LoadAssetAtPath<GameObject>(path), $"{piece.Model} {counts[piece.Model]}", piece.X, piece.Z, piece.Size, piece.Yaw, piece.Fit);
                     placed++;
                 }
 
@@ -184,51 +169,6 @@ namespace NinjaRealm.Editor
             {
                 Object.DestroyImmediate(root);
             }
-        }
-
-        /// <summary>Fits a model to its size, stands it on the ground centred on its spot, and turns it.</summary>
-        static void Place(Transform root, GameObject model, Piece piece, string name)
-        {
-            var holder = new GameObject(name).transform;
-            holder.SetParent(root, false);
-
-            var instance = (GameObject)PrefabUtility.InstantiatePrefab(model, holder);
-            instance.transform.localPosition = Vector3.zero;
-            instance.transform.localRotation = Quaternion.identity;
-            instance.transform.localScale = Vector3.one;
-
-            var bounds = BoundsOf(instance);
-            float size;
-            if (piece.Fit == Fit.Length)
-            {
-                if (bounds.size.z > bounds.size.x)
-                {
-                    instance.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
-                    bounds = BoundsOf(instance);
-                }
-
-                size = bounds.size.x;
-            }
-            else
-            {
-                size = bounds.size.y;
-            }
-
-            if (size > 0.0001f) instance.transform.localScale = Vector3.one * (piece.Size / size);
-            bounds = BoundsOf(instance);
-            instance.transform.localPosition -= new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
-
-            holder.localPosition = new Vector3(piece.X, 0f, piece.Z);
-            holder.localRotation = Quaternion.Euler(0f, piece.Yaw, 0f);
-        }
-
-        static Bounds BoundsOf(GameObject instance)
-        {
-            var renderers = instance.GetComponentsInChildren<Renderer>();
-            if (renderers.Length == 0) return new Bounds(instance.transform.position, Vector3.zero);
-            var bounds = renderers[0].bounds;
-            foreach (var renderer in renderers.Skip(1)) bounds.Encapsulate(renderer.bounds);
-            return bounds;
         }
     }
 }
