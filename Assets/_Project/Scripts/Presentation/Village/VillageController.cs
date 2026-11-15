@@ -20,11 +20,11 @@ namespace NinjaRealm.Presentation.Village
         [SerializeField] Camera viewCamera;
 
         [Header("Camera")]
-        [SerializeField] Vector3 focus = new Vector3(0f, 0f, 2f);
+        [SerializeField] Vector3 focus = new Vector3(0f, 0f, 3f);
         [SerializeField, Range(20f, 80f)] float pitch = 48f;
         [SerializeField] float yaw;
-        [SerializeField, Min(4f)] float distance = 26f;
-        [SerializeField] Vector2 distanceRange = new Vector2(14f, 34f);
+        [SerializeField, Min(4f)] float distance = 34f;
+        [SerializeField] Vector2 distanceRange = new Vector2(16f, 44f);
         [SerializeField, Tooltip("How far the focus may move from its start, in metres (x and z).")]
         Vector2 panLimit = new Vector2(12f, 9f);
 

@@ -55,7 +55,10 @@ namespace NinjaRealm.Presentation.Village
                 if (building == null) continue;
                 var screen = cam.WorldToScreenPoint(building.LabelPosition);
                 if (screen.z <= 0f) continue;
-                var point = new Vector2(screen.x / scale, (Screen.height - screen.y) / scale);
+                // Keep the name on screen and below the top bar when the roof is out of view.
+                var point = new Vector2(
+                    Mathf.Clamp(screen.x / scale, 90f, PrototypeGui.Width - 90f),
+                    Mathf.Clamp((Screen.height - screen.y) / scale, 106f, PrototypeGui.Height - 40f));
                 var hovered = building == controller.Hovered;
                 var rect = new Rect(point.x - 80f, point.y - 26f, 160f, 24f);
                 PrototypeGui.Fill(rect, hovered ? new Color(0.32f, 0.27f, 0.12f, 0.95f) : PrototypeGui.PanelColor, true);
