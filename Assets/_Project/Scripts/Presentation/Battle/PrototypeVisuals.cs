@@ -10,7 +10,7 @@ namespace NinjaRealm.Presentation.Battle
     /// </summary>
     public static class PrototypeVisuals
     {
-        static readonly Dictionary<Color, Material> LitCache = new Dictionary<Color, Material>();
+        static readonly Dictionary<(Color, Texture), Material> LitCache = new Dictionary<(Color, Texture), Material>();
         static readonly Dictionary<Color, Material> UnlitCache = new Dictionary<Color, Material>();
         static Mesh hexTile;
 
@@ -19,17 +19,20 @@ namespace NinjaRealm.Presentation.Battle
 
         public static Color TeamColor(int team) => team == 0 ? TeamColor0 : TeamColor1;
 
-        /// <summary>A shared lit material in the given colour, based on the pipeline's default material.</summary>
-        public static Material Lit(Color color)
+        /// <summary>
+        /// A shared lit material in the given colour, based on the pipeline's default material.
+        /// With a texture, the colour tints it.
+        /// </summary>
+        public static Material Lit(Color color, Texture texture = null)
         {
-            if (LitCache.TryGetValue(color, out var material) && material != null) return material;
-            material = NewLit(color);
-            LitCache[color] = material;
+            if (LitCache.TryGetValue((color, texture), out var material) && material != null) return material;
+            material = NewLit(color, texture);
+            LitCache[(color, texture)] = material;
             return material;
         }
 
-        /// <summary>A new lit material the caller owns, for colours that change (hit flashes).</summary>
-        public static Material NewLit(Color color)
+        /// <summary>A new lit material the caller owns, for colours that change (hit flashes) or its own tiling.</summary>
+        public static Material NewLit(Color color, Texture texture = null)
         {
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             Material material;
@@ -46,6 +49,12 @@ namespace NinjaRealm.Presentation.Battle
             material.name = "Prototype Lit";
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0.15f);
             SetColor(material, color);
+            if (texture != null)
+            {
+                if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", texture);
+                material.mainTexture = texture;
+            }
+
             return material;
         }
 
@@ -85,7 +94,10 @@ namespace NinjaRealm.Presentation.Battle
             return part;
         }
 
-        /// <summary>A low poly hex tile: flat top at y = 0, sides going down to -height.</summary>
+        /// <summary>
+        /// A low poly hex tile: flat top at y = 0, sides going down to -height. The top maps the
+        /// whole texture across the hex; the sides map a strip of it.
+        /// </summary>
         public static Mesh HexTile()
         {
             if (hexTile != null) return hexTile;
@@ -94,9 +106,12 @@ namespace NinjaRealm.Presentation.Battle
             const float height = 0.22f;
             var vertices = new List<Vector3>();
             var normals = new List<Vector3>();
+            var uvs = new List<Vector2>();
             var triangles = new List<int>();
 
-            void Triangle(Vector3 a, Vector3 b, Vector3 c, Vector3 outward)
+            Vector2 TopUv(Vector3 point) => new Vector2(point.x / (2f * radius) + 0.5f, point.z / (2f * radius) + 0.5f);
+
+            void Triangle(Vector3 a, Vector3 b, Vector3 c, Vector3 outward, System.Func<Vector3, Vector2> uv)
             {
                 // Unity treats clockwise triangles as front faces; flip if needed so the face points outward.
                 if (Vector3.Dot(Vector3.Cross(b - a, c - a), outward) < 0f)
@@ -110,6 +125,9 @@ namespace NinjaRealm.Presentation.Battle
                 vertices.Add(a);
                 vertices.Add(b);
                 vertices.Add(c);
+                uvs.Add(uv(a));
+                uvs.Add(uv(b));
+                uvs.Add(uv(c));
                 normals.Add(outward);
                 normals.Add(outward);
                 normals.Add(outward);
@@ -123,16 +141,24 @@ namespace NinjaRealm.Presentation.Battle
             {
                 var a = HexLayout.Corner(i, radius);
                 var b = HexLayout.Corner((i + 1) % 6, radius);
-                Triangle(Vector3.zero, a, b, Vector3.up);
+                Triangle(Vector3.zero, a, b, Vector3.up, TopUv);
 
+                // Each side shows a thin strip along the top's edge, so the stone wraps over it.
                 var outward = ((a + b) * 0.5f).normalized;
-                Triangle(a, b, b + down, outward);
-                Triangle(a, b + down, a + down, outward);
+                Vector2 SideUv(Vector3 point)
+                {
+                    var along = Vector3.Dot(point - a, (b - a).normalized) / radius;
+                    return new Vector2(along, 0.85f + point.y / height * 0.15f);
+                }
+
+                Triangle(a, b, b + down, outward, SideUv);
+                Triangle(a, b + down, a + down, outward, SideUv);
             }
 
             hexTile = new Mesh { name = "Hex Tile" };
             hexTile.SetVertices(vertices);
             hexTile.SetNormals(normals);
+            hexTile.SetUVs(0, uvs);
             hexTile.SetTriangles(triangles, 0);
             hexTile.RecalculateBounds();
             return hexTile;

@@ -14,12 +14,12 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
-  m_Fog: 0
-  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  m_FogMode: 3
+  m_Fog: 1
+  m_FogColor: {r: 0.55, g: 0.68, b: 0.84, a: 1}
+  m_FogMode: 1
   m_FogDensity: 0.01
-  m_LinearFogStart: 0
-  m_LinearFogEnd: 300
+  m_LinearFogStart: 30
+  m_LinearFogEnd: 70
   m_AmbientSkyColor: {r: 0.62, g: 0.68, b: 0.8, a: 1}
   m_AmbientEquatorColor: {r: 0.56, g: 0.52, b: 0.46, a: 1}
   m_AmbientGroundColor: {r: 0.3, g: 0.28, b: 0.25, a: 1}
@@ -152,6 +152,13 @@ MonoBehaviour:
   tileColorAlt: {r: 0.56, g: 0.54, b: 0.5, a: 1}
   groundColor: {r: 0.36, g: 0.5, b: 0.28, a: 1}
   teamTint: 0.12
+  tileTexture: {fileID: 2800000, guid: 1a3949fce29bf409a985644d06052f46, type: 3}
+  groundTexture: {fileID: 2800000, guid: 7c65c17b28b4f40bbad775c234c37b8c, type: 3}
+  groundTextureMetres: 6
+  groundRadius: 45
+  arena: {fileID: 1575201066127655497, guid: baa56672e24fb4fd8a32727940be4b73, type: 3}
+  validColor: {r: 0.45, g: 0.85, b: 0.45, a: 1}
+  invalidColor: {r: 0.9, g: 0.35, b: 0.3, a: 1}
 --- !u!4 &770754870
 Transform:
   m_ObjectHideFlags: 0
@@ -476,8 +483,8 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 100
-  field of view: 36
+  far clip plane: 120
+  field of view: 42
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -503,8 +510,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1752594838}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.4018354, y: 0, z: 0, w: 0.9157119}
-  m_LocalPosition: {x: 0, y: 12.5, z: -12}
+  m_LocalRotation: {x: 0.29731062, y: 0, z: 0, w: 0.9547808}
+  m_LocalPosition: {x: 0, y: 10, z: -13.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

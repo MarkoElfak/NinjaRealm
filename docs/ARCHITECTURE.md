@@ -142,7 +142,7 @@ Both menu items rebuild the database. To change a number, change it in `Prototyp
 
 * `BattleController` owns the phases. It builds each fight from the two lineups with `CombatSetupBuilder.AddLineup`. A seed of 0 picks a new seed for each fight; any other seed replays the same fight.
 * `BattlePlayback` steps the simulation at 20 ticks per second times the speed, and turns new events into animations. It never changes the fight.
-* `HexBoardView` is built in code (`PrototypeVisuals`): low poly hex tiles. `HexBoardView.TryGetHex` turns a screen point into a hex for drag and drop.
+* `HexBoardView` is built in code (`PrototypeVisuals`): low poly hex tiles with a stone texture, grass ground, and the arena prefab (fences, braziers, banners and the village behind the board) placed around it. The art is linked by **Ninja Realm > Art > Set Up Battle Arena**; without it the board falls back to plain colours. `HexBoardView.TryGetHex` turns a screen point into a hex for drag and drop.
 * `UnitView` shows a ninja's `ModelPrefab` (see `docs/ART_STYLE.md`), scaled to 1.2 m, with a team ring and health, shield and mana bars. Combat events become animator triggers (`NinjaAnimation`: `Attack`, `Cast`, `Hit`, `Die`, and the `Moving` bool). A ninja without a model gets a placeholder chibi body built in code, in dark cloth with the element colour.
 * The screens are temporary IMGUI, drawn with `PrototypeGui` and scaled to a 900 pixel tall reference screen. They will be replaced by real UI.
 * `HexLayout` maps board hexes to world positions: pointy-top hexes, 0.75 m radius, board centred on the origin, team 0 nearest the camera.

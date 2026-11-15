@@ -3,13 +3,28 @@ using UnityEngine;
 
 namespace NinjaRealm.Presentation.Battle
 {
-    /// <summary>Builds the hex board: stone tiles, a slightly different tint for each team's half, and the ground.</summary>
+    /// <summary>
+    /// Builds the hex board: stone tiles, a slightly different tint for each team's half, the
+    /// ground, and the arena around it. The art (textures and the arena prefab) is linked by
+    /// Ninja Realm > Art > Set Up Battle Arena; without it the board uses plain colours.
+    /// </summary>
     public sealed class HexBoardView : MonoBehaviour
     {
         [SerializeField] Color tileColor = new Color(0.62f, 0.6f, 0.56f);
         [SerializeField] Color tileColorAlt = new Color(0.56f, 0.54f, 0.5f);
         [SerializeField] Color groundColor = new Color(0.36f, 0.5f, 0.28f);
         [SerializeField, Range(0f, 0.3f)] float teamTint = 0.12f;
+
+        [Header("Art")]
+        [SerializeField] Texture2D tileTexture;
+        [SerializeField] Texture2D groundTexture;
+        [SerializeField, Min(0.5f)] float groundTextureMetres = 6f;
+        [SerializeField, Min(1f)] float groundRadius = 45f;
+        [SerializeField] GameObject arena;
+
+        // Tints for textured tiles: the texture carries the stone colour.
+        static readonly Color TexturedTile = new Color(1f, 1f, 1f);
+        static readonly Color TexturedTileAlt = new Color(0.9f, 0.9f, 0.88f);
 
         [SerializeField] Color validColor = new Color(0.45f, 0.85f, 0.45f);
         [SerializeField] Color invalidColor = new Color(0.9f, 0.35f, 0.3f);
@@ -19,8 +34,12 @@ namespace NinjaRealm.Presentation.Battle
         readonly System.Collections.Generic.Dictionary<HexCoord, Material> tileMaterials =
             new System.Collections.Generic.Dictionary<HexCoord, Material>();
         HexCoord? highlighted;
+        Material groundMaterial;
 
         public int Columns { get; private set; } = 7;
+
+        /// <summary>The arena placed around the board, if one is linked.</summary>
+        public GameObject Arena { get; private set; }
 
         public int Rows { get; private set; } = 8;
 
@@ -71,7 +90,7 @@ namespace NinjaRealm.Presentation.Battle
 
             highlighted = hex;
             if (hex.HasValue && tiles.TryGetValue(hex.Value, out var renderer))
-                renderer.sharedMaterial = PrototypeVisuals.Lit(valid ? validColor : invalidColor);
+                renderer.sharedMaterial = PrototypeVisuals.Lit(valid ? validColor : invalidColor, tileTexture);
         }
 
         public void Build(int columns, int rows)
@@ -94,23 +113,60 @@ namespace NinjaRealm.Presentation.Battle
                     var tile = new GameObject($"Hex {column},{row}");
                     tile.transform.SetParent(transform, false);
                     tile.transform.localPosition = HexLayout.ToWorld(new HexCoord(column, row), columns, rows);
+
+                    // Turning a hex by a sixth of a circle keeps its shape, and varies the stone.
+                    tile.transform.localRotation = Quaternion.Euler(0f, 60f * ((column * 5 + row * 3) % 6), 0f);
                     tile.AddComponent<MeshFilter>().sharedMesh = mesh;
 
-                    var baseColor = (column + row) % 2 == 0 ? tileColor : tileColorAlt;
+                    var even = (column + row) % 2 == 0;
+                    var baseColor = tileTexture != null ? (even ? TexturedTile : TexturedTileAlt) : even ? tileColor : tileColorAlt;
                     var color = Color.Lerp(baseColor, PrototypeVisuals.TeamColor(team), teamTint);
                     var renderer = tile.AddComponent<MeshRenderer>();
-                    renderer.sharedMaterial = PrototypeVisuals.Lit(color);
+                    renderer.sharedMaterial = PrototypeVisuals.Lit(color, tileTexture);
                     var hex = new HexCoord(column, row);
                     tiles[hex] = renderer;
                     tileMaterials[hex] = renderer.sharedMaterial;
                 }
             }
 
+            BuildGround(columns, rows);
+
+            Arena = null;
+            if (arena != null)
+            {
+                Arena = Instantiate(arena, transform, false);
+                Arena.name = "Arena";
+            }
+        }
+
+        void BuildGround(int columns, int rows)
+        {
             var width = HexLayout.Width * (columns + 0.5f);
             var depth = HexLayout.RowSpacing * rows;
-            var groundSize = Mathf.Max(width, depth) * 2.2f;
+            var groundSize = Mathf.Max(Mathf.Max(width, depth) * 2.2f, groundRadius * 2f);
+
+            Material material;
+            if (groundTexture != null)
+            {
+                // A cylinder's cap maps the texture once across its diameter, so repeat it.
+                if (groundMaterial == null)
+                {
+                    groundMaterial = PrototypeVisuals.NewLit(Color.white, groundTexture);
+                    groundMaterial.name = "Ground";
+                }
+
+                var repeats = Vector2.one * (groundSize / groundTextureMetres);
+                groundMaterial.mainTextureScale = repeats;
+                if (groundMaterial.HasProperty("_BaseMap")) groundMaterial.SetTextureScale("_BaseMap", repeats);
+                material = groundMaterial;
+            }
+            else
+            {
+                material = PrototypeVisuals.Lit(groundColor);
+            }
+
             PrototypeVisuals.Part(PrimitiveType.Cylinder, transform, new Vector3(0f, -0.3f, 0f),
-                new Vector3(groundSize, 0.05f, groundSize), PrototypeVisuals.Lit(groundColor), "Ground");
+                new Vector3(groundSize, 0.05f, groundSize), material, "Ground");
         }
     }
 }
