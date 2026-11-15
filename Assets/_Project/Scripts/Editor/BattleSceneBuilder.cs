@@ -40,17 +40,9 @@ namespace NinjaRealm.Editor
             // Load the database after NewScene: opening a scene unloads assets loaded before it.
             var database = FindDatabase();
 
-            // Angled board camera, like an auto battler: team 0 at the bottom of the screen.
             var cameraObject = new GameObject("Main Camera") { tag = "MainCamera" };
-            var camera = cameraObject.AddComponent<Camera>();
             cameraObject.AddComponent<AudioListener>();
-            camera.fieldOfView = 36f;
-            camera.nearClipPlane = 0.3f;
-            camera.farClipPlane = 100f;
-            camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = new Color(0.55f, 0.68f, 0.84f);
-            cameraObject.transform.position = new Vector3(0f, 12.5f, -12f);
-            cameraObject.transform.LookAt(new Vector3(0f, 0f, -0.5f));
+            ApplyCamera(cameraObject.AddComponent<Camera>());
 
             // Warm late-afternoon sun with soft shadows.
             var sun = new GameObject("Sun").AddComponent<Light>();
@@ -60,10 +52,7 @@ namespace NinjaRealm.Editor
             sun.shadows = LightShadows.Soft;
             sun.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
 
-            RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.62f, 0.68f, 0.8f);
-            RenderSettings.ambientEquatorColor = new Color(0.56f, 0.52f, 0.46f);
-            RenderSettings.ambientGroundColor = new Color(0.3f, 0.28f, 0.25f);
+            ApplyAtmosphere();
 
             var bootstrap = new GameObject("Game Bootstrap").AddComponent<GameBootstrap>();
             Assign(bootstrap, "content", database);
@@ -82,6 +71,9 @@ namespace NinjaRealm.Editor
             var hud = battle.AddComponent<BattleHud>();
             Assign(hud, "controller", controller);
 
+            // The stone, grass and arena art, where it has been made.
+            BattleArenaSetup.LinkArt(board);
+
             if (database == null || bootstrap == null)
                 throw new InvalidOperationException("[Battle] The ContentDatabase could not be loaded into the new scene.");
 
@@ -94,6 +86,39 @@ namespace NinjaRealm.Editor
             EditorBuildSettings.scenes = scenes.ToArray();
 
             Debug.Log($"[Battle] Created {ScenePath} using {AssetDatabase.GetAssetPath(database)}. Press Play to set up a lineup and fight.");
+        }
+
+        static readonly Color SkyColor = new Color(0.55f, 0.68f, 0.84f);
+
+        /// <summary>
+        /// Angled board camera, like an auto battler: team 0 at the bottom of the screen, the
+        /// whole board above the lineup bench, and the village behind the board at the top.
+        /// </summary>
+        public static void ApplyCamera(Camera camera)
+        {
+            if (camera == null) return;
+            camera.fieldOfView = 42f;
+            camera.nearClipPlane = 0.3f;
+            camera.farClipPlane = 120f;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = SkyColor;
+            camera.transform.position = new Vector3(0f, 10f, -13.5f);
+            camera.transform.LookAt(new Vector3(0f, 0f, 1f));
+        }
+
+        /// <summary>Soft ambient light, and a haze that fades the far ground into the sky.</summary>
+        public static void ApplyAtmosphere()
+        {
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.62f, 0.68f, 0.8f);
+            RenderSettings.ambientEquatorColor = new Color(0.56f, 0.52f, 0.46f);
+            RenderSettings.ambientGroundColor = new Color(0.3f, 0.28f, 0.25f);
+
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogColor = SkyColor;
+            RenderSettings.fogStartDistance = 30f;
+            RenderSettings.fogEndDistance = 70f;
         }
 
         /// <summary>
