@@ -24,7 +24,7 @@ Average fight: 32.8s (matchup averages from 21.6s to 44.5s). Timeouts: 32 of 400
 
 ## Enemy lineups
 
-> Since the persistent roster, Bandit Patrol has three ninjas (the new save's starting three, without weapons), and the enemy lineups fight at levels 1, 2, 4, 7 and 10. The tables below are from before that change. `ProgressionTests.StarterTeam_UsuallyBeatsTheFirstOpponent` checks that a new save's team beats Bandit Patrol at least 60% of the time.
+> Since the campaign, there are 24 enemy lineups and their levels live on the campaign's stages (see Campaign below). The tables below are from before the persistent roster, with the first five lineups at equal levels. `ProgressionTests.StarterTeam_UsuallyBeatsTheFirstOpponent` checks that a new save's team beats Bandit Patrol at least 60% of the time.
 
 The five enemy lineups played against each other:
 
@@ -98,6 +98,22 @@ The Mint and the Steel Mine pay for coming back, not for waiting. The numbers ar
 * A win against the first opponent pays 90 Gold and 5 Steel, so a full Mint is worth about three and a half easy wins and a full Steel Mine about six.
 * A full Mint buys one Common recruit (200 Gold) with some left over. A full Steel Mine pays for one forge (20 Steel) and most of a second.
 * Fights should stay the main source of Gold. If players stop fighting between collections, lower the Mint before raising fight pay.
+
+## Campaign
+
+Three chapters of eight stages. Every fourth stage is an elite and every eighth a boss.
+
+| Chapter | Enemies | Levels | Weapons | Boss | Boss reward |
+| --- | --- | --- | --- | --- | --- |
+| 1 Bandit Hills | 3, then 4 from 1-5 | 1, 2, 2, 3, 3, 4, 5, 6 | none, then one component | Kaito, 2 stars, Shadow Katana | Mei |
+| 2 Ember Valley | 4, then 5 from 2-5 | 6, 7, 8, 10, 11, 12, 14, 15 | components, a few combined | Jiro, 3 stars | Jiro |
+| 3 Tide Coast | 5, then 6 from 3-5 | 15, 16, 18, 20, 21, 23, 25, 26 | combined | Goro, 3 stars, two combined weapons | Nami |
+
+* **Pay.** Every fight pays by the stage's reward tier, which goes up every five stages (tier 1 for 1-1 to 1-5, tier 5 from 3-5). Tier `t` pays `60 + 30t` Gold, `5t` Steel and `20 + 10t` clan XP for a win, and has a `30 + 10t` percent chance of a component.
+* **First clear.** `200t` Gold, a certain component and 20 Karma per chapter number. Elites add 20 Steel per chapter number, enough for a forge in chapter 1. Bosses add a ninja.
+* **Stars.** 1 for the win, 2 with at least half the team standing, 3 with nobody fallen. Each chapter has chests at 8, 16 and 24 stars: Gold and Steel (300 and 20 per chapter number), Karma (100 per chapter number), and a combined weapon (Wind Boots, Kusarigama, Dragon Fan). The last chest needs three stars on every stage.
+* **Pace.** The targets are about 15 fights for chapter 1, 40 for chapter 2 and 80 for chapter 3. Clan XP is the clock behind that: the team grows to 4 at clan level 3 (300 XP, about ten tier 1 wins), to 5 at level 6 and to 6 at level 10, which is when the enemy teams grow too.
+* **Checking it.** **Ninja Realm > Balance > Walk the Campaign** plays the campaign three times with `CampaignWalker` and writes the fights per stage and chapter to `Logs/campaign_walk.md`. The levels above are the first pass from the plan and have not been tuned against a walk yet.
 
 ## Next
 

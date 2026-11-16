@@ -131,6 +131,28 @@ namespace NinjaRealm.Tests
             }
         }
 
+        // ---------------------------------------------------------------- walker
+
+        [Test]
+        public void Walker_PlaysTheSameWayForTheSameSeed()
+        {
+            var walker = new CampaignWalker(database) { MaxFights = 40, Seed = 3 };
+
+            var first = walker.Run();
+            var second = walker.Run();
+
+            Assert.That(first.Fights, Is.InRange(1, 40));
+            Assert.IsTrue(first.Stages[0].Cleared, "the starting team gets past the first stage within 40 fights");
+            Assert.AreEqual(first.Fights, first.Stages.Sum(stage => stage.Tries + stage.FarmFights));
+            Assert.AreEqual(first.Fights, second.Fights);
+            CollectionAssert.AreEqual(first.Stages.Select(stage => stage.Tries), second.Stages.Select(stage => stage.Tries));
+            CollectionAssert.AreEqual(first.Stages.Select(stage => stage.Stars), second.Stages.Select(stage => stage.Stars));
+
+            var report = walker.Report(first);
+            StringAssert.Contains("| 1-1 | Bandit Patrol |", report);
+            StringAssert.Contains("Chapter 1, Bandit Hills", report);
+        }
+
         // ---------------------------------------------------------------- unlocking
 
         [Test]
@@ -173,7 +195,7 @@ namespace NinjaRealm.Tests
             foreach (var stage in service.Campaign.Stages) service.ApplyStageResult(stage, 3, 1);
 
             Assert.AreEqual(Stage("3_8"), service.NextUnclearedStage());
-            Assert.AreEqual(72, service.Campaign.Chapters.Sum(service.ChapterStars));
+            Assert.AreEqual(72, service.Campaign.Chapters.Sum(chapter => service.ChapterStars(chapter)));
         }
 
         // ---------------------------------------------------------------- stars
