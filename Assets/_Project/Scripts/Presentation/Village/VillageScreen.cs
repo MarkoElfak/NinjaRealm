@@ -270,6 +270,13 @@ namespace NinjaRealm.Presentation.Village
             if (selected) PrototypeGui.Fill(new Rect(rect.x, rect.yMax + 2f, rect.width, 3f), PrototypeGui.Gold);
         }
 
+        /// <summary>Switches the Dojo's panel to the hall of all ninjas.</summary>
+        public void ShowAllNinjas()
+        {
+            dojoTab = DojoTab.AllNinjas;
+            hallScroll = Vector2.zero;
+        }
+
         /// <summary>Every ninja in the content, sorted once.</summary>
         List<NinjaDefinition> AllNinjas() => allNinjas ??= controller.AllNinjas();
 
