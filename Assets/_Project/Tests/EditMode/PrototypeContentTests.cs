@@ -46,12 +46,11 @@ namespace NinjaRealm.Tests
         }
 
         [Test]
-        public void EnemyLineups_HaveOneOfEachDifficulty()
+        public void EnemyLineups_AreDescribedAndValid()
         {
             var lineups = database.GetAll<LineupDefinition>().ToList();
 
-            Assert.AreEqual(5, lineups.Count);
-            CollectionAssert.AreEquivalent(new[] { 1, 2, 3, 4, 5 }, lineups.Select(l => l.Difficulty));
+            Assert.AreEqual(24, lineups.Count);
             foreach (var lineup in lineups)
             {
                 Assert.IsNotEmpty(lineup.Description, lineup.Id);

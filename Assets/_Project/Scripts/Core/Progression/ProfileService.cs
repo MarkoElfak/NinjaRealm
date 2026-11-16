@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using NinjaRealm.Combat;
+using NinjaRealm.Core.Campaign;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Lineups;
@@ -12,11 +13,30 @@ namespace NinjaRealm.Core.Progression
     public sealed class FightRewards
     {
         public bool Won;
+
+        /// <summary>Stars this fight earned: 0 for a loss, up to <see cref="StageStars.Max"/>.</summary>
+        public int Stars;
+
+        /// <summary>The most stars ever won on the stage, counting this fight.</summary>
+        public int BestStars;
+
+        /// <summary>Stars this fight added to the stage's best.</summary>
+        public int NewStars;
+
         public int Gold;
         public int Steel;
         public int ClanXp;
+
+        /// <summary>The stage was cleared for the first time.</summary>
         public bool FirstWin;
+
         public int FirstWinGold;
+        public int FirstClearKarma;
+        public int FirstClearSteel;
+
+        /// <summary>What the first clear's ninja did: joined, gained a shard or rose a star. Null when there was none.</summary>
+        public string NinjaMessage;
+
         public WeaponDefinition Drop;
         public int ClanLevelsGained;
         public int Karma;
@@ -42,6 +62,7 @@ namespace NinjaRealm.Core.Progression
             Content = content ?? throw new ArgumentNullException(nameof(content));
             Progression = progression ?? throw new ArgumentNullException(nameof(progression));
             this.storage = storage;
+            Campaign = new CampaignMap(content);
             Clean();
         }
 
@@ -50,6 +71,9 @@ namespace NinjaRealm.Core.Progression
         public ContentDatabase Content { get; }
 
         public ProgressionDefinition Progression { get; }
+
+        /// <summary>The campaign's chapters and stages in play order.</summary>
+        public CampaignMap Campaign { get; }
 
         /// <summary>Set when the save couldn't be read and a new one was started. The old file is kept beside it.</summary>
         public string LoadProblem { get; private set; }
@@ -75,15 +99,20 @@ namespace NinjaRealm.Core.Progression
             if (progression == null || storage == null) return null;
 
             string problem = null;
+            var fileVersion = SaveFile.CurrentVersion;
             var text = storage.Read();
-            if (text == null || !SaveFile.TryRead(text, out var profile, out problem))
+            if (text == null || !SaveFile.TryRead(text, out var profile, out problem, out fileVersion))
             {
                 if (text != null) storage.SetAside();
                 profile = NewProfile(progression, newSeed);
             }
 
+            // A save from an older version is rewritten in the new format; the old file stays beside it.
+            var older = text != null && problem == null && fileVersion < SaveFile.CurrentVersion;
+            if (older) storage.KeepCopy($"v{fileVersion}");
+
             var service = new ProfileService(profile, content, progression, storage) { LoadProblem = problem };
-            if (text == null || problem != null) service.Save();
+            if (text == null || problem != null || older) service.Save();
             return service;
         }
 
@@ -462,32 +491,99 @@ namespace NinjaRealm.Core.Progression
 
         public int TeamSize => Math.Min(LineupRules.MaxUnits, Progression.TeamSize(Profile.clanLevel));
 
-        // ---------------------------------------------------------------- fights
+        // ---------------------------------------------------------------- campaign
 
-        public bool HasBeaten(LineupDefinition opponent) => opponent != null && Profile.beatenLineups.Contains(opponent.Id);
+        /// <summary>The most stars won on a stage. 0 until it is cleared.</summary>
+        public int StarsOf(StageDefinition stage)
+        {
+            if (stage == null) return 0;
+            foreach (var progress in Profile.stages)
+                if (progress.id == stage.Id) return progress.stars;
+            return 0;
+        }
+
+        public bool HasCleared(StageDefinition stage) => StarsOf(stage) > 0;
+
+        /// <summary>A stage can be fought when it is the first, was cleared before, or the stage before it was cleared.</summary>
+        public bool IsUnlocked(StageDefinition stage)
+        {
+            var index = Campaign.IndexOf(stage);
+            if (index < 0) return false;
+            return index == 0 || HasCleared(stage) || HasCleared(Campaign.Stages[index - 1]);
+        }
+
+        /// <summary>A chapter opens with its first stage.</summary>
+        public bool IsUnlocked(ChapterDefinition chapter) =>
+            chapter != null && chapter.Stages.Count > 0 && IsUnlocked(chapter.Stages[0]);
+
+        /// <summary>Stars won in a chapter, out of <see cref="ChapterDefinition.MaxStars"/>.</summary>
+        public int ChapterStars(ChapterDefinition chapter)
+        {
+            var stars = 0;
+            if (chapter != null)
+                foreach (var stage in chapter.Stages) stars += StarsOf(stage);
+            return stars;
+        }
+
+        /// <summary>The first stage not cleared yet, or the last stage when the campaign is finished. Null without a campaign.</summary>
+        public StageDefinition NextUnclearedStage()
+        {
+            var stages = Campaign.Stages;
+            foreach (var stage in stages)
+                if (!HasCleared(stage)) return stage;
+            return stages.Count > 0 ? stages[stages.Count - 1] : null;
+        }
+
+        /// <summary>The stage picked for the next fight: the saved pick while it can be fought, otherwise <see cref="NextUnclearedStage"/>.</summary>
+        public StageDefinition CurrentStage() =>
+            Content.TryGet<StageDefinition>(Profile.stage, out var picked) && IsUnlocked(picked) ? picked : NextUnclearedStage();
+
+        /// <summary>Picks the stage for the next fight. False when it is still locked.</summary>
+        public bool SelectStage(StageDefinition stage)
+        {
+            if (!IsUnlocked(stage)) return false;
+            if (Profile.stage == stage.Id) return true;
+            Profile.stage = stage.Id;
+            Save();
+            return true;
+        }
 
         /// <summary>
-        /// Pays for a finished fight: Gold, Steel and clan XP by the opponent's difficulty, a
-        /// first-win bonus, a chance of a weapon component on a win, and Karma for each clan
-        /// level reached. The seed makes the drop the same every time for the same fight.
+        /// Pays for a finished fight on a stage. Every fight pays Gold, Steel and clan XP by the
+        /// stage's reward tier, a win has a chance of a weapon component, and each clan level
+        /// reached pays Karma. The first clear adds bonus Gold, a certain component and the
+        /// stage's own Karma, Steel and ninja. <paramref name="stars"/> is 0 for a loss; the best
+        /// stars are kept. The seed makes the drop the same every time for the same fight.
         /// </summary>
-        public FightRewards ApplyFightResult(LineupDefinition opponent, bool won, int seed)
+        public FightRewards ApplyStageResult(StageDefinition stage, int stars, int seed)
         {
-            var difficulty = opponent != null ? opponent.Difficulty : 1;
-            var rewards = new FightRewards { Won = won, TeamSizeBefore = TeamSize };
-            Progression.FightPay(difficulty, won, out rewards.Gold, out rewards.Steel, out rewards.ClanXp);
+            stars = Math.Max(0, Math.Min(StageStars.Max, stars));
+            var won = stars > 0;
+            var tier = stage != null ? stage.RewardTier : 1;
+            var rewards = new FightRewards { Won = won, Stars = stars, TeamSizeBefore = TeamSize };
+            Progression.FightPay(tier, won, out rewards.Gold, out rewards.Steel, out rewards.ClanXp);
 
             var random = new DeterministicRandom(unchecked((ulong)(uint)seed * 0x2545F4914F6CDD1DUL + 0x5EED));
             if (won)
             {
-                rewards.FirstWin = opponent != null && !HasBeaten(opponent);
-                if (rewards.FirstWin)
+                var before = StarsOf(stage);
+                rewards.FirstWin = stage != null && before == 0;
+                if (stage != null && stars > before)
                 {
-                    rewards.FirstWinGold = Progression.FirstWinGold(difficulty);
-                    Profile.beatenLineups.Add(opponent.Id);
+                    SetStars(stage, stars);
+                    rewards.NewStars = stars - before;
                 }
 
-                if (rewards.FirstWin || random.RollBasisPoints(Progression.DropChance(difficulty)))
+                if (rewards.FirstWin)
+                {
+                    rewards.FirstWinGold = Progression.FirstWinGold(tier);
+                    rewards.FirstClearKarma = stage.FirstClearKarma;
+                    rewards.FirstClearSteel = stage.FirstClearSteel;
+                    if (stage.FirstClearNinja != null && CannotGain(stage.FirstClearNinja) == null)
+                        rewards.NinjaMessage = Gain(stage.FirstClearNinja);
+                }
+
+                if (rewards.FirstWin || random.RollBasisPoints(Progression.DropChance(tier)))
                 {
                     var components = new List<WeaponDefinition>();
                     foreach (var weapon in Content.GetAll<WeaponDefinition>())
@@ -500,8 +596,9 @@ namespace NinjaRealm.Core.Progression
                 }
             }
 
+            rewards.BestStars = StarsOf(stage);
             Profile.wallet.Add(Progression.Gold, rewards.Gold + rewards.FirstWinGold);
-            Profile.wallet.Add(Progression.Steel, rewards.Steel);
+            Profile.wallet.Add(Progression.Steel, rewards.Steel + rewards.FirstClearSteel);
 
             Profile.clanXp += rewards.ClanXp;
             while (Profile.clanXp >= Progression.ClanXpToNext(Profile.clanLevel))
@@ -512,10 +609,76 @@ namespace NinjaRealm.Core.Progression
                 rewards.Karma += Progression.ClanLevelKarma(Profile.clanLevel);
             }
 
-            Profile.wallet.Add(Progression.Karma, rewards.Karma);
+            Profile.wallet.Add(Progression.Karma, rewards.Karma + rewards.FirstClearKarma);
             rewards.TeamSizeAfter = TeamSize;
             Save();
             return rewards;
+        }
+
+        void SetStars(StageDefinition stage, int stars)
+        {
+            foreach (var progress in Profile.stages)
+            {
+                if (progress.id != stage.Id) continue;
+                progress.stars = stars;
+                return;
+            }
+
+            Profile.stages.Add(new StageProgress { id = stage.Id, stars = stars });
+        }
+
+        public bool ChestOpened(ChapterDefinition chapter, StarChest chest)
+        {
+            if (chapter == null || chest == null) return false;
+            foreach (var opened in Profile.chests)
+                if (opened.chapter == chapter.Id && opened.stars == chest.stars) return true;
+            return false;
+        }
+
+        /// <summary>Why a star chest can't be opened right now, or null if it can.</summary>
+        public string CannotOpenChest(ChapterDefinition chapter, StarChest chest)
+        {
+            if (chapter == null || chest == null || !Contains(chapter.Chests, chest)) return "There's no chest there.";
+            if (ChestOpened(chapter, chest)) return "You already opened this chest.";
+            var stars = ChapterStars(chapter);
+            return stars < chest.stars ? $"Needs {chest.stars} stars in {chapter.DisplayName}. You have {stars}." : null;
+        }
+
+        /// <summary>Pays out a star chest, once.</summary>
+        public bool TryOpenChest(ChapterDefinition chapter, StarChest chest, out string message)
+        {
+            message = CannotOpenChest(chapter, chest);
+            if (message != null) return false;
+
+            Profile.chests.Add(new OpenedChest { chapter = chapter.Id, stars = chest.stars });
+            Profile.wallet.Add(Progression.Gold, chest.gold);
+            Profile.wallet.Add(Progression.Steel, chest.steel);
+            Profile.wallet.Add(Progression.Karma, chest.karma);
+            if (chest.weapon != null) AddWeapon(Profile, chest.weapon.Id, 1);
+            message = $"The chest held {ChestContents(chest)}.";
+            Save();
+            return true;
+        }
+
+        /// <summary>What a star chest holds, such as "300 Gold, 30 Steel and a Shadow Katana".</summary>
+        public string ChestContents(StarChest chest)
+        {
+            var parts = new List<string>();
+            if (chest == null) return string.Empty;
+            if (chest.gold > 0) parts.Add($"{chest.gold} {Name(Progression.Gold)}");
+            if (chest.steel > 0) parts.Add($"{chest.steel} {Name(Progression.Steel)}");
+            if (chest.karma > 0) parts.Add($"{chest.karma} {Name(Progression.Karma)}");
+            if (chest.weapon != null) parts.Add(chest.weapon.DisplayName);
+            if (parts.Count == 0) return "nothing";
+            if (parts.Count == 1) return parts[0];
+            return string.Join(", ", parts.GetRange(0, parts.Count - 1)) + " and " + parts[parts.Count - 1];
+        }
+
+        static bool Contains(IReadOnlyList<StarChest> chests, StarChest chest)
+        {
+            foreach (var candidate in chests)
+                if (candidate == chest) return true;
+            return false;
         }
 
         // ---------------------------------------------------------------- income
@@ -619,11 +782,10 @@ namespace NinjaRealm.Core.Progression
 
         // ---------------------------------------------------------------- lineup
 
-        /// <summary>Stores the player's lineup and chosen opponent in the save.</summary>
-        public void SaveLineup(PlayerLineup lineup, LineupDefinition opponent)
+        /// <summary>Stores the player's lineup in the save.</summary>
+        public void SaveLineup(PlayerLineup lineup)
         {
             if (lineup != null) Profile.lineup = lineup.ToSaved();
-            if (opponent != null) Profile.opponent = opponent.Id;
             Save();
         }
 
@@ -704,9 +866,31 @@ namespace NinjaRealm.Core.Progression
             profile.clanLevel = Math.Max(1, profile.clanLevel);
             profile.clanXp = Math.Max(0, profile.clanXp);
             profile.lineup ??= new List<SavedLineupSlot>();
-            profile.opponent ??= string.Empty;
+
+            profile.stage ??= string.Empty;
+            profile.stages ??= new List<StageProgress>();
+            var seenStages = new HashSet<string>();
+            profile.stages.RemoveAll(progress => progress == null || progress.stars <= 0 ||
+                                                 !Content.TryGet<StageDefinition>(progress.id, out _) || !seenStages.Add(progress.id));
+            foreach (var progress in profile.stages) progress.stars = Math.Min(StageStars.Max, progress.stars);
+
+            // A save from before the campaign: each beaten lineup clears the first stage that uses it, with one star.
             profile.beatenLineups ??= new List<string>();
-            profile.beatenLineups.RemoveAll(id => !Content.TryGet<LineupDefinition>(id, out _));
+            foreach (var lineupId in profile.beatenLineups)
+                foreach (var stage in Campaign.Stages)
+                {
+                    if (stage.Lineup == null || stage.Lineup.Id != lineupId) continue;
+                    if (seenStages.Add(stage.Id)) profile.stages.Add(new StageProgress { id = stage.Id, stars = 1 });
+                    break;
+                }
+
+            profile.beatenLineups.Clear();
+
+            profile.chests ??= new List<OpenedChest>();
+            var seenChests = new HashSet<string>();
+            profile.chests.RemoveAll(opened => opened == null || !Content.TryGet<ChapterDefinition>(opened.chapter, out var chapter) ||
+                                               !HasChest(chapter, opened.stars) || !seenChests.Add($"{opened.chapter}#{opened.stars}"));
+
             profile.dojoOffers ??= new List<string>();
             for (var i = 0; i < profile.dojoOffers.Count; i++)
                 if (!Content.TryGet<NinjaDefinition>(profile.dojoOffers[i], out _)) profile.dojoOffers[i] = string.Empty;
@@ -715,6 +899,13 @@ namespace NinjaRealm.Core.Progression
             profile.incomes ??= new List<IncomeTimer>();
             var seenIncomes = new HashSet<string>();
             profile.incomes.RemoveAll(timer => timer == null || Progression.Income(timer.id) == null || !seenIncomes.Add(timer.id));
+        }
+
+        static bool HasChest(ChapterDefinition chapter, int stars)
+        {
+            foreach (var chest in chapter.Chests)
+                if (chest != null && chest.stars == stars) return true;
+            return false;
         }
 
         static string Name(ContentDefinition definition) => definition != null ? definition.DisplayName : "?";

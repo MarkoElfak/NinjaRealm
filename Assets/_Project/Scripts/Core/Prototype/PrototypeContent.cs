@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NinjaRealm.Combat;
+using NinjaRealm.Core.Campaign;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Definitions.Effects;
@@ -56,9 +57,9 @@ namespace NinjaRealm.Core.Prototype
 
     /// <summary>
     /// The prototype's content: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas,
-    /// 6 components, 4 combined weapons, 5 enemy lineups, 3 resources and the progression
-    /// settings. This is the source of truth for prototype numbers; the content assets are
-    /// created from it.
+    /// 6 components, 4 combined weapons, 24 enemy lineups, a campaign of 3 chapters with 8
+    /// stages each, 3 resources and the progression settings. This is the source of truth for
+    /// prototype numbers; the content assets are created from it.
     /// </summary>
     public sealed class PrototypeContent
     {
@@ -238,24 +239,114 @@ namespace NinjaRealm.Core.Prototype
             var dragonFan = Combined("dragon_fan", "Dragon Fan", "Skills deal +20% damage.", prayerBeads, prayerBeads, Mod(abilityDamage, ModifierOperation.Add, 20f));
             var windBoots = Combined("wind_boots", "Wind Boots", "+10% dodge.", swiftSandals, swiftSandals, Mod(dodge, ModifierOperation.Add, 10f));
 
-            // Enemy lineups, from easiest to hardest. Positions are seen from the enemy's side: row 3 is their front row.
-            Lineup("bandit_patrol", "Bandit Patrol", 1, 1, "Three ninjas and no weapons. A warm-up.",
+            // Enemy lineups, in the order the campaign meets them. Positions are seen from the enemy's side: row 3 is their front row.
+            // Chapter 1, Bandit Hills: three ninjas, then four, with at most one weapon component.
+            var banditPatrol = Lineup("bandit_patrol", "Bandit Patrol", "Three ninjas and no weapons. A warm-up.",
                 Slot(daichi, 3, 3), Slot(kaito, 2, 3), Slot(hana, 3, 0));
+            var hillScouts = Lineup("hill_scouts", "Hill Scouts", "Two Blademasters hit hard and early. Their healer stands alone at the back.",
+                Slot(kaito, 3, 3), Slot(goro, 4, 3), Slot(hana, 3, 0));
+            var mountainLookout = Lineup("mountain_lookout", "Mountain Lookout", "Two shielded Vanguards hold the line for a Mystic behind them.",
+                Slot(daichi, 3, 3), Slot(takeshi, 2, 3), Slot(mei, 3, 0));
+            var banditAmbush = Lineup("bandit_ambush", "Bandit Ambush", "Goro leads with a Kunai, and Saya's shields keep him standing.",
+                Slot(goro, 3, 3, kunai), Slot(kaito, 2, 3), Slot(saya, 3, 0));
+            var smugglersCamp = Lineup("smugglers_camp", "Smugglers' Camp", "Four of them now: a wall, two blades and a healer.",
+                Slot(daichi, 3, 3), Slot(kaito, 2, 3), Slot(goro, 4, 3), Slot(hana, 3, 0));
+            var stolenShrine = Lineup("stolen_shrine", "Stolen Shrine", "Vanguards in front, a healer and a Mystic behind. Reach the back row.",
+                Slot(takeshi, 3, 3, jadeCharm), Slot(daichi, 2, 3), Slot(hana, 2, 0), Slot(mei, 4, 0));
+            var chiefsGuard = Lineup("chiefs_guard", "Chief's Guard", "Three Earth ninjas: armor and magic resist for the whole team.",
+                Slot(daichi, 3, 3, ironPlate), Slot(goro, 2, 3), Slot(mei, 4, 1), Slot(saya, 3, 0));
+            var banditChief = Lineup("bandit_chief", "Bandit Chief", "The chief is a two-star Kaito with a Shadow Katana. His crits end fights.",
+                Slot(kaito, 3, 3, shadowKatana), Slot(daichi, 2, 3), Slot(goro, 4, 3), Slot(hana, 3, 0));
 
-            Lineup("ember_clan", "Ember Clan", 2, 2, "Three Fire ninjas set everything they hit burning.",
+            // Chapter 2, Ember Valley: four ninjas, then five, with components and the odd combined weapon.
+            var valleyGate = Lineup("valley_gate", "Valley Gate", "A plated wall, a blade and two casters at the back.",
+                Slot(daichi, 3, 3, ironPlate), Slot(kaito, 2, 3), Slot(mei, 3, 0), Slot(hana, 4, 0));
+            var ashRoad = Lineup("ash_road", "Ash Road", "Two armed Blademasters with a Mystic and a Medic behind them.",
+                Slot(kaito, 3, 3, kunai), Slot(goro, 2, 3), Slot(mei, 2, 0, prayerBeads), Slot(saya, 4, 0));
+            var burningFields = Lineup("burning_fields", "Burning Fields", "Fast attacks at the front, steady healing at the back.",
+                Slot(takeshi, 3, 3, jadeCharm), Slot(kaito, 4, 3, swiftSandals), Slot(mei, 3, 1), Slot(hana, 3, 0, chakraScroll));
+            var flameWardens = Lineup("flame_wardens", "Flame Wardens", "Three Fire ninjas: their burns cut your healing. Mei carries a Dragon Fan.",
+                Slot(jiro, 3, 3, ironPlate), Slot(kaito, 2, 3, kunai), Slot(mei, 3, 0, dragonFan), Slot(saya, 4, 0));
+            var lavaBridge = Lineup("lava_bridge", "Lava Bridge", "Five of them: two Vanguards, a blade, a healer and a Mystic.",
+                Slot(daichi, 3, 3, ironPlate), Slot(takeshi, 2, 3), Slot(goro, 4, 3, kunai), Slot(hana, 2, 0), Slot(mei, 4, 0, prayerBeads));
+            var emberClan = Lineup("ember_clan", "Ember Clan", "Three Fire ninjas set everything they hit burning.",
                 Slot(jiro, 3, 3, ironPlate), Slot(kaito, 2, 3), Slot(goro, 4, 3), Slot(mei, 3, 1), Slot(daichi, 1, 3));
+            var smokeTemple = Lineup("smoke_temple", "Smoke Temple", "Goro heals with every hit of his Kusarigama, behind two Vanguards.",
+                Slot(takeshi, 3, 3, jadeCharm), Slot(jiro, 2, 3, ironPlate), Slot(goro, 4, 3, kusarigama), Slot(saya, 2, 0, chakraScroll),
+                Slot(mei, 4, 0, prayerBeads));
+            var emberLord = Lineup("ember_lord", "Ember Lord", "Jiro, lord of the Ember Clan, fights at three stars with his clan around him.",
+                Slot(jiro, 3, 3, ironPlate, jadeCharm), Slot(kaito, 2, 3, kunai), Slot(goro, 4, 3, swiftSandals), Slot(mei, 3, 1, dragonFan),
+                Slot(daichi, 1, 3, ironPlate));
 
-            Lineup("tide_shrine", "Tide Shrine", 3, 4, "Water healers that outlast you behind a shielded wall.",
+            // Chapter 3, Tide Coast: five ninjas, then six, with combined weapons.
+            var coastRoad = Lineup("coast_road", "Coast Road", "A full line with weapons on every ninja, and a Shadow Katana among them.",
+                Slot(takeshi, 3, 3, jadeCharm), Slot(daichi, 2, 3, ironPlate), Slot(kaito, 4, 3, shadowKatana), Slot(hana, 2, 0, chakraScroll),
+                Slot(mei, 4, 0, prayerBeads));
+            var tideShrine = Lineup("tide_shrine", "Tide Shrine", "Water healers that outlast you behind a shielded wall.",
                 Slot(takeshi, 3, 3, jadeCharm), Slot(daichi, 2, 3, ironPlate), Slot(saya, 4, 1), Slot(hana, 2, 0, chakraScroll),
                 Slot(nami, 4, 0, dragonFan, windBoots));
-
-            Lineup("stone_fortress", "Stone Fortress", 4, 7, "Three Vanguards and three Earth ninjas. Hard to break, slow to kill you.",
+            var pearlDivers = Lineup("pearl_divers", "Pearl Divers", "Three Water ninjas and two Medics. Burst them down or they heal it all back.",
+                Slot(takeshi, 3, 3, jadeCharm, ironPlate), Slot(goro, 2, 3, kusarigama), Slot(nami, 3, 0, dragonFan), Slot(hana, 2, 0, chakraScroll),
+                Slot(saya, 4, 0));
+            var stormMonks = Lineup("storm_monks", "Storm Monks", "Two Mystics with Dragon Fans behind two Vanguards. Their skills come fast.",
+                Slot(jiro, 3, 3, ironPlate, jadeCharm), Slot(takeshi, 2, 3, jadeCharm), Slot(nami, 3, 0, dragonFan, chakraScroll),
+                Slot(mei, 4, 0, dragonFan), Slot(saya, 2, 0, prayerBeads));
+            var stoneFortress = Lineup("stone_fortress", "Stone Fortress", "Three Vanguards and three Earth ninjas. Hard to break, slow to kill you.",
                 Slot(daichi, 3, 3, ironPlate, jadeCharm), Slot(jiro, 2, 3, ironPlate), Slot(takeshi, 4, 3, jadeCharm),
                 Slot(goro, 3, 2, kusarigama), Slot(saya, 2, 1), Slot(mei, 4, 0, chakraScroll));
-
-            Lineup("shogun_guard", "Shogun's Guard", 5, 10, "The Shogun's elite: every synergy they can field, and the best weapons.",
+            var harborBlockade = Lineup("harbor_blockade", "Harbor Blockade", "Six ninjas: four across the front, a healer and Nami behind.",
+                Slot(daichi, 3, 3, ironPlate, jadeCharm), Slot(takeshi, 2, 3, jadeCharm), Slot(kaito, 4, 3, shadowKatana),
+                Slot(goro, 1, 3, kusarigama), Slot(hana, 2, 0, chakraScroll), Slot(nami, 4, 0, dragonFan));
+            var shogunsVanguard = Lineup("shoguns_vanguard", "Shogun's Vanguard", "Three Vanguards screen Goro and two casters. The last gate before the guard.",
+                Slot(jiro, 3, 3, ironPlate, jadeCharm), Slot(daichi, 2, 3, ironPlate), Slot(takeshi, 4, 3, jadeCharm),
+                Slot(goro, 3, 2, shadowKatana), Slot(saya, 2, 0, chakraScroll), Slot(mei, 4, 0, dragonFan, windBoots));
+            var shogunGuard = Lineup("shogun_guard", "Shogun's Guard", "The Shogun's elite: every synergy they can field, the best weapons, and a three-star Goro.",
                 Slot(jiro, 3, 3, ironPlate, jadeCharm), Slot(goro, 2, 3, shadowKatana, kusarigama), Slot(kaito, 4, 3, shadowKatana),
                 Slot(takeshi, 1, 3, jadeCharm), Slot(nami, 3, 0, dragonFan, chakraScroll), Slot(mei, 5, 1, dragonFan, windBoots));
+
+            // The campaign. Every fourth stage is an elite and every eighth a boss. What a fight
+            // pays goes up a tier every five stages; the first clear pays 20 Karma per chapter number.
+            var stageCount = 0;
+            StageDefinition Stage(int chapter, int place, LineupDefinition lineup, int level,
+                NinjaDefinition boss = null, int bossStars = 1, NinjaDefinition reward = null)
+            {
+                var kind = place == 8 ? StageKind.Boss : place == 4 ? StageKind.Elite : StageKind.Normal;
+                var tier = Math.Min(5, stageCount / 5 + 1);
+                stageCount++;
+                return sink.Provide<StageDefinition>("Campaign/Stages", $"stage.{chapter}_{place}", $"{chapter}-{place} {lineup.DisplayName}", stage =>
+                {
+                    stage.Configure(lineup, level, kind, tier);
+                    stage.SetBoss(boss, bossStars);
+                    stage.SetFirstClear(20 * chapter, kind == StageKind.Elite ? 20 * chapter : 0, reward);
+                });
+            }
+
+            // Star chests at 8, 16 and 24 stars: Gold and Steel, then Karma, then a combined weapon.
+            StarChest[] Chests(int chapter, WeaponDefinition weapon) => new[]
+            {
+                new StarChest { stars = 8, gold = 300 * chapter, steel = 20 * chapter },
+                new StarChest { stars = 16, karma = 100 * chapter },
+                new StarChest { stars = 24, weapon = weapon },
+            };
+
+            void Chapter(int number, string id, string name, string description, WeaponDefinition lastChest, params StageDefinition[] stages) =>
+                sink.Provide<ChapterDefinition>("Campaign/Chapters", "chapter." + id, name, c => c.Configure(number, description, stages, Chests(number, lastChest)));
+
+            // The bosses fight with stars: a two-star Kaito, a three-star Jiro and a three-star Goro. Beating one wins a ninja.
+            Chapter(1, "bandit_hills", "Bandit Hills", "Bandits hold the hill roads above the village. Clear them out and face their chief.", windBoots,
+                Stage(1, 1, banditPatrol, 1), Stage(1, 2, hillScouts, 2), Stage(1, 3, mountainLookout, 2), Stage(1, 4, banditAmbush, 3),
+                Stage(1, 5, smugglersCamp, 3), Stage(1, 6, stolenShrine, 4), Stage(1, 7, chiefsGuard, 5),
+                Stage(1, 8, banditChief, 6, kaito, 2, mei));
+
+            Chapter(2, "ember_valley", "Ember Valley", "The Ember Clan burns everything it touches. Their lord Jiro waits at the end of the valley.", kusarigama,
+                Stage(2, 1, valleyGate, 6), Stage(2, 2, ashRoad, 7), Stage(2, 3, burningFields, 8), Stage(2, 4, flameWardens, 10),
+                Stage(2, 5, lavaBridge, 11), Stage(2, 6, emberClan, 12), Stage(2, 7, smokeTemple, 14),
+                Stage(2, 8, emberLord, 15, jiro, 3, jiro));
+
+            Chapter(3, "tide_coast", "Tide Coast", "The Shogun's fleet has landed on the coast. Break through to his guard.", dragonFan,
+                Stage(3, 1, coastRoad, 15), Stage(3, 2, tideShrine, 16), Stage(3, 3, pearlDivers, 18), Stage(3, 4, stormMonks, 20),
+                Stage(3, 5, stoneFortress, 21), Stage(3, 6, harborBlockade, 23), Stage(3, 7, shogunsVanguard, 25),
+                Stage(3, 8, shogunGuard, 26, goro, 3, nami));
 
             // Resources
             var gold = Resource("gold", "Gold", new Color(1f, 0.82f, 0.35f), "Earned in every fight. Recruits ninjas.");
@@ -332,8 +423,8 @@ namespace NinjaRealm.Core.Prototype
         }
 
 
-        LineupDefinition Lineup(string id, string name, int difficulty, int level, string description, params LineupSlot[] slots) =>
-            sink.Provide<LineupDefinition>("Lineups", "lineup." + id, name, l => l.Configure(description, difficulty, level, slots));
+        LineupDefinition Lineup(string id, string name, string description, params LineupSlot[] slots) =>
+            sink.Provide<LineupDefinition>("Lineups", "lineup." + id, name, l => l.Configure(description, slots));
 
         ResourceDefinition Resource(string id, string name, Color color, string description) =>
             sink.Provide<ResourceDefinition>("Economy", "resource." + id, name, r => r.Configure(description, color));

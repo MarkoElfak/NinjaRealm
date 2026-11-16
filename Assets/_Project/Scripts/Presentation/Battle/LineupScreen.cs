@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 using NinjaRealm.Combat;
+using NinjaRealm.Core.Campaign;
 using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Lineups;
 using NinjaRealm.Core.Progression;
@@ -11,8 +12,8 @@ namespace NinjaRealm.Presentation.Battle
 {
     /// <summary>
     /// Prototype lineup screen: drag ninjas from the bench onto your half of the board, drag
-    /// them around or off the board, drag weapons onto them, pick an opponent and start the
-    /// fight. The bench and armory hold what the player owns. Drawn with IMGUI; input is read
+    /// them around or off the board, drag weapons onto them, step through the campaign stages
+    /// and start the fight. The bench and armory hold what the player owns. Drawn with IMGUI; input is read
     /// from the Input System.
     /// </summary>
     [RequireComponent(typeof(BattleController))]
@@ -341,7 +342,7 @@ namespace NinjaRealm.Presentation.Battle
             Layout();
 
             DrawNames();
-            DrawOpponents();
+            DrawStage();
             DrawRight();
             DrawTopBar();
             DrawBottom();
@@ -409,52 +410,97 @@ namespace NinjaRealm.Presentation.Battle
                    Amount(progression.Gold) + Amount(progression.Karma) + Amount(progression.Steel);
         }
 
-        void DrawOpponents()
+        void DrawStage()
         {
             PrototypeGui.Panel(leftPanel);
             var x = leftPanel.x + 12f;
             var y = leftPanel.y + 10f;
             var width = leftPanel.width - 24f;
-            GUI.Label(new Rect(x, y, width, 22f), "Opponent", PrototypeGui.Title);
-            y += 28f;
 
-            foreach (var opponent in controller.Opponents)
+            var stage = controller.Stage;
+            var campaign = controller.Campaign;
+            if (stage == null || campaign == null)
             {
-                var rect = new Rect(x, y, width, 36f);
-                var isSelected = opponent == controller.Opponent;
-                PrototypeGui.Fill(rect, isSelected ? new Color(0.32f, 0.27f, 0.12f, 0.95f) : PrototypeGui.CardColor, isSelected);
-                if (GUI.Button(rect, GUIContent.none, GUIStyle.none)) controller.SelectOpponent(opponent);
-                var beaten = controller.Profile != null && controller.Profile.HasBeaten(opponent) ? "  <color=#9a9a9a>beaten</color>" : "";
-                GUI.Label(new Rect(rect.x + 8f, rect.y + 2f, rect.width - 16f, 20f), $"{opponent.DisplayName}{beaten}", PrototypeGui.Label);
-                GUI.Label(new Rect(rect.xMax - 52f, rect.y + 18f, 46f, 16f), $"Lv {opponent.Level}", PrototypeGui.Small);
-                PrototypeGui.Pips(new Vector2(rect.x + 9f, rect.y + 23f), opponent.Difficulty, 5, PrototypeGui.Gold);
-                y += 40f;
+                GUI.Label(new Rect(x, y, width, 60f), "There are no campaign stages. Run Ninja Realm > Content > Create Prototype Content.", PrototypeGui.Wrap);
+                return;
             }
 
-            if (controller.Opponent == null) return;
+            var profile = controller.Profile;
+            var chapter = campaign.ChapterOf(stage);
+            if (chapter != null)
+            {
+                GUI.Label(new Rect(x, y, width, 18f), $"<color=#9aa3b0>Chapter {chapter.Number}: {chapter.DisplayName}</color>", PrototypeGui.Small);
+                y += 20f;
+            }
 
-            y += 6f;
-            var description = controller.Opponent.Description;
+            GUI.Label(new Rect(x, y, width, 22f), $"Stage {campaign.LabelOf(stage)}{KindText(stage.Kind)}", PrototypeGui.Title);
+            y += 28f;
+
+            // Step through the stages that can be fought.
+            var previous = campaign.Previous(stage);
+            var next = campaign.Next(stage);
+            var half = (width - 6f) / 2f;
+            GUI.enabled = controller.IsUnlocked(previous);
+            if (GUI.Button(new Rect(x, y, half, 24f), "< Previous")) controller.SelectStage(previous);
+            GUI.enabled = controller.IsUnlocked(next);
+            if (GUI.Button(new Rect(x + half + 6f, y, half, 24f), next != null && !GUI.enabled ? "Next (locked)" : "Next >")) controller.SelectStage(next);
+            GUI.enabled = true;
+            y += 32f;
+
+            var opponent = stage.Lineup;
+            PrototypeGui.Fill(new Rect(x, y, width, 46f), PrototypeGui.CardColor, true);
+            GUI.Label(new Rect(x + 8f, y + 3f, width - 60f, 20f), $"<b>{(opponent != null ? opponent.DisplayName : "Nobody")}</b>", PrototypeGui.Label);
+            GUI.Label(new Rect(x + width - 52f, y + 5f, 46f, 16f), $"Lv {stage.Level}", PrototypeGui.Small);
+            var stars = profile != null ? profile.StarsOf(stage) : 0;
+            PrototypeGui.Pips(new Vector2(x + 9f, y + 29f), stars, StageStars.Max, PrototypeGui.Gold);
+            GUI.Label(new Rect(x + 60f, y + 24f, width - 68f, 16f), stars > 0 ? $"Best: {stars} of {StageStars.Max} stars" : "Not cleared yet", PrototypeGui.Small);
+            y += 54f;
+
+            if (opponent == null) return;
+
+            var description = opponent.Description;
             var descriptionHeight = PrototypeGui.Wrap.CalcHeight(new GUIContent(description), width);
             GUI.Label(new Rect(x, y, width, descriptionHeight), description, PrototypeGui.Wrap);
             y += descriptionHeight + 6f;
 
-            var profile = controller.Profile;
             if (profile != null)
             {
-                var opponent = controller.Opponent;
-                profile.Progression.FightPay(opponent.Difficulty, true, out var gold, out var steel, out var xp);
-                var pay = $"<b>Win:</b> {gold} Gold, {steel} Steel, {xp} clan XP, {profile.Progression.DropChance(opponent.Difficulty) / 100}% weapon drop.";
-                if (!profile.HasBeaten(opponent))
-                    pay += $" <color=#{PrototypeGui.Hex(PrototypeGui.Gold)}>First win: +{profile.Progression.FirstWinGold(opponent.Difficulty)} Gold and a weapon.</color>";
+                var progression = profile.Progression;
+                progression.FightPay(stage.RewardTier, true, out var gold, out var steel, out var xp);
+                var pay = $"<b>Win:</b> {gold} Gold, {steel} Steel, {xp} clan XP, {progression.DropChance(stage.RewardTier) / 100}% weapon drop.";
+                if (!profile.HasCleared(stage))
+                    pay += $" <color=#{PrototypeGui.Hex(PrototypeGui.Gold)}>First clear: {FirstClearText(stage, progression)}.</color>";
                 var payHeight = PrototypeGui.Wrap.CalcHeight(new GUIContent(pay), width);
                 GUI.Label(new Rect(x, y, width, payHeight), pay, PrototypeGui.Wrap);
-                y += payHeight + 10f;
+                y += payHeight + 6f;
             }
+
+            const string starRules = "<color=#9aa3b0>Stars: 1 for the win, 2 with half your team standing, 3 with nobody fallen.</color>";
+            var rulesHeight = PrototypeGui.Wrap.CalcHeight(new GUIContent(starRules), width);
+            GUI.Label(new Rect(x, y, width, rulesHeight), starRules, PrototypeGui.Wrap);
+            y += rulesHeight + 10f;
 
             GUI.Label(new Rect(x, y, width, 22f), "Their synergies", PrototypeGui.Title);
             y += 26f;
-            DrawSynergies(LineupSynergies.Count(controller.Opponent.Slots), x, y, width, leftPanel.yMax - 8f);
+            DrawSynergies(LineupSynergies.Count(opponent.Slots), x, y, width, leftPanel.yMax - 8f);
+        }
+
+        /// <summary>" (Elite)" or " (Boss)" in colour, or nothing for a normal stage.</summary>
+        public static string KindText(StageKind kind) => kind switch
+        {
+            StageKind.Elite => "  <color=#c9a0ff>Elite</color>",
+            StageKind.Boss => "  <color=#ff8066>Boss</color>",
+            _ => "",
+        };
+
+        /// <summary>What a stage's first clear adds, such as "+200 Gold, a weapon, +20 Karma and Mei".</summary>
+        public static string FirstClearText(StageDefinition stage, ProgressionDefinition progression)
+        {
+            var parts = new List<string> { $"+{progression.FirstWinGold(stage.RewardTier)} Gold", "a weapon" };
+            if (stage.FirstClearKarma > 0) parts.Add($"+{stage.FirstClearKarma} Karma");
+            if (stage.FirstClearSteel > 0) parts.Add($"+{stage.FirstClearSteel} Steel");
+            if (stage.FirstClearNinja != null) parts.Add(stage.FirstClearNinja.DisplayName);
+            return string.Join(", ", parts.GetRange(0, parts.Count - 1)) + " and " + parts[parts.Count - 1];
         }
 
         void DrawRight()

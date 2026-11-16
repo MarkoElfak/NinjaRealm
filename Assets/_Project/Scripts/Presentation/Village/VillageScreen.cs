@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
+using NinjaRealm.Core.Campaign;
 using NinjaRealm.Core.Definitions;
-using NinjaRealm.Core.Lineups;
 using NinjaRealm.Core.Progression;
 using NinjaRealm.Presentation.Battle;
 using UnityEngine;
@@ -13,7 +13,7 @@ namespace NinjaRealm.Presentation.Village
     /// building and each plaza ninja, and the open panel. The Dojo has two tabs, the day's
     /// recruits and a hall that shows every ninja with its model; the Shrine and Blacksmith
     /// reuse the roster panels; the Mint and Steel Mine collect their income; the Command Hall
-    /// sends you to battle; a ninja on the plaza opens its details.
+    /// shows the campaign map and sends you to battle; a ninja on the plaza opens its details.
     /// </summary>
     [RequireComponent(typeof(VillageController))]
     public sealed class VillageScreen : MonoBehaviour
@@ -36,6 +36,8 @@ namespace NinjaRealm.Presentation.Village
         RosterPanels panels;
         DojoTab dojoTab;
         NinjaDefinition hallSelected;
+        ChapterDefinition mapChapter;
+        StageDefinition mapStage;
         Vector2 hallScroll;
         List<NinjaDefinition> allNinjas;
 
@@ -43,7 +45,14 @@ namespace NinjaRealm.Presentation.Village
         {
             controller = GetComponent<VillageController>();
             panels = new RosterPanels(() => controller.Profile, () => controller.Content);
-            controller.OpenedChanged += _ => panels.ResetScroll();
+            controller.OpenedChanged += _ =>
+            {
+                panels.ResetScroll();
+
+                // The campaign map opens on the stage picked for the next fight.
+                mapChapter = null;
+                mapStage = null;
+            };
         }
 
         void OnGUI()
@@ -202,39 +211,177 @@ namespace NinjaRealm.Presentation.Village
             panels.DrawMessage(footer);
         }
 
+        // ---------------------------------------------------------------- the Command Hall and its campaign map
+
+        /// <summary>Shows a chapter of the campaign map, for checking it from the editor menu.</summary>
+        public void ShowChapter(int number)
+        {
+            var profile = controller.Profile;
+            if (profile == null) return;
+            foreach (var chapter in profile.Campaign.Chapters)
+                if (chapter.Number == number) PickChapter(profile, chapter);
+        }
+
+        void PickChapter(ProfileService profile, ChapterDefinition chapter)
+        {
+            mapChapter = chapter;
+
+            // The stage to fight next in this chapter: the first one not cleared that is open, else its first stage.
+            mapStage = chapter.Stages.Count > 0 ? chapter.Stages[0] : null;
+            foreach (var stage in chapter.Stages)
+            {
+                if (profile.HasCleared(stage) || !profile.IsUnlocked(stage)) continue;
+                mapStage = stage;
+                break;
+            }
+        }
+
         void DrawCommandHall(Rect area)
         {
             var profile = controller.Profile;
-            var database = controller.Content;
-            var y = area.y;
-            if (profile != null)
+            if (profile == null)
             {
-                GUI.Label(new Rect(area.x, y, area.width, 22f),
-                    $"<b>Your clan</b>  {profile.OwnedNinjas().Count} ninjas, team size {profile.TeamSize}", PrototypeGui.Label);
-                y += 30f;
-
-                var opponentId = profile.Profile.opponent;
-                LineupDefinition opponent = null;
-                if (!string.IsNullOrEmpty(opponentId) && database != null) database.TryGet(opponentId, out opponent);
-                var lineupCount = profile.Profile.lineup?.Count ?? 0;
-                GUI.Label(new Rect(area.x, y, area.width, 22f),
-                    $"Saved lineup: <b>{lineupCount}</b> ninjas.  Next opponent: <b>{(opponent != null ? opponent.DisplayName : "choose one in battle")}</b>",
-                    PrototypeGui.Small);
-                y += 30f;
+                GUI.Label(area, "<color=#9aa3b0>Press Play to see the campaign with your save.</color>", PrototypeGui.Centered);
+                return;
             }
 
-            GUI.Label(new Rect(area.x, y, area.width, 40f),
-                "In battle you place your ninjas on the board, pick an opponent and fight. Wins pay Gold, Steel and clan XP, and can drop weapon components.",
-                PrototypeGui.Wrap);
-            y += 56f;
+            var campaign = profile.Campaign;
+            if (campaign.Stages.Count == 0)
+            {
+                GUI.Label(area, "<color=#ff9980>There are no campaign stages. Run Ninja Realm > Content > Create Prototype Content.</color>", PrototypeGui.Centered);
+                return;
+            }
 
+            if (mapChapter == null || mapStage == null)
+            {
+                mapStage = profile.CurrentStage();
+                mapChapter = campaign.ChapterOf(mapStage);
+            }
+
+            var y = area.y;
+
+            // Chapters along the top.
+            var chapters = campaign.Chapters;
+            var tabWidth = (area.width - (chapters.Count - 1) * 8f) / Mathf.Max(1, chapters.Count);
+            for (var i = 0; i < chapters.Count; i++)
+            {
+                var chapter = chapters[i];
+                var rect = new Rect(area.x + i * (tabWidth + 8f), y, tabWidth, 30f);
+                var open = profile.IsUnlocked(chapter);
+                var text = open
+                    ? $"{chapter.Number}. {chapter.DisplayName}   ★ {profile.ChapterStars(chapter)} / {chapter.MaxStars}"
+                    : $"{chapter.Number}. {chapter.DisplayName}   (locked)";
+                GUI.enabled = open;
+                if (GUI.Button(rect, text) && chapter != mapChapter) PickChapter(profile, chapter);
+                GUI.enabled = true;
+                if (chapter == mapChapter) PrototypeGui.Fill(new Rect(rect.x, rect.yMax + 2f, rect.width, 3f), PrototypeGui.Gold);
+            }
+
+            y += 42f;
+            GUI.Label(new Rect(area.x, y, area.width, 20f), $"<color=#9aa3b0>{mapChapter.Description}</color>", PrototypeGui.Small);
+            y += 28f;
+
+            // The chapter's stages, four to a row.
+            const int columns = 4;
+            const float cardHeight = 74f;
+            var cardWidth = (area.width - (columns - 1) * 8f) / columns;
+            var stages = mapChapter.Stages;
+            for (var i = 0; i < stages.Count; i++)
+            {
+                var stage = stages[i];
+                var rect = new Rect(area.x + i % columns * (cardWidth + 8f), y + i / columns * (cardHeight + 8f), cardWidth, cardHeight);
+                DrawStageCard(profile, stage, rect);
+            }
+
+            y += Mathf.CeilToInt(stages.Count / (float)columns) * (cardHeight + 8f) + 6f;
+
+            // The chapter's star chests.
+            var chests = mapChapter.Chests;
+            var stars = profile.ChapterStars(mapChapter);
+            var chestWidth = (area.width - Mathf.Max(0, chests.Count - 1) * 8f) / Mathf.Max(1, chests.Count);
+            for (var i = 0; i < chests.Count; i++)
+                DrawChest(profile, mapChapter, chests[i], stars, new Rect(area.x + i * (chestWidth + 8f), y, chestWidth, 52f));
+            if (chests.Count > 0) y += 64f;
+
+            // The picked stage and the way to battle.
+            var details = new Rect(area.x, y, area.width, area.yMax - y);
+            PrototypeGui.Fill(details, new Color(1f, 1f, 1f, 0.04f));
+            DrawStageDetails(profile, mapStage, new Rect(details.x + 12f, details.y + 8f, details.width - 24f, details.height - 16f));
+        }
+
+        void DrawStageCard(ProfileService profile, StageDefinition stage, Rect rect)
+        {
+            var open = profile.IsUnlocked(stage);
+            var selected = stage == mapStage;
+            PrototypeGui.Fill(rect, selected ? SelectedColor : open ? PrototypeGui.CardColor : PrototypeGui.DisabledColor, selected);
+            if (open && GUI.Button(rect, GUIContent.none, GUIStyle.none)) mapStage = stage;
+
+            var label = profile.Campaign.LabelOf(stage);
+            var name = stage.Lineup != null ? stage.Lineup.DisplayName : "Nobody";
+            var dim = open ? "" : "<color=#7a808c>";
+            var dimEnd = open ? "" : "</color>";
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 4f, rect.width - 16f, 20f), $"{dim}<b>{label}</b>{dimEnd}{(open ? LineupScreen.KindText(stage.Kind) : "")}", PrototypeGui.Label);
+            GUI.Label(new Rect(rect.xMax - 50f, rect.y + 6f, 44f, 16f), $"{dim}Lv {stage.Level}{dimEnd}", PrototypeGui.Small);
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 26f, rect.width - 16f, 18f), $"{dim}{name}{dimEnd}", PrototypeGui.Small);
+            if (open) PrototypeGui.Pips(new Vector2(rect.x + 9f, rect.y + 54f), profile.StarsOf(stage), StageStars.Max, PrototypeGui.Gold);
+            else GUI.Label(new Rect(rect.x + 8f, rect.y + 48f, rect.width - 16f, 18f), "<color=#7a808c>Locked</color>", PrototypeGui.Small);
+        }
+
+        void DrawChest(ProfileService profile, ChapterDefinition chapter, StarChest chest, int stars, Rect rect)
+        {
+            if (chest == null) return;
+            var opened = profile.ChestOpened(chapter, chest);
+            var ready = !opened && stars >= chest.stars;
+            PrototypeGui.Fill(rect, ready ? SelectedColor : PrototypeGui.CardColor, ready);
+            var gold = PrototypeGui.Hex(PrototypeGui.Gold);
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 4f, rect.width - 110f, 20f), $"<b>Chest</b>  <color=#{gold}>★ {chest.stars}</color>", PrototypeGui.Label);
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 26f, rect.width - 110f, 18f), profile.ChestContents(chest), PrototypeGui.Small);
+
+            var button = new Rect(rect.xMax - 100f, rect.y + 11f, 92f, 30f);
+            if (opened)
+                GUI.Label(button, "<color=#9aa3b0>Opened</color>", PrototypeGui.Centered);
+            else if (!ready)
+                GUI.Label(button, $"<color=#9aa3b0>{stars} / {chest.stars}</color>", PrototypeGui.Centered);
+            else if (GUI.Button(button, "Open"))
+                panels.Show(profile.TryOpenChest(chapter, chest, out var message), message);
+        }
+
+        void DrawStageDetails(ProfileService profile, StageDefinition stage, Rect area)
+        {
+            if (stage == null) return;
+            var campaign = profile.Campaign;
+            var opponent = stage.Lineup;
+            var textWidth = area.width - 260f;
+            var y = area.y;
+            GUI.Label(new Rect(area.x, y, textWidth, 24f),
+                $"<b>Stage {campaign.LabelOf(stage)}: {(opponent != null ? opponent.DisplayName : "Nobody")}</b>{LineupScreen.KindText(stage.Kind)}   <color=#9aa3b0>Level {stage.Level}, {(opponent != null ? opponent.Slots.Count : 0)} ninjas</color>",
+                PrototypeGui.Label);
+            y += 26f;
+
+            var text = opponent != null ? opponent.Description : "";
+            var progression = profile.Progression;
+            progression.FightPay(stage.RewardTier, true, out var gold, out var steel, out var xp);
+            text += $"\n<b>Win:</b> {gold} Gold, {steel} Steel, {xp} clan XP, {progression.DropChance(stage.RewardTier) / 100}% weapon drop.";
+            if (!profile.HasCleared(stage))
+                text += $"\n<color=#{PrototypeGui.Hex(PrototypeGui.Gold)}>First clear: {LineupScreen.FirstClearText(stage, progression)}.</color>";
+            GUI.Label(new Rect(area.x, y, textWidth, area.yMax - y), text, PrototypeGui.Wrap);
+
+            // The button, with the team it will send.
+            var button = new Rect(area.xMax - 240f, area.y + 4f, 240f, 44f);
             var canGo = GameScenes.CanLoad(GameScenes.Battle);
-            GUI.enabled = canGo;
-            if (GUI.Button(new Rect(area.x + area.width / 2f - 120f, y, 240f, 44f), "To battle!")) controller.GoToBattle();
+            GUI.enabled = canGo && profile.IsUnlocked(stage);
+            if (GUI.Button(button, $"To battle: stage {campaign.LabelOf(stage)}"))
+            {
+                profile.SelectStage(stage);
+                controller.GoToBattle();
+            }
+
             GUI.enabled = true;
-            if (!canGo)
-                GUI.Label(new Rect(area.x, y + 52f, area.width, 20f),
-                    "<color=#ff9980>The battle scene is not in the build settings. Run Ninja Realm > Scenes > Create Village Scene.</color>", PrototypeGui.Small);
+            var lineupCount = profile.Profile.lineup?.Count ?? 0;
+            var note = canGo
+                ? $"<color=#9aa3b0>Your lineup: {lineupCount} of {profile.TeamSize} ninjas. You set it up before the fight.</color>"
+                : "<color=#ff9980>The battle scene is not in the build settings. Run Ninja Realm > Scenes > Create Village Scene.</color>";
+            GUI.Label(new Rect(button.x, button.yMax + 6f, button.width, 54f), note, PrototypeGui.Wrap);
         }
 
         // ---------------------------------------------------------------- the Dojo and its hall

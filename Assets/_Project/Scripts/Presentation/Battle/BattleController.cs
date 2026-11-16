@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NinjaRealm.Combat;
+using NinjaRealm.Core.Campaign;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Fights;
@@ -12,7 +13,7 @@ namespace NinjaRealm.Presentation.Battle
 {
     public enum BattlePhase
     {
-        /// <summary>The player arranges their lineup and picks an opponent.</summary>
+        /// <summary>The player arranges their lineup against the stage's enemies.</summary>
         Setup,
 
         /// <summary>The fight plays.</summary>
@@ -23,10 +24,11 @@ namespace NinjaRealm.Presentation.Battle
     }
 
     /// <summary>
-    /// Runs the prototype battle loop: lineup setup, the fight, and the result. The screens
-    /// (LineupScreen, RosterScreen, BattleHud, ResultScreen) read and drive it. In play mode the
-    /// lineup is built from the ninjas and weapons in the player's save (<see cref="GameProfile"/>),
-    /// and every fight pays its rewards into it.
+    /// Runs the prototype battle loop: lineup setup against a campaign stage, the fight, and the
+    /// result. The screens (LineupScreen, RosterScreen, BattleHud, ResultScreen) read and drive
+    /// it. In play mode the lineup is built from the ninjas and weapons in the player's save
+    /// (<see cref="GameProfile"/>), the stage is the one picked there, and every fight pays its
+    /// rewards and stars into it.
     /// </summary>
     public sealed class BattleController : MonoBehaviour
     {
@@ -41,20 +43,28 @@ namespace NinjaRealm.Presentation.Battle
 
         readonly List<UnitView> previewViews = new List<UnitView>();
         readonly Dictionary<LineupSlot, UnitView> playerViews = new Dictionary<LineupSlot, UnitView>();
-        readonly List<LineupDefinition> opponents = new List<LineupDefinition>();
         bool initialized;
         bool previewDirty;
         bool lineupDirty;
         bool payOnFinish;
         LineupDefinition lastOpponent;
+        StageDefinition lastStage;
 
         public BattlePhase Phase { get; private set; } = BattlePhase.Setup;
 
         public PlayerLineup Lineup { get; private set; }
 
+        /// <summary>The campaign's chapters and stages in play order.</summary>
+        public CampaignMap Campaign { get; private set; }
+
+        /// <summary>The stage being set up for, or fought.</summary>
+        public StageDefinition Stage { get; private set; }
+
+        /// <summary>The enemy lineup on the board: the stage's, or the one an editor tool started a fight against.</summary>
         public LineupDefinition Opponent { get; private set; }
 
-        public IReadOnlyList<LineupDefinition> Opponents => opponents;
+        /// <summary>Stars the last fight earned. 0 for a loss, a draw or a fight outside the campaign.</summary>
+        public int LastStars { get; private set; }
 
         /// <summary>Both teams' ninjas shown on the board during setup.</summary>
         public IReadOnlyList<UnitView> PreviewViews => previewViews;
@@ -104,7 +114,7 @@ namespace NinjaRealm.Presentation.Battle
             if (playback != null) playback.Finished -= OnFightFinished;
         }
 
-        /// <summary>Loads the content and the opponent list. Safe to call more than once.</summary>
+        /// <summary>Loads the content, the save and the stage to fight. Safe to call more than once.</summary>
         public bool Initialize()
         {
             if (initialized) return true;
@@ -119,12 +129,12 @@ namespace NinjaRealm.Presentation.Battle
 
             if (!database.IsInitialized) database.Initialize();
 
-            opponents.Clear();
-            opponents.AddRange(database.GetAll<LineupDefinition>());
-            opponents.Sort((a, b) => a.Difficulty != b.Difficulty ? a.Difficulty.CompareTo(b.Difficulty) : string.CompareOrdinal(a.Id, b.Id));
-            Opponent = opponents.Count > 0 ? opponents[0] : null;
-
             if (Application.isPlaying) Profile = GameProfile.Load(database);
+
+            // Without a save every stage is open and the first one is picked.
+            Campaign = Profile != null ? Profile.Campaign : new CampaignMap(database);
+            Stage = Profile != null ? Profile.CurrentStage() : Campaign.Stages.Count > 0 ? Campaign.Stages[0] : null;
+            Opponent = Stage != null ? Stage.Lineup : null;
 
             Lineup = new PlayerLineup(Profile != null ? Profile.TeamSize : LineupRules.MaxUnits);
             Lineup.Changed += () =>
@@ -160,17 +170,26 @@ namespace NinjaRealm.Presentation.Battle
                 FitLineupToProfile();
             }
 
+            Opponent = Stage != null ? Stage.Lineup : null;
             board.Build(LineupRules.Columns, LineupRules.RowsPerTeam * 2);
             SetPhase(BattlePhase.Setup);
             RebuildPreview();
         }
 
-        public void SelectOpponent(LineupDefinition opponent)
+        /// <summary>True when the stage can be fought: always without a save, otherwise once the save has unlocked it.</summary>
+        public bool IsUnlocked(StageDefinition stage) =>
+            stage != null && Campaign != null && Campaign.Contains(stage) && (Profile == null || Profile.IsUnlocked(stage));
+
+        /// <summary>Picks the stage to set up for. Locked stages are refused.</summary>
+        public bool SelectStage(StageDefinition stage)
         {
-            if (opponent == null || opponent == Opponent) return;
-            Opponent = opponent;
+            if (Phase != BattlePhase.Setup || !IsUnlocked(stage)) return false;
+            if (stage == Stage) return true;
+            Stage = stage;
+            Opponent = stage.Lineup;
+            Profile?.SelectStage(stage);
             previewDirty = true;
-            lineupDirty = true;
+            return true;
         }
 
         /// <summary>Keeps the lineup to the ninjas and weapons the player owns and the team size. Call after the roster changes.</summary>
@@ -235,25 +254,36 @@ namespace NinjaRealm.Presentation.Battle
 
         // ---------------------------------------------------------------- fight
 
-        public bool CanFight => Phase == BattlePhase.Setup && Lineup != null && Lineup.Slots.Count > 0 && Opponent != null;
+        public bool CanFight => Phase == BattlePhase.Setup && Lineup != null && Lineup.Slots.Count > 0 && Stage != null && Stage.Lineup != null;
 
-        /// <summary>Starts a fight between the player's lineup and the chosen opponent.</summary>
+        /// <summary>Starts a fight between the player's lineup and the picked stage.</summary>
         public void StartFight() => StartFight(seed != 0 ? seed : NewSeed());
 
         public void StartFight(int fightSeed)
         {
-            if (!Initialize() || Lineup.Slots.Count == 0 || Opponent == null) return;
+            if (!Initialize() || Lineup.Slots.Count == 0 || Stage == null || Stage.Lineup == null) return;
             Save();
-            StartFight(Lineup.Slots, Opponent, fightSeed, true);
+            StartFight(Lineup.Slots, Stage, fightSeed, true);
         }
 
         /// <summary>
-        /// Starts a fight between any player lineup and an enemy lineup. The player's ninjas fight
-        /// at their level and stars in the save, the enemy's at the lineup's level. When
-        /// <paramref name="payRewards"/> is set, the result is paid into the save. Used by the
-        /// screens and by editor tools.
+        /// Starts a fight between any player lineup and a stage. The player's ninjas fight at
+        /// their level and stars in the save, the enemy's at the stage's level, its boss with the
+        /// boss stars. When <paramref name="payRewards"/> is set, the result and its stars are
+        /// paid into the save.
         /// </summary>
-        public void StartFight(IReadOnlyList<LineupSlot> playerSlots, LineupDefinition opponent, int fightSeed, bool payRewards = false)
+        public void StartFight(IReadOnlyList<LineupSlot> playerSlots, StageDefinition stage, int fightSeed, bool payRewards = false)
+        {
+            if (stage == null || stage.Lineup == null) return;
+            StartFight(playerSlots, stage.Lineup, stage, stage.RankOf, fightSeed, payRewards);
+        }
+
+        /// <summary>Starts a fight against a lineup outside the campaign, at level 1. It pays nothing. Used by editor tools.</summary>
+        public void StartFight(IReadOnlyList<LineupSlot> playerSlots, LineupDefinition opponent, int fightSeed) =>
+            StartFight(playerSlots, opponent, null, _ => NinjaRank.Base, fightSeed, false);
+
+        void StartFight(IReadOnlyList<LineupSlot> playerSlots, LineupDefinition opponent, StageDefinition stage,
+            Func<NinjaDefinition, NinjaRank> enemyRank, int fightSeed, bool payRewards)
         {
             if (!Initialize()) return;
 
@@ -266,8 +296,7 @@ namespace NinjaRealm.Presentation.Battle
             CurrentSeed = fightSeed;
             var builder = CombatSetupBuilder.FromDatabase(database);
             builder.AddLineup(0, playerSlots, RankOf);
-            var enemyRank = new NinjaRank(opponent != null ? opponent.Level : 1, 1);
-            if (opponent != null) builder.AddLineup(1, opponent.Slots, _ => enemyRank);
+            if (opponent != null) builder.AddLineup(1, opponent.Slots, enemyRank);
             var setup = builder.Build();
             board.Build(setup.BoardColumns, setup.BoardRows);
 
@@ -281,8 +310,11 @@ namespace NinjaRealm.Presentation.Battle
 
             lastPlayerSlots = CopySlots(playerSlots);
             lastOpponent = opponent;
-            payOnFinish = payRewards && Profile != null;
+            lastStage = stage;
+            Opponent = opponent;
+            payOnFinish = payRewards && Profile != null && stage != null;
             LastRewards = null;
+            LastStars = 0;
             SetPhase(BattlePhase.Fight);
             playback.Paused = false;
             playback.Begin(simulation, board, views, NameOf);
@@ -299,10 +331,34 @@ namespace NinjaRealm.Presentation.Battle
         }
 
         /// <summary>Plays the last fight again with the same seed, to watch it. A replay pays nothing.</summary>
-        public void Replay() => StartFight(lastPlayerSlots, lastOpponent, CurrentSeed);
+        public void Replay() => StartLast(CurrentSeed, false);
 
         /// <summary>Plays the last matchup again with a new seed. It pays like any fight.</summary>
-        public void FightAgain() => StartFight(lastPlayerSlots, lastOpponent, seed != 0 ? seed : NewSeed(), true);
+        public void FightAgain() => StartLast(seed != 0 ? seed : NewSeed(), true);
+
+        void StartLast(int fightSeed, bool payRewards)
+        {
+            if (lastStage != null) StartFight(lastPlayerSlots, lastStage, fightSeed, payRewards);
+            else if (lastOpponent != null) StartFight(lastPlayerSlots, lastOpponent, fightSeed);
+        }
+
+        /// <summary>The stage after the one just fought, when the result screen can offer it: it exists and is unlocked.</summary>
+        public StageDefinition NextStage
+        {
+            get
+            {
+                var next = Campaign != null ? Campaign.Next(lastStage != null ? lastStage : Stage) : null;
+                return IsUnlocked(next) ? next : null;
+            }
+        }
+
+        /// <summary>Goes back to the lineup with the next stage picked.</summary>
+        public void GoToNextStage()
+        {
+            var next = NextStage;
+            EnterSetup();
+            if (next != null) SelectStage(next);
+        }
 
         /// <summary>True when the village scene can be loaded, so the screens show a way back.</summary>
         public bool CanLeaveToVillage => Application.isPlaying && GameScenes.CanLoad(GameScenes.Village);
@@ -323,8 +379,9 @@ namespace NinjaRealm.Presentation.Battle
         void OnFightFinished(CombatResult result)
         {
             if (Phase != BattlePhase.Fight) return;
+            LastStars = lastStage != null ? StageStars.For(result) : 0;
             if (payOnFinish && Profile != null)
-                LastRewards = Profile.ApplyFightResult(lastOpponent, result.WinningTeam == 0, CurrentSeed);
+                LastRewards = Profile.ApplyStageResult(lastStage, LastStars, CurrentSeed);
             payOnFinish = false;
             SetPhase(BattlePhase.Result);
         }
@@ -351,7 +408,6 @@ namespace NinjaRealm.Presentation.Battle
             {
                 Lineup.LoadSaved(Profile.Profile.lineup, database);
                 if (Lineup.Slots.Count == 0) Lineup.SetSlots(StarterLineup(Profile.OwnedNinjas()));
-                SelectSavedOpponent(Profile.Profile.opponent);
             }
             else
             {
@@ -361,16 +417,10 @@ namespace NinjaRealm.Presentation.Battle
             lineupDirty = false;
         }
 
-        void SelectSavedOpponent(string opponentId)
-        {
-            foreach (var opponent in opponents)
-                if (opponent.Id == opponentId) Opponent = opponent;
-        }
-
         void Save()
         {
             lineupDirty = false;
-            if (Profile != null && Lineup != null) Profile.SaveLineup(Lineup, Opponent);
+            if (Profile != null && Lineup != null) Profile.SaveLineup(Lineup);
         }
 
         /// <summary>The first ninjas available, along the front and back rows, so the first press of Fight shows something.</summary>

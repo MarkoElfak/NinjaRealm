@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using NinjaRealm.Combat;
+using NinjaRealm.Core.Campaign;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Fights;
@@ -47,6 +48,9 @@ namespace NinjaRealm.Tests
         WeaponDefinition Weapon(string name) => database.Get<WeaponDefinition>("weapon." + name);
 
         LineupDefinition Opponent(string name) => database.Get<LineupDefinition>("lineup." + name);
+
+        /// <summary>A campaign stage by chapter and place, such as "1_1".</summary>
+        StageDefinition Stage(string place) => database.Get<StageDefinition>("stage." + place);
 
         int Gold => service.Balance(progression.Gold);
 
@@ -245,8 +249,8 @@ namespace NinjaRealm.Tests
         [Test]
         public void FirstWin_PaysABonusAndAWeapon()
         {
-            var bandits = Opponent("bandit_patrol");
-            var rewards = service.ApplyFightResult(bandits, true, 7);
+            var bandits = Stage("1_1");
+            var rewards = service.ApplyStageResult(bandits, 3, 7);
 
             Assert.IsTrue(rewards.FirstWin);
             Assert.AreEqual(90, rewards.Gold);
@@ -257,18 +261,23 @@ namespace NinjaRealm.Tests
             Assert.AreEqual(WeaponTier.Component, rewards.Drop.Tier);
             Assert.AreEqual(500 + 290, Gold);
             Assert.AreEqual(5, Steel);
-            Assert.IsTrue(service.HasBeaten(bandits));
+            Assert.AreEqual(100 + 20, Karma, "the first clear of a chapter 1 stage pays 20 Karma");
+            Assert.IsTrue(service.HasCleared(bandits));
 
-            var again = service.ApplyFightResult(bandits, true, 7);
+            var again = service.ApplyStageResult(bandits, 3, 7);
             Assert.IsFalse(again.FirstWin);
             Assert.AreEqual(0, again.FirstWinGold);
+            Assert.AreEqual(0, again.FirstClearKarma);
         }
 
         [Test]
         public void Loss_PaysAQuarterOfTheGoldAndHalfTheXp()
         {
-            var rewards = service.ApplyFightResult(Opponent("ember_clan"), false, 7);
+            var tierTwo = Stage("1_6");
+            Assert.AreEqual(2, tierTwo.RewardTier);
+            var rewards = service.ApplyStageResult(tierTwo, 0, 7);
 
+            Assert.IsFalse(rewards.Won);
             Assert.AreEqual(30, rewards.Gold);
             Assert.AreEqual(0, rewards.Steel);
             Assert.AreEqual(20, rewards.ClanXp);
@@ -279,24 +288,26 @@ namespace NinjaRealm.Tests
         [Test]
         public void Drops_AreTheSameForTheSameSeed()
         {
-            var tide = Opponent("tide_shrine");
-            service.Profile.beatenLineups.Add(tide.Id);
+            var tide = Stage("3_2");
+            service.Profile.stages.Add(new StageProgress { id = tide.Id, stars = 3 });
             var other = ProfileService.Load(new MemorySaveStorage(), database, 1);
-            other.Profile.beatenLineups.Add(tide.Id);
+            other.Profile.stages.Add(new StageProgress { id = tide.Id, stars = 3 });
 
             for (var seed = 1; seed < 20; seed++)
-                Assert.AreEqual(service.ApplyFightResult(tide, true, seed).Drop, other.ApplyFightResult(tide, true, seed).Drop, $"seed {seed}");
+                Assert.AreEqual(service.ApplyStageResult(tide, 3, seed).Drop, other.ApplyStageResult(tide, 3, seed).Drop, $"seed {seed}");
         }
 
         [Test]
         public void ClanLevels_PayKarmaAndGrowTheTeam()
         {
-            var shogun = Opponent("shogun_guard");
+            // Already cleared, so the first clear's own Karma stays out of the count.
+            var shogun = Stage("3_8");
+            service.Profile.stages.Add(new StageProgress { id = shogun.Id, stars = 3 });
             FightRewards rewards = null;
             var levels = 0;
             while (service.ClanLevel < 3)
             {
-                rewards = service.ApplyFightResult(shogun, true, levels);
+                rewards = service.ApplyStageResult(shogun, 3, levels);
                 levels += rewards.ClanLevelsGained;
             }
 
@@ -369,11 +380,12 @@ namespace NinjaRealm.Tests
         {
             service.TryLevelUp(Ninja("kaito"), out _);
             service.RefreshDojoIfNewDay(Today);
-            service.ApplyFightResult(Opponent("bandit_patrol"), true, 3);
+            service.ApplyStageResult(Stage("1_1"), 2, 3);
             var lineup = new PlayerLineup();
             lineup.Place(Ninja("hana"), 3, 0);
             lineup.Equip(lineup.Slots[0], Weapon("kunai"));
-            service.SaveLineup(lineup, Opponent("ember_clan"));
+            service.SaveLineup(lineup);
+            Assert.IsTrue(service.SelectStage(Stage("1_2")));
 
             var loaded = ProfileService.Load(new MemorySaveStorage(storage.Text), database, 999);
 
@@ -383,9 +395,9 @@ namespace NinjaRealm.Tests
             Assert.AreEqual(Karma, loaded.Balance(progression.Karma));
             Assert.AreEqual(Steel, loaded.Balance(progression.Steel));
             Assert.AreEqual(service.ClanXp, loaded.ClanXp);
-            Assert.IsTrue(loaded.HasBeaten(Opponent("bandit_patrol")));
+            Assert.AreEqual(2, loaded.StarsOf(Stage("1_1")));
             CollectionAssert.AreEqual(service.Profile.dojoOffers, loaded.Profile.dojoOffers);
-            Assert.AreEqual("lineup.ember_clan", loaded.Profile.opponent);
+            Assert.AreEqual(Stage("1_2"), loaded.CurrentStage());
             Assert.AreEqual(42, loaded.Profile.randomSeed, "the seed comes from the file, not the new one");
 
             var reloaded = new PlayerLineup();
@@ -451,7 +463,7 @@ namespace NinjaRealm.Tests
             var writes = storage.Writes;
             service.TryLevelUp(Ninja("kaito"), out _);
             service.RefreshDojoIfNewDay(Today);
-            service.ApplyFightResult(Opponent("bandit_patrol"), false, 1);
+            service.ApplyStageResult(Stage("1_1"), 0, 1);
             Assert.AreEqual(writes + 3, storage.Writes);
 
             service.TryLevelUp(Ninja("nami"), out _);

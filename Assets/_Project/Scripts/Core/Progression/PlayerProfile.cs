@@ -41,9 +41,20 @@ namespace NinjaRealm.Core.Progression
         public int clanLevel = 1;
         public int clanXp;
         public List<SavedLineupSlot> lineup = new List<SavedLineupSlot>();
-        public string opponent = string.Empty;
 
-        /// <summary>Enemy lineups beaten at least once, for first-win bonuses.</summary>
+        /// <summary>The campaign stage picked for the next fight.</summary>
+        public string stage = string.Empty;
+
+        /// <summary>The best stars on every campaign stage cleared so far.</summary>
+        public List<StageProgress> stages = new List<StageProgress>();
+
+        /// <summary>The star chests opened so far.</summary>
+        public List<OpenedChest> chests = new List<OpenedChest>();
+
+        /// <summary>
+        /// Only in saves from before the campaign (version 1): the enemy lineups beaten at least
+        /// once. Loading turns them into cleared stages and empties the list.
+        /// </summary>
         public List<string> beatenLineups = new List<string>();
 
         /// <summary>The Dojo's current offers by ninja ID. An empty entry was already recruited.</summary>
@@ -72,6 +83,22 @@ namespace NinjaRealm.Core.Progression
         public int shards;
 
         public NinjaRank Rank => new NinjaRank(level, stars);
+    }
+
+    /// <summary>A cleared campaign stage and the most stars won on it.</summary>
+    [Serializable]
+    public sealed class StageProgress
+    {
+        public string id;
+        public int stars;
+    }
+
+    /// <summary>An opened star chest: the chapter it belongs to and the stars it needed.</summary>
+    [Serializable]
+    public sealed class OpenedChest
+    {
+        public string chapter;
+        public int stars;
     }
 
     [Serializable]

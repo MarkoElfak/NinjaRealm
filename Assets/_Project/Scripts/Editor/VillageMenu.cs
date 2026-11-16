@@ -15,6 +15,19 @@ namespace NinjaRealm.Editor
         [MenuItem(Menu + "Open Command Hall")]
         public static void OpenCommandHall() => Open(VillageBuildingKind.CommandHall);
 
+        [MenuItem(Menu + "Open Command Hall, Chapter 2")]
+        public static void OpenChapterTwo() => OpenChapter(2);
+
+        [MenuItem(Menu + "Open Command Hall, Chapter 3")]
+        public static void OpenChapterThree() => OpenChapter(3);
+
+        static void OpenChapter(int number)
+        {
+            if (!Open(VillageBuildingKind.CommandHall)) return;
+            var screen = Object.FindAnyObjectByType<VillageScreen>();
+            if (screen != null) screen.ShowChapter(number);
+        }
+
         [MenuItem(Menu + "Open Dojo")]
         public static void OpenDojo() => Open(VillageBuildingKind.Dojo);
 
