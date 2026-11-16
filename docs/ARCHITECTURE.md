@@ -132,7 +132,7 @@ Known limits for now: a timed buff to health does not change max health, and uni
 * `StageStars.For` turns a finished fight into stars: 1 for a win, 2 with at least half the team standing, 3 with nobody fallen. A loss or a draw is 0.
 * The save keeps the best stars per stage, the opened chests and the stage picked for the next fight. `ProfileService` has the rules: `IsUnlocked` (the first stage, a stage cleared before, or the one after a cleared stage), `CurrentStage`, `SelectStage`, `ApplyStageResult` and `TryOpenChest`.
 * `ApplyStageResult(stage, stars, seed)` pays every fight by the stage's reward tier (Gold, Steel, clan XP, a chance of a component). The first clear adds the first-win Gold, a certain component, and the stage's own Karma, Steel and ninja. A ninja the player already owns arrives as a shard.
-* `CampaignWalker` plays the whole campaign headless with a simple player (strongest ninjas, Karma into the lowest level, Dojo offers that help, weapons handed out, farming the stage before after two losses) and reports the fights each stage and chapter took. **Ninja Realm > Balance > Walk the Campaign** writes the report to `Logs/campaign_walk.md`.
+* `CampaignWalker` plays the whole campaign headless with a simple player (strongest ninjas, star chests opened, Karma into the lowest level, Dojo offers that help, weapons handed out, farming the stage before after two losses) and reports the fights each stage and chapter took. **Ninja Realm > Balance > Walk the Campaign** writes the report to `Logs/campaign_walk.md`.
 
 ## Progression and the save file
 

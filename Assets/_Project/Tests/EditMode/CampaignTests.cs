@@ -103,8 +103,8 @@ namespace NinjaRealm.Tests
         {
             var chief = Stage("1_8");
 
-            Assert.AreEqual(new NinjaRank(6, 2), chief.RankOf(Ninja("kaito")));
-            Assert.AreEqual(new NinjaRank(6, 1), chief.RankOf(Ninja("daichi")));
+            Assert.AreEqual(new NinjaRank(chief.Level, 2), chief.RankOf(Ninja("kaito")));
+            Assert.AreEqual(new NinjaRank(chief.Level, 1), chief.RankOf(Ninja("daichi")));
             Assert.AreEqual(Ninja("mei"), chief.FirstClearNinja);
             Assert.AreEqual(new NinjaRank(1, 1), Stage("1_1").RankOf(Ninja("kaito")));
         }

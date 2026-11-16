@@ -55,8 +55,8 @@ namespace NinjaRealm.Core.Campaign
     /// <summary>
     /// Plays the campaign headlessly with a simple, sensible player, to see how long each
     /// chapter takes. The player always fights the next stage with its strongest ninjas,
-    /// spends Karma on its lowest level, buys what the Dojo offers when it helps, forges what
-    /// it can and hands out its weapons. After two losses in a row it fights the stage before
+    /// opens star chests, spends Karma on its lowest level, buys what the Dojo offers when it
+    /// helps, forges what it can and hands out its weapons. After two losses in a row it fights the stage before
     /// for Gold and clan XP, then tries again. Every run with the same seed goes the same way.
     /// </summary>
     public sealed class CampaignWalker
@@ -180,6 +180,11 @@ namespace NinjaRealm.Core.Campaign
 
         void Spend(ProfileService service)
         {
+            // Star chests are opened as soon as the stars are there.
+            foreach (var chapter in service.Campaign.Chapters)
+                foreach (var chest in chapter.Chests)
+                    service.TryOpenChest(chapter, chest, out _);
+
             // Recruits: a new ninja while the team has room for one, otherwise shards for the ninjas that fight.
             var team = TopNinjas(service);
             var offers = service.DojoOffers();

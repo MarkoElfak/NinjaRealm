@@ -274,7 +274,7 @@ namespace NinjaRealm.Core.Prototype
             var smokeTemple = Lineup("smoke_temple", "Smoke Temple", "Goro heals with every hit of his Kusarigama, behind two Vanguards.",
                 Slot(takeshi, 3, 3, jadeCharm), Slot(jiro, 2, 3, ironPlate), Slot(goro, 4, 3, kusarigama), Slot(saya, 2, 0, chakraScroll),
                 Slot(mei, 4, 0, prayerBeads));
-            var emberLord = Lineup("ember_lord", "Ember Lord", "Jiro, lord of the Ember Clan, fights at three stars with his clan around him.",
+            var emberLord = Lineup("ember_lord", "Ember Lord", "Jiro, lord of the Ember Clan, fights at two stars with his clan around him.",
                 Slot(jiro, 3, 3, ironPlate, jadeCharm), Slot(kaito, 2, 3, kunai), Slot(goro, 4, 3, swiftSandals), Slot(mei, 3, 1, dragonFan),
                 Slot(daichi, 1, 3, ironPlate));
 
@@ -300,7 +300,7 @@ namespace NinjaRealm.Core.Prototype
             var shogunsVanguard = Lineup("shoguns_vanguard", "Shogun's Vanguard", "Three Vanguards screen Goro and two casters. The last gate before the guard.",
                 Slot(jiro, 3, 3, ironPlate, jadeCharm), Slot(daichi, 2, 3, ironPlate), Slot(takeshi, 4, 3, jadeCharm),
                 Slot(goro, 3, 2, shadowKatana), Slot(saya, 2, 0, chakraScroll), Slot(mei, 4, 0, dragonFan, windBoots));
-            var shogunGuard = Lineup("shogun_guard", "Shogun's Guard", "The Shogun's elite: every synergy they can field, the best weapons, and a three-star Goro.",
+            var shogunGuard = Lineup("shogun_guard", "Shogun's Guard", "The Shogun's elite: every synergy they can field, the best weapons, and a two-star Goro.",
                 Slot(jiro, 3, 3, ironPlate, jadeCharm), Slot(goro, 2, 3, shadowKatana, kusarigama), Slot(kaito, 4, 3, shadowKatana),
                 Slot(takeshi, 1, 3, jadeCharm), Slot(nami, 3, 0, dragonFan, chakraScroll), Slot(mei, 5, 1, dragonFan, windBoots));
 
@@ -332,21 +332,22 @@ namespace NinjaRealm.Core.Prototype
             void Chapter(int number, string id, string name, string description, WeaponDefinition lastChest, params StageDefinition[] stages) =>
                 sink.Provide<ChapterDefinition>("Campaign/Chapters", "chapter." + id, name, c => c.Configure(number, description, stages, Chests(number, lastChest)));
 
-            // The bosses fight with stars: a two-star Kaito, a three-star Jiro and a three-star Goro. Beating one wins a ninja.
+            // The bosses fight with stars: Kaito, Jiro and Goro at two stars. Beating one wins a ninja.
+            // The levels are tuned with the campaign walker; see docs/BALANCE.md.
             Chapter(1, "bandit_hills", "Bandit Hills", "Bandits hold the hill roads above the village. Clear them out and face their chief.", windBoots,
                 Stage(1, 1, banditPatrol, 1), Stage(1, 2, hillScouts, 2), Stage(1, 3, mountainLookout, 2), Stage(1, 4, banditAmbush, 3),
-                Stage(1, 5, smugglersCamp, 3), Stage(1, 6, stolenShrine, 4), Stage(1, 7, chiefsGuard, 5),
-                Stage(1, 8, banditChief, 6, kaito, 2, mei));
+                Stage(1, 5, smugglersCamp, 3), Stage(1, 6, stolenShrine, 3), Stage(1, 7, chiefsGuard, 4),
+                Stage(1, 8, banditChief, 4, kaito, 2, mei));
 
             Chapter(2, "ember_valley", "Ember Valley", "The Ember Clan burns everything it touches. Their lord Jiro waits at the end of the valley.", kusarigama,
-                Stage(2, 1, valleyGate, 6), Stage(2, 2, ashRoad, 7), Stage(2, 3, burningFields, 8), Stage(2, 4, flameWardens, 10),
-                Stage(2, 5, lavaBridge, 11), Stage(2, 6, emberClan, 12), Stage(2, 7, smokeTemple, 14),
-                Stage(2, 8, emberLord, 15, jiro, 3, jiro));
+                Stage(2, 1, valleyGate, 7), Stage(2, 2, ashRoad, 8), Stage(2, 3, burningFields, 10), Stage(2, 4, flameWardens, 11),
+                Stage(2, 5, lavaBridge, 12), Stage(2, 6, emberClan, 13), Stage(2, 7, smokeTemple, 14),
+                Stage(2, 8, emberLord, 14, jiro, 2, jiro));
 
             Chapter(3, "tide_coast", "Tide Coast", "The Shogun's fleet has landed on the coast. Break through to his guard.", dragonFan,
-                Stage(3, 1, coastRoad, 15), Stage(3, 2, tideShrine, 16), Stage(3, 3, pearlDivers, 18), Stage(3, 4, stormMonks, 20),
-                Stage(3, 5, stoneFortress, 21), Stage(3, 6, harborBlockade, 23), Stage(3, 7, shogunsVanguard, 25),
-                Stage(3, 8, shogunGuard, 26, goro, 3, nami));
+                Stage(3, 1, coastRoad, 25), Stage(3, 2, tideShrine, 28), Stage(3, 3, pearlDivers, 31), Stage(3, 4, stormMonks, 33),
+                Stage(3, 5, stoneFortress, 35), Stage(3, 6, harborBlockade, 37), Stage(3, 7, shogunsVanguard, 39),
+                Stage(3, 8, shogunGuard, 40, goro, 2, nami));
 
             // Resources
             var gold = Resource("gold", "Gold", new Color(1f, 0.82f, 0.35f), "Earned in every fight. Recruits ninjas.");
@@ -408,9 +409,9 @@ namespace NinjaRealm.Core.Prototype
                 p.teamSizes = new List<ProgressionDefinition.TeamSizeStep>
                 {
                     new ProgressionDefinition.TeamSizeStep { clanLevel = 1, teamSize = 3 },
-                    new ProgressionDefinition.TeamSizeStep { clanLevel = 3, teamSize = 4 },
-                    new ProgressionDefinition.TeamSizeStep { clanLevel = 6, teamSize = 5 },
-                    new ProgressionDefinition.TeamSizeStep { clanLevel = 10, teamSize = 6 },
+                    new ProgressionDefinition.TeamSizeStep { clanLevel = 2, teamSize = 4 },
+                    new ProgressionDefinition.TeamSizeStep { clanLevel = 5, teamSize = 5 },
+                    new ProgressionDefinition.TeamSizeStep { clanLevel = 9, teamSize = 6 },
                 };
 
                 // Income: the Mint fills in 8 hours with about what four easy wins pay; the Steel Mine with enough for a forge and a half.

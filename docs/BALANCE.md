@@ -105,15 +105,32 @@ Three chapters of eight stages. Every fourth stage is an elite and every eighth 
 
 | Chapter | Enemies | Levels | Weapons | Boss | Boss reward |
 | --- | --- | --- | --- | --- | --- |
-| 1 Bandit Hills | 3, then 4 from 1-5 | 1, 2, 2, 3, 3, 4, 5, 6 | none, then one component | Kaito, 2 stars, Shadow Katana | Mei |
-| 2 Ember Valley | 4, then 5 from 2-5 | 6, 7, 8, 10, 11, 12, 14, 15 | components, a few combined | Jiro, 3 stars | Jiro |
-| 3 Tide Coast | 5, then 6 from 3-5 | 15, 16, 18, 20, 21, 23, 25, 26 | combined | Goro, 3 stars, two combined weapons | Nami |
+| 1 Bandit Hills | 3, then 4 from 1-5 | 1, 2, 2, 3, 3, 3, 4, 4 | none, then one component | Kaito, 2 stars, Shadow Katana | Mei |
+| 2 Ember Valley | 4, then 5 from 2-5 | 7, 8, 10, 11, 12, 13, 14, 14 | components, a few combined | Jiro, 2 stars | Jiro |
+| 3 Tide Coast | 5, then 6 from 3-5 | 25, 28, 31, 33, 35, 37, 39, 40 | combined | Goro, 2 stars, two combined weapons | Nami |
 
 * **Pay.** Every fight pays by the stage's reward tier, which goes up every five stages (tier 1 for 1-1 to 1-5, tier 5 from 3-5). Tier `t` pays `60 + 30t` Gold, `5t` Steel and `20 + 10t` clan XP for a win, and has a `30 + 10t` percent chance of a component.
 * **First clear.** `200t` Gold, a certain component and 20 Karma per chapter number. Elites add 20 Steel per chapter number, enough for a forge in chapter 1. Bosses add a ninja.
 * **Stars.** 1 for the win, 2 with at least half the team standing, 3 with nobody fallen. Each chapter has chests at 8, 16 and 24 stars: Gold and Steel (300 and 20 per chapter number), Karma (100 per chapter number), and a combined weapon (Wind Boots, Kusarigama, Dragon Fan). The last chest needs three stars on every stage.
-* **Pace.** The targets are about 15 fights for chapter 1, 40 for chapter 2 and 80 for chapter 3. Clan XP is the clock behind that: the team grows to 4 at clan level 3 (300 XP, about ten tier 1 wins), to 5 at level 6 and to 6 at level 10, which is when the enemy teams grow too.
-* **Checking it.** **Ninja Realm > Balance > Walk the Campaign** plays the campaign three times with `CampaignWalker` and writes the fights per stage and chapter to `Logs/campaign_walk.md`. The levels above are the first pass from the plan and have not been tuned against a walk yet.
+* **Pace.** The targets are about 15 fights for chapter 1, 40 for chapter 2 and 80 for chapter 3. Clan XP is the clock behind that: the team grows to 4 at clan level 2, to 5 at level 5 and to 6 at level 9, which the walker reaches about when the enemy teams grow at 1-5, 2-5 and 3-5. With the earlier steps (3, 6 and 10) the fifth stage of each chapter was a wall of 8 to 20 fights that no level could soften, because a team one ninja short loses whatever the levels are.
+* **Checking it.** **Ninja Realm > Balance > Walk the Campaign** plays the campaign three times with `CampaignWalker` and writes the fights per stage and chapter to `Logs/campaign_walk.md`. The walker is a plain player: strongest ninjas, Karma into the lowest level, Dojo offers that help, chests opened at once, and a fight on the stage before after two losses in a row. A real player who places ninjas well needs fewer fights.
+
+### Walks behind these levels
+
+100 walks (seeds 1 to 50 and 101 to 150), fights per chapter:
+
+| Chapter | Target | Median | Middle half of the walks | Of which the boss (median) |
+| --- | --- | --- | --- | --- |
+| 1 Bandit Hills | 15 | 18 to 20 | 10 to 25 | 4 to 6 |
+| 2 Ember Valley | 40 | 33 to 36 | 20 to 53 | 10 to 12 |
+| 3 Tide Coast | 80 | 87 | 69 to 120 | 20 to 34 |
+
+What the walks showed:
+
+* **Stars and team size count for far more than levels.** A level adds 4% to health and attack damage; a star multiplies them by 1.6 and a fifth ninja adds a quarter of a team. So enemy levels run well ahead of the player's: the walker clears chapter 3 (enemy levels 25 to 40, one star) with six ninjas at level 13 or 14 and two stars on average. If that reads badly on the stage card, the fix is a star rank for the whole enemy lineup on `StageDefinition`, not higher levels.
+* **Bosses are the walls.** A boss star is worth about fifteen levels, so each boss takes a third of its chapter. Three-star bosses were too much: a three-star Jiro at level 15 took a median of 44 fights and a three-star Goro at level 36 took 56, so all three bosses fight at two stars and the last one makes up the difference in levels.
+* **Luck in the Dojo is the spread.** The same levels take between 93 and 331 fights for the whole campaign depending on which ninjas and shards the Dojo offers. Chapter 3 has the widest spread.
+* The first pass (levels 1 to 26, three-star bosses in chapters 2 and 3, team steps at 3, 6 and 10) took a median of 26, 68 and 40 fights, with 44 of chapter 2's fights on its boss and chapter 3 over in one try per stage until its boss.
 
 ## Next
 

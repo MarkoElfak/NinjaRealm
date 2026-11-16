@@ -89,8 +89,10 @@ namespace NinjaRealm.Tests
             Assert.AreEqual(13600, progression.StatMultiplier(10, 1));
             Assert.AreEqual(16000, progression.StatMultiplier(1, 2));
             Assert.AreEqual(21760, progression.StatMultiplier(10, 2));
-            Assert.AreEqual(3, progression.TeamSize(2));
-            Assert.AreEqual(4, progression.TeamSize(3));
+            Assert.AreEqual(3, progression.TeamSize(1));
+            Assert.AreEqual(4, progression.TeamSize(2));
+            Assert.AreEqual(4, progression.TeamSize(4));
+            Assert.AreEqual(5, progression.TeamSize(5));
             Assert.AreEqual(6, progression.TeamSize(20));
         }
 
@@ -305,14 +307,14 @@ namespace NinjaRealm.Tests
             service.Profile.stages.Add(new StageProgress { id = shogun.Id, stars = 3 });
             FightRewards rewards = null;
             var levels = 0;
-            while (service.ClanLevel < 3)
+            while (service.ClanLevel < 2)
             {
                 rewards = service.ApplyStageResult(shogun, 3, levels);
                 levels += rewards.ClanLevelsGained;
             }
 
-            Assert.AreEqual(2, levels);
-            Assert.AreEqual(100 + progression.ClanLevelKarma(2) + progression.ClanLevelKarma(3), Karma);
+            Assert.AreEqual(1, levels);
+            Assert.AreEqual(100 + progression.ClanLevelKarma(2), Karma);
             Assert.AreEqual(4, service.TeamSize);
             Assert.AreEqual(4, rewards.TeamSizeAfter);
         }
