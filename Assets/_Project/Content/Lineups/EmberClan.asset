@@ -15,8 +15,6 @@ MonoBehaviour:
   id: lineup.ember_clan
   displayName: Ember Clan
   description: Three Fire ninjas set everything they hit burning.
-  difficulty: 2
-  level: 2
   slots:
   - ninja: {fileID: 11400000, guid: 1d44ddad18d604730b0578c1c1e92743, type: 2}
     column: 3

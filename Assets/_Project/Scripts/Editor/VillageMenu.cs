@@ -54,6 +54,13 @@ namespace NinjaRealm.Editor
             if (owned.Count > 0) village.OpenNinja(owned[0]);
         }
 
+        [MenuItem(Menu + "Go to Battle")]
+        public static void GoToBattle()
+        {
+            var village = Village();
+            if (village != null) village.GoToBattle();
+        }
+
         [MenuItem(Menu + "Close Panel")]
         public static void ClosePanel()
         {

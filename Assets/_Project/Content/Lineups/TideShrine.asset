@@ -15,8 +15,6 @@ MonoBehaviour:
   id: lineup.tide_shrine
   displayName: Tide Shrine
   description: Water healers that outlast you behind a shielded wall.
-  difficulty: 3
-  level: 4
   slots:
   - ninja: {fileID: 11400000, guid: 82c482e3f22f74e51b146e90b6abf13b, type: 2}
     column: 3

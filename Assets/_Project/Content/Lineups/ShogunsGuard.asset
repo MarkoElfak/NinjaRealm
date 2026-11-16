@@ -14,9 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Lineups.LineupDefinition
   id: lineup.shogun_guard
   displayName: Shogun's Guard
-  description: 'The Shogun''s elite: every synergy they can field, and the best weapons.'
-  difficulty: 5
-  level: 10
+  description: 'The Shogun''s elite: every synergy they can field, the best weapons,
+    and a two-star Goro.'
   slots:
   - ninja: {fileID: 11400000, guid: 1d44ddad18d604730b0578c1c1e92743, type: 2}
     column: 3

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd72710b9b1a4cbe84e7b7b233798a5f, type: 3}
+  m_Name: 36HarborBlockade
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Campaign.StageDefinition
+  id: stage.3_6
+  displayName: 3-6 Harbor Blockade
+  lineup: {fileID: 11400000, guid: d3a0ca1a7876f4ee3951316edeaab378, type: 2}
+  level: 37
+  kind: 0
+  rewardTier: 5
+  boss: {fileID: 0}
+  bossStars: 1
+  firstClearKarma: 60
+  firstClearSteel: 0
+  firstClearNinja: {fileID: 0}
