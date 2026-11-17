@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -97,6 +98,69 @@ namespace NinjaRealm.Presentation
             var label = new Label(text);
             foreach (var name in classes) label.AddToClassList(name);
             return label;
+        }
+
+        /// <summary>An empty element with these classes.</summary>
+        public static VisualElement Element(params string[] classes)
+        {
+            var element = new VisualElement();
+            foreach (var name in classes) element.AddToClassList(name);
+            return element;
+        }
+
+        public static Button Button(string text, Action clicked, params string[] classes)
+        {
+            var button = new Button(clicked) { text = text };
+            foreach (var name in classes) button.AddToClassList(name);
+            return button;
+        }
+
+        /// <summary>Lets clicks pass through an element and everything in it, for labels over the 3D world.</summary>
+        public static void IgnorePicking(VisualElement element)
+        {
+            element.pickingMode = PickingMode.Ignore;
+            foreach (var child in element.Children()) IgnorePicking(child);
+        }
+
+        /// <summary>
+        /// Scrolls a freshly built scroll view to an offset once its content has a size, so a
+        /// list rebuilt after a button press stays where the player was.
+        /// </summary>
+        public static void RestoreScroll(ScrollView view, Vector2 offset)
+        {
+            if (offset == Vector2.zero) return;
+            EventCallback<GeometryChangedEvent> once = null;
+            once = _ =>
+            {
+                view.contentContainer.UnregisterCallback(once);
+                view.scrollOffset = offset;
+            };
+            view.contentContainer.RegisterCallback(once);
+        }
+    }
+
+    /// <summary>A label that shows the result of the last action for a few seconds, red when it failed.</summary>
+    public sealed class UiMessage
+    {
+        const long ShowMilliseconds = 4000;
+
+        readonly Label label;
+        IVisualElementScheduledItem clear;
+
+        public UiMessage(Label label) => this.label = label;
+
+        public void Show(bool succeeded, string text)
+        {
+            if (label == null) return;
+            label.text = text;
+            label.EnableInClassList("danger-text", !succeeded);
+            clear?.Pause();
+            clear = label.schedule.Execute(Clear).StartingIn(ShowMilliseconds);
+        }
+
+        public void Clear()
+        {
+            if (label != null) label.text = "";
         }
     }
 }

@@ -1,6 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:Style src="project://database/Assets/_Project/UI/Styles/Village.uss" />
     <ui:VisualElement name="root" class="ui-root" picking-mode="Ignore">
+        <ui:VisualElement name="worldNames" class="world-names" picking-mode="Ignore" />
         <ui:VisualElement name="topBarRow" class="top-bar-row" picking-mode="Ignore">
             <ui:VisualElement name="topBar" class="panel top-bar">
                 <ui:VisualElement class="top-bar__heading">

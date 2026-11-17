@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="project://database/Assets/_Project/UI/Styles/Panels.uss" />
+    <ui:VisualElement name="overlay" class="overlay">
+        <ui:VisualElement name="frame" class="panel building-panel">
+            <ui:VisualElement class="panel-header">
+                <ui:VisualElement class="panel-header__heading">
+                    <ui:Label name="title" class="title" />
+                    <ui:Label name="subtitle" class="subtitle wrap" />
+                </ui:VisualElement>
+                <ui:Button name="close" text="Close (Esc)" class="button--small" />
+            </ui:VisualElement>
+            <ui:VisualElement name="body" class="building-panel__body" />
+            <ui:Label name="message" class="message wrap" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

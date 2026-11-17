@@ -1,28 +1,9 @@
-.overlay {
-    flex-grow: 1;
-    align-items: center;
-    justify-content: center;
-    padding-top: 70px;
-    background-color: rgba(0, 0, 0, 0.35);
-}
-
 .hall {
     width: 980px;
     max-width: 94%;
     padding: 0 18px 14px 18px;
     border-top-width: 4px;
     border-top-color: var(--red);
-}
-
-.hall__header {
-    flex-direction: row;
-    align-items: flex-start;
-    padding-top: 14px;
-    margin-bottom: 12px;
-}
-
-.hall__heading {
-    flex-grow: 1;
 }
 
 .chapter-tabs {
@@ -245,10 +226,4 @@
     font-size: 12px;
     color: var(--muted);
     white-space: normal;
-}
-
-.message {
-    margin-top: 10px;
-    min-height: 18px;
-    color: var(--gold);
 }

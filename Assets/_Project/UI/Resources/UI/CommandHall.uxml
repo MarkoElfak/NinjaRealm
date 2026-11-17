@@ -2,8 +2,8 @@
     <ui:Style src="project://database/Assets/_Project/UI/Styles/CommandHall.uss" />
     <ui:VisualElement name="overlay" class="overlay">
         <ui:VisualElement name="hall" class="panel hall">
-            <ui:VisualElement class="hall__header">
-                <ui:VisualElement class="hall__heading">
+            <ui:VisualElement class="panel-header">
+                <ui:VisualElement class="panel-header__heading">
                     <ui:Label text="Command Hall" class="title" />
                     <ui:Label text="Fight the campaign: pick a stage, set up your lineup and win its stars." class="subtitle" />
                 </ui:VisualElement>

@@ -1,34 +1,21 @@
-using System.Collections.Generic;
 using NinjaRealm.Core.Campaign;
 using NinjaRealm.Core.Progression;
 using NinjaRealm.Presentation.Battle;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace NinjaRealm.Presentation.Village
 {
     /// <summary>
-    /// The village's UI Toolkit screens: the clan and wallet along the top, and the Command
-    /// Hall's campaign map. The other panels are still drawn by <see cref="VillageScreen"/>.
-    /// Layouts: UI/Resources/UI/VillageHud.uxml and CommandHall.uxml.
+    /// The Command Hall's campaign map in UI Toolkit: the chapters, their stages and star
+    /// chests, and the picked stage with the button that goes to battle. Layout:
+    /// UI/Resources/UI/CommandHall.uxml.
     /// </summary>
-    [RequireComponent(typeof(VillageController))]
-    public sealed class VillageUi : MonoBehaviour
+    public sealed class CommandHallView
     {
         const int StagesPerRow = 4;
 
-        VillageController controller;
-        UIDocument document;
-        Label hint;
-        Label clanLevel;
-        Label clanXp;
-        VisualElement clanXpFill;
-        VisualElement resources;
-        VisualElement panelLayer;
-        readonly List<(ResourceDefinition resource, Label amount)> amounts = new List<(ResourceDefinition, Label)>();
-        string shownWallet;
-
-        // The Command Hall.
+        readonly VillageController controller;
+        readonly VisualElement layer;
         VisualElement hall;
         VisualElement chapterTabs;
         Label chapterDescription;
@@ -42,121 +29,25 @@ namespace NinjaRealm.Presentation.Village
         Label stageFirstClear;
         Button toBattle;
         Label lineupNote;
-        Label message;
+        UiMessage message;
         ChapterDefinition mapChapter;
         StageDefinition mapStage;
 
-        /// <summary>True once the screens are up, so the IMGUI leaves the top bar and the Command Hall to them.</summary>
-        public bool Ready { get; private set; }
-
-        void Awake() => controller = GetComponent<VillageController>();
-
-        void OnEnable()
+        public CommandHallView(VillageController controller, VisualElement layer)
         {
-            if (document == null) document = GameUi.Create(transform, "VillageHud");
-            if (document == null) return;
-
-            var root = document.rootVisualElement;
-            hint = root.Q<Label>("hint");
-            clanLevel = root.Q<Label>("clanLevel");
-            clanXp = root.Q<Label>("clanXp");
-            clanXpFill = root.Q("clanXpFill");
-            resources = root.Q("resources");
-            panelLayer = root.Q("panelLayer");
-            amounts.Clear();
-            resources.Clear();
-            shownWallet = null;
-            hall = null;
-            Ready = hint != null && clanLevel != null && resources != null && panelLayer != null;
-            controller.OpenedChanged += OnOpenedChanged;
-            OnOpenedChanged(controller.Opened);
+            this.controller = controller;
+            this.layer = layer;
         }
 
-        void OnDisable()
+        /// <summary>Opens the map on the stage picked for the next fight.</summary>
+        public void Show()
         {
-            controller.OpenedChanged -= OnOpenedChanged;
-            Ready = false;
+            mapChapter = null;
+            mapStage = null;
+            ShowCommandHall();
         }
 
-        void Update()
-        {
-            if (!Ready) return;
-            hint.text = controller.PanelOpen ? "Esc closes the panel." : "Click a building or a ninja. Drag to look around, scroll to zoom.";
-            RefreshWallet();
-        }
-
-        // ---------------------------------------------------------------- top bar
-
-        void RefreshWallet()
-        {
-            var profile = controller.Profile;
-            if (profile == null)
-            {
-                if (shownWallet == "") return;
-                shownWallet = "";
-                clanLevel.text = "No save";
-                clanXp.text = "Outside play mode";
-                clanXpFill.style.width = Length.Percent(0f);
-                return;
-            }
-
-            var progression = profile.Progression;
-            if (amounts.Count == 0)
-                foreach (var resource in new[] { progression.Gold, progression.Karma, progression.Steel })
-                    if (resource != null) amounts.Add((resource, AddResource(resource)));
-
-            // Only touch the labels when something changed.
-            var wallet = $"{profile.ClanLevel}/{profile.ClanXp}/{profile.ClanXpToNext}";
-            foreach (var (resource, _) in amounts) wallet += "/" + profile.Balance(resource);
-            if (wallet == shownWallet) return;
-            shownWallet = wallet;
-
-            clanLevel.text = $"Clan {profile.ClanLevel}";
-            clanXp.text = $"{profile.ClanXp} / {profile.ClanXpToNext} XP";
-            var fraction = profile.ClanXpToNext > 0 ? Mathf.Clamp01(profile.ClanXp / (float)profile.ClanXpToNext) : 1f;
-            clanXpFill.style.width = Length.Percent(fraction * 100f);
-            foreach (var (resource, amount) in amounts) amount.text = profile.Balance(resource).ToString();
-        }
-
-        Label AddResource(ResourceDefinition resource)
-        {
-            var chip = new VisualElement();
-            chip.AddToClassList("resource");
-            var dot = new VisualElement();
-            dot.AddToClassList("resource__dot");
-            dot.style.backgroundColor = resource.Color;
-            chip.Add(dot);
-            chip.Add(GameUi.Label(resource.DisplayName, "resource__name"));
-            var amount = GameUi.Label("0", "resource__amount");
-            amount.style.color = resource.Color;
-            chip.Add(amount);
-            resources.Add(chip);
-            return amount;
-        }
-
-        // ---------------------------------------------------------------- panels
-
-        void OnOpenedChanged(VillageBuilding building)
-        {
-            if (!Ready) return;
-            var commandHall = building != null && building.Kind == VillageBuildingKind.CommandHall;
-            if (commandHall)
-            {
-                // The campaign map opens on the stage picked for the next fight.
-                mapChapter = null;
-                mapStage = null;
-                ShowCommandHall();
-            }
-            else if (hall != null)
-            {
-                GameUi.Show(hall, false);
-            }
-        }
-
-        /// <summary>True when this building's panel is drawn here rather than by the IMGUI.</summary>
-        public bool Draws(VillageBuilding building) => Ready && building != null && building.Kind == VillageBuildingKind.CommandHall;
-
-        // ---------------------------------------------------------------- the Command Hall
+        public void Hide() => GameUi.Show(hall, false);
 
         /// <summary>Shows a chapter of the open campaign map, for checking it from the editor menu.</summary>
         public void ShowChapter(int number)
@@ -174,7 +65,7 @@ namespace NinjaRealm.Presentation.Village
             {
                 hall = GameUi.Instantiate("CommandHall");
                 if (hall == null) return;
-                panelLayer.Add(hall);
+                layer.Add(hall);
                 chapterTabs = hall.Q("chapterTabs");
                 chapterDescription = hall.Q<Label>("chapterDescription");
                 stages = hall.Q("stages");
@@ -187,12 +78,12 @@ namespace NinjaRealm.Presentation.Village
                 stageFirstClear = hall.Q<Label>("stageFirstClear");
                 toBattle = hall.Q<Button>("toBattle");
                 lineupNote = hall.Q<Label>("lineupNote");
-                message = hall.Q<Label>("message");
+                message = new UiMessage(hall.Q<Label>("message"));
                 hall.Q<Button>("close").clicked += controller.Close;
                 toBattle.clicked += GoToBattle;
             }
 
-            message.text = "";
+            message.Clear();
             GameUi.Show(hall, true);
             RefreshHall();
         }
@@ -340,9 +231,9 @@ namespace NinjaRealm.Presentation.Village
             {
                 var open = new Button(() =>
                 {
-                    profile.TryOpenChest(chapter, chest, out var result);
+                    var opened = profile.TryOpenChest(chapter, chest, out var result);
                     RefreshHall();
-                    message.text = result;
+                    message.Show(opened, result);
                 }) { text = "Open" };
                 open.AddToClassList("button--primary");
                 open.AddToClassList("button--small");
