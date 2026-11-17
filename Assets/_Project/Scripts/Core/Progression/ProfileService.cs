@@ -137,6 +137,43 @@ namespace NinjaRealm.Core.Progression
             Changed?.Invoke();
         }
 
+        // ---------------------------------------------------------------- clan
+
+        /// <summary>The clan's name, or empty before the new game screen.</summary>
+        public string ClanName => Profile.clanName ?? string.Empty;
+
+        /// <summary>The clan's home village, or null before one is picked.</summary>
+        public HomeVillage HomeVillage => Progression.Village(Profile.village);
+
+        /// <summary>
+        /// True until the clan has a name and, when the content has villages, a home village. A
+        /// save from before the new game screen also needs one, and keeps all its progress.
+        /// </summary>
+        public bool NeedsFounding =>
+            Core.Progression.ClanName.Problem(Profile.clanName) != null || (Progression.Villages.Count > 0 && HomeVillage == null);
+
+        /// <summary>
+        /// Names the clan and settles it in its home village. The next Dojo visit rolls fresh
+        /// offers, so the village's ninjas show up from the first day.
+        /// </summary>
+        public bool TryFoundClan(string name, HomeVillage village, out string message)
+        {
+            message = Core.Progression.ClanName.Problem(name);
+            if (message != null) return false;
+            if (Progression.Villages.Count > 0 && (village == null || Progression.Village(village.id) != village))
+            {
+                message = "Pick a home village.";
+                return false;
+            }
+
+            Profile.clanName = Core.Progression.ClanName.Clean(name);
+            Profile.village = village?.id ?? string.Empty;
+            Profile.dojoDate = string.Empty;
+            message = village != null ? $"The {Profile.clanName} clan settles in {village.displayName}." : $"The {Profile.clanName} clan is founded.";
+            Save();
+            return true;
+        }
+
         // ---------------------------------------------------------------- wallet
 
         public int Balance(ResourceDefinition resource) => Profile.wallet.Get(resource);
@@ -391,10 +428,38 @@ namespace NinjaRealm.Core.Progression
                 }
 
                 var pool = byRarity[chosen.rarity];
-                var pick = random.Range(0, pool.Count);
+                var pick = PickFromPool(pool, random);
                 Profile.dojoOffers.Add(pool[pick].Id);
                 pool.RemoveAt(pick);
             }
+        }
+
+        /// <summary>
+        /// A ninja from one rarity's pool. Ninjas of the home village's element weigh its Dojo
+        /// affinity against the others' 10000; without a home village every ninja is as likely.
+        /// </summary>
+        int PickFromPool(List<NinjaDefinition> pool, DeterministicRandom random)
+        {
+            var home = HomeVillage;
+            var anyHome = false;
+            if (home != null && home.dojoAffinity != ProgressionDefinition.BasisPoints)
+                foreach (var ninja in pool)
+                    anyHome |= home.IsHome(ninja);
+            if (!anyHome) return random.Range(0, pool.Count);
+
+            long total = 0;
+            foreach (var ninja in pool) total += Weight(ninja);
+            var roll = (long)random.Range(0, (int)Math.Min(int.MaxValue, total));
+            for (var i = 0; i < pool.Count; i++)
+            {
+                var weight = Weight(pool[i]);
+                if (roll < weight) return i;
+                roll -= weight;
+            }
+
+            return pool.Count - 1;
+
+            int Weight(NinjaDefinition ninja) => home.IsHome(ninja) ? Math.Max(1, home.dojoAffinity) : ProgressionDefinition.BasisPoints;
         }
 
         DeterministicRandom NextRandom()

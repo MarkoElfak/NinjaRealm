@@ -1,0 +1,159 @@
+.new-game-overlay {
+    padding-top: 0;
+    background-color: rgba(6, 8, 12, 0.6);
+}
+
+.new-game {
+    width: 1040px;
+    padding: 24px 28px 18px 28px;
+    border-top-width: 3px;
+    border-top-color: var(--red);
+}
+
+.new-game__title {
+    font-size: 30px;
+    -unity-font-style: bold;
+    color: var(--gold);
+    margin-bottom: 4px;
+}
+
+.new-game__section {
+    margin-top: 18px;
+    margin-bottom: 8px;
+}
+
+.name-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.name-field {
+    width: 360px;
+    margin: 0 10px 0 0;
+}
+
+.name-field .unity-base-text-field__input {
+    background-color: var(--ink-card);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 6px;
+    color: var(--paper);
+    font-size: 20px;
+    padding: 6px 10px;
+}
+
+.name-field:focus .unity-base-text-field__input {
+    border-color: var(--gold);
+}
+
+.name-note {
+    margin-top: 6px;
+    min-height: 18px;
+}
+
+.village-cards {
+    flex-direction: row;
+}
+
+.village-card {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: 12px;
+    padding: 0 0 14px 0;
+    background-color: var(--ink-card);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition-duration: 0.12s;
+}
+
+.village-card--last {
+    margin-right: 0;
+}
+
+.village-card:hover {
+    background-color: var(--ink-card-hover);
+    border-color: var(--line-strong);
+}
+
+.village-card--selected {
+    border-color: var(--gold);
+    background-color: rgb(48, 44, 40);
+}
+
+.village-card--selected:hover {
+    border-color: var(--gold);
+    background-color: rgb(52, 48, 43);
+}
+
+.village-card__stripe {
+    height: 8px;
+}
+
+.village-card__head {
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 14px 8px 14px;
+}
+
+.village-card__crest {
+    width: 46px;
+    height: 46px;
+    border-radius: 23px;
+    margin-right: 12px;
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.35);
+    font-size: 24px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgb(255, 255, 255);
+}
+
+.village-card__name {
+    font-size: 21px;
+    -unity-font-style: bold;
+}
+
+.village-card__element {
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+.village-card__text {
+    padding: 0 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+
+.village-card__line {
+    padding: 0 14px;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.village-card__pick {
+    margin: 10px 14px 0 14px;
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: var(--muted);
+    -unity-text-align: middle-center;
+}
+
+.village-card--selected .village-card__pick {
+    color: var(--gold);
+}
+
+.new-game__footer {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 18px;
+}
+
+.new-game__summary {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: 16px;
+    font-size: 15px;
+}

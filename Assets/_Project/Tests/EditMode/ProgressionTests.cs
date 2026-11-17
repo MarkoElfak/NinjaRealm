@@ -145,6 +145,101 @@ namespace NinjaRealm.Tests
             StringAssert.Contains("most stars", message);
         }
 
+        // ---------------------------------------------------------------- founding the clan
+
+        HomeVillage Village(string id) => progression.Village(id);
+
+        [Test]
+        public void NewSave_NeedsANameAndAVillage()
+        {
+            Assert.IsTrue(service.NeedsFounding);
+            Assert.AreEqual("", service.ClanName);
+            Assert.IsNull(service.HomeVillage);
+            Assert.AreEqual(3, progression.Villages.Count);
+        }
+
+        [Test]
+        public void FoundClan_SavesTheNameAndVillage()
+        {
+            Assert.IsTrue(service.TryFoundClan("  Silent   Moon ", Village("mistwater"), out var message), message);
+            StringAssert.Contains("Mistwater", message);
+            Assert.IsFalse(service.NeedsFounding);
+
+            var reloaded = ProfileService.Load(storage, database, 7);
+            Assert.AreEqual("Silent Moon", reloaded.ClanName);
+            Assert.AreEqual("mistwater", reloaded.HomeVillage.id);
+            Assert.IsFalse(reloaded.NeedsFounding);
+        }
+
+        [Test]
+        public void FoundClan_RefusesABadNameOrNoVillage()
+        {
+            Assert.IsFalse(service.TryFoundClan("Al", Village("emberfall"), out _), "too short");
+            Assert.IsFalse(service.TryFoundClan("The Very Long Clan Name", Village("emberfall"), out _), "too long");
+            Assert.IsFalse(service.TryFoundClan("Moon<3", Village("emberfall"), out _), "symbols");
+            Assert.IsFalse(service.TryFoundClan("1234", Village("emberfall"), out _), "no letter");
+            Assert.IsFalse(service.TryFoundClan("Silent Moon", null, out var message), "no village");
+            StringAssert.Contains("village", message);
+            Assert.IsTrue(service.NeedsFounding);
+            Assert.AreEqual(1, storage.Writes, "only the new save itself was written");
+        }
+
+        [Test]
+        public void ClanName_AllowsLettersDigitsSpacesHyphensAndApostrophes()
+        {
+            Assert.IsNull(ClanName.Problem("Kaze-no Ren's 2"));
+            Assert.IsNull(ClanName.Problem("Hōshi"));
+            Assert.AreEqual("Iron Lotus", ClanName.Clean("\tIron \n Lotus  "));
+        }
+
+        [Test]
+        public void FoundClan_KeepsAnOlderSavesProgress()
+        {
+            service.Grant(new[] { new ResourceAmount(progression.Gold, 1000) });
+            service.Profile.clanLevel = 4;
+            Assert.IsTrue(service.TryFoundClan("Iron Lotus", Village("stonehollow"), out _));
+
+            Assert.AreEqual(1500, Gold);
+            Assert.AreEqual(4, service.ClanLevel);
+            Assert.AreEqual(3, service.OwnedNinjas().Count);
+        }
+
+        [Test]
+        public void Dojo_FavoursTheHomeVillagesElement()
+        {
+            var fire = Ninja("kaito").Element;
+            var plain = ProfileService.Load(new MemorySaveStorage(), database, 42);
+            var ember = ProfileService.Load(new MemorySaveStorage(), database, 42);
+            Assert.IsTrue(ember.TryFoundClan("Ash Fang", Village("emberfall"), out _));
+
+            int FireOffers(ProfileService roster)
+            {
+                var count = 0;
+                for (var day = 0; day < 300; day++)
+                {
+                    roster.RefreshDojoIfNewDay(Today.AddDays(day));
+                    count += roster.DojoOffers().Count(n => n != null && n.Element == fire);
+                }
+
+                return count;
+            }
+
+            var withoutVillage = FireOffers(plain);
+            var withVillage = FireOffers(ember);
+            Assert.Greater(withVillage, withoutVillage * 1.15f, $"fire offers: {withVillage} from Emberfall, {withoutVillage} with no village");
+        }
+
+        [Test]
+        public void Dojo_WithNoVillageRollsAsBefore()
+        {
+            // The same seed gives the same offers as before villages existed.
+            service.RefreshDojoIfNewDay(Today);
+            var other = ProfileService.Load(new MemorySaveStorage(), database, 42);
+            other.Profile.village = "nowhere";
+            other.RefreshDojoIfNewDay(Today);
+            CollectionAssert.AreEqual(service.Profile.dojoOffers, other.Profile.dojoOffers);
+        }
+
         // ---------------------------------------------------------------- dojo
 
         [Test]

@@ -111,6 +111,10 @@ namespace NinjaRealm.Core.Progression
         [SerializeField, Tooltip("Buildings that make a resource over time, such as the Mint.")]
         internal List<IncomeSource> incomes = new List<IncomeSource>();
 
+        [Header("Home villages")]
+        [SerializeField, Tooltip("The villages a new clan can pick on the new game screen. Empty skips the pick.")]
+        internal List<HomeVillage> villages = new List<HomeVillage>();
+
         public override string IdCategory => "progression";
 
         public ResourceDefinition Gold => gold;
@@ -140,6 +144,17 @@ namespace NinjaRealm.Core.Progression
         public int ForgeCost => forgeCost;
 
         public IReadOnlyList<IncomeSource> Incomes => incomes;
+
+        public IReadOnlyList<HomeVillage> Villages => villages;
+
+        /// <summary>The home village with this ID, or null.</summary>
+        public HomeVillage Village(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            foreach (var village in villages)
+                if (village != null && village.id == id) return village;
+            return null;
+        }
 
         /// <summary>The income source with this ID (see <see cref="IncomeIds"/>), or null.</summary>
         public IncomeSource Income(string id)
@@ -267,6 +282,19 @@ namespace NinjaRealm.Core.Progression
                     yield return $"lists income source '{income.id}' more than once.";
                 else if (income.resource == null || income.perHour <= 0 || income.storageHours <= 0)
                     yield return $"income source '{income.id}' needs a resource, an hourly amount and storage hours.";
+            }
+
+            var villageIds = new HashSet<string>();
+            foreach (var village in villages)
+            {
+                if (village == null || string.IsNullOrEmpty(village.id))
+                    yield return "has a home village with no ID.";
+                else if (!villageIds.Add(village.id))
+                    yield return $"lists home village '{village.id}' more than once.";
+                else if (string.IsNullOrEmpty(village.displayName) || village.element == null)
+                    yield return $"home village '{village.id}' needs a name and an element.";
+                else if (village.dojoAffinity <= 0)
+                    yield return $"home village '{village.id}' needs a Dojo affinity above zero.";
             }
 
             if (teamSizes.Count == 0)

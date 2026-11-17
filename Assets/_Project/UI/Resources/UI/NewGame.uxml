@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="project://database/Assets/_Project/UI/Styles/NewGame.uss" />
+    <ui:VisualElement name="overlay" class="overlay new-game-overlay">
+        <ui:VisualElement name="frame" class="panel new-game">
+            <ui:Label text="Found your clan" class="new-game__title" />
+            <ui:Label text="Name your clan and choose the village it calls home. Your three starting ninjas come with you whichever you pick." class="subtitle wrap" />
+            <ui:Label text="Clan name" class="section-title new-game__section" />
+            <ui:VisualElement class="name-row">
+                <ui:TextField name="clanName" max-length="16" class="name-field" />
+                <ui:Button name="randomName" text="Random name" class="button--small" />
+            </ui:VisualElement>
+            <ui:Label name="nameNote" class="note wrap name-note" />
+            <ui:Label text="Home village" class="section-title new-game__section" />
+            <ui:VisualElement name="villages" class="village-cards" />
+            <ui:VisualElement class="new-game__footer">
+                <ui:Label name="summary" class="wrap new-game__summary" />
+                <ui:Button name="found" text="Found the clan" class="button--primary" />
+            </ui:VisualElement>
+            <ui:Label name="message" class="message wrap" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

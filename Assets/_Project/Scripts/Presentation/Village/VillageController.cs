@@ -74,12 +74,16 @@ namespace NinjaRealm.Presentation.Village
         /// <summary>True while a building's panel or a ninja's details cover the village.</summary>
         public bool PanelOpen => Opened != null || OpenedNinja != null;
 
+        /// <summary>True while the new game screen asks for the clan's name and home village. Set by <see cref="NewGameScreen"/>.</summary>
+        public bool Founding { get; set; }
+
         /// <summary>Raised when a panel opens or closes, with the building (null for a ninja's details or a close).</summary>
         public event Action<VillageBuilding> OpenedChanged;
 
         void Awake()
         {
             if (GetComponent<VillageScreen>() == null) gameObject.AddComponent<VillageScreen>();
+            if (GetComponent<NewGameScreen>() == null) gameObject.AddComponent<NewGameScreen>();
         }
 
         void Start()
@@ -207,8 +211,8 @@ namespace NinjaRealm.Presentation.Village
             var keyboard = Keyboard.current;
             if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame && PanelOpen) Close();
 
-            // A panel is open: the village waits behind it.
-            if (PanelOpen)
+            // A panel or the new game screen is open: the village waits behind it.
+            if (PanelOpen || Founding)
             {
                 Hovered = null;
                 HoveredNinja = null;

@@ -12,6 +12,32 @@ namespace NinjaRealm.Editor
     {
         const string Menu = "Ninja Realm/Village/";
 
+        [MenuItem(Menu + "Open New Game Screen")]
+        public static void OpenNewGame()
+        {
+            if (Village() == null) return;
+            var screen = Object.FindAnyObjectByType<NewGameScreen>();
+            if (screen != null) screen.Open();
+        }
+
+        [MenuItem(Menu + "Found a Random Clan")]
+        public static void FoundRandomClan()
+        {
+            if (Village() == null) return;
+            var screen = Object.FindAnyObjectByType<NewGameScreen>();
+            if (screen != null) screen.FoundRandom();
+        }
+
+        [MenuItem(Menu + "Forget the Clan's Name and Village")]
+        public static void ForgetClan()
+        {
+            var village = Village();
+            if (village == null || village.Profile == null) return;
+            village.Profile.Profile.clanName = string.Empty;
+            village.Profile.Profile.village = string.Empty;
+            village.Profile.Save();
+        }
+
         [MenuItem(Menu + "Open Command Hall")]
         public static void OpenCommandHall() => Open(VillageBuildingKind.CommandHall);
 

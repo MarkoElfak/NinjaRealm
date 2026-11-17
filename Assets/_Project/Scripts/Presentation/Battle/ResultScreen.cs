@@ -188,10 +188,12 @@ namespace NinjaRealm.Presentation.Battle
             for (var team = 0; team < 2; team++)
             {
                 teams[team].Sort((a, b) => b.DamageDealt.CompareTo(a.DamageDealt));
-                log.Add(GameUi.Label(team == 0 ? "Your team" : opponent, "team-title"));
+                log.Add(GameUi.Label(team == 0 ? OurTeam : opponent, "team-title"));
                 foreach (var unit in teams[team]) log.Add(Row(unit, most));
             }
         }
+
+        string OurTeam => controller.Profile != null && !string.IsNullOrEmpty(controller.Profile.ClanName) ? $"Your team, {controller.Profile.ClanName}" : "Your team";
 
         static VisualElement Cell(string text, string className)
         {

@@ -103,7 +103,8 @@ namespace NinjaRealm.Presentation.Battle
         {
             var overtime = simulation.Tick >= simulation.Setup.OvertimeStartTicks;
             var opponent = controller.Opponent != null ? controller.Opponent.DisplayName : "Enemy";
-            var title = $"You vs {opponent}    {playback.FightSeconds:0.0}s{(overtime ? "  <color=#FF7744>OVERTIME</color>" : "")}";
+            var clan = controller.Profile != null && !string.IsNullOrEmpty(controller.Profile.ClanName) ? controller.Profile.ClanName : "You";
+            var title = $"{clan} vs {opponent}    {playback.FightSeconds:0.0}s{(overtime ? "  <color=#FF7744>OVERTIME</color>" : "")}";
             if (title != shownTitle)
             {
                 shownTitle = title;
