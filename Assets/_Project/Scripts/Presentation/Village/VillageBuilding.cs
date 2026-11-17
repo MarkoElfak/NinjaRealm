@@ -146,7 +146,7 @@ namespace NinjaRealm.Presentation.Village
 
         public static string DescriptionOf(VillageBuildingKind kind) => kind switch
         {
-            VillageBuildingKind.CommandHall => "Set up your lineup, choose an opponent and fight.",
+            VillageBuildingKind.CommandHall => "Fight the campaign: pick a stage, set up your lineup and win its stars.",
             VillageBuildingKind.Dojo => "Recruit new ninjas, four new every day, and see every ninja there is.",
             VillageBuildingKind.Shrine => "Spend Karma to level up your ninjas.",
             VillageBuildingKind.Blacksmith => "Forge combined weapons from two components and Steel.",

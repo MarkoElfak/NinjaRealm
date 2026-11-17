@@ -15,8 +15,6 @@ MonoBehaviour:
   id: lineup.bandit_patrol
   displayName: Bandit Patrol
   description: Three ninjas and no weapons. A warm-up.
-  difficulty: 1
-  level: 1
   slots:
   - ninja: {fileID: 11400000, guid: e2f82cf69c9d742b39860c8e1e88f977, type: 2}
     column: 3

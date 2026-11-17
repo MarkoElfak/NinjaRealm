@@ -203,7 +203,7 @@ namespace NinjaRealm.Core.Progression
             return size;
         }
 
-        /// <summary>Gold, Steel and clan XP for a fight against an opponent of this difficulty.</summary>
+        /// <summary>Gold, Steel and clan XP for a fight. The difficulty is the stage's reward tier, 1 to 5.</summary>
         public void FightPay(int difficulty, bool won, out int goldPaid, out int steelPaid, out int clanXp)
         {
             goldPaid = winGold + winGoldPerDifficulty * difficulty;

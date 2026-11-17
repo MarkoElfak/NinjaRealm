@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd62050bf2e24091a594ea4081de6f09, type: 3}
+  m_Name: EmberValley
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Campaign.ChapterDefinition
+  id: chapter.ember_valley
+  displayName: Ember Valley
+  number: 2
+  description: The Ember Clan burns everything it touches. Their lord Jiro waits
+    at the end of the valley.
+  stages:
+  - {fileID: 11400000, guid: 66b8b9ebb24f64ba4993551a7079c877, type: 2}
+  - {fileID: 11400000, guid: 8947982f0312a43a3acb70a34da288dc, type: 2}
+  - {fileID: 11400000, guid: c69645ceb8b9f497aa89306a6aeb9323, type: 2}
+  - {fileID: 11400000, guid: ed3653b8f64f546de98ba4b573ae12a0, type: 2}
+  - {fileID: 11400000, guid: 9f96ef1f85a0f44c887ed8eb42a19784, type: 2}
+  - {fileID: 11400000, guid: 5ab72204a4cb049a1846d684486c8928, type: 2}
+  - {fileID: 11400000, guid: e3b21074b47f64813b425523c5cf33ec, type: 2}
+  - {fileID: 11400000, guid: 4bd40c2a61186420f8209a2b20433df7, type: 2}
+  chests:
+  - stars: 8
+    gold: 600
+    steel: 40
+    karma: 0
+    weapon: {fileID: 0}
+  - stars: 16
+    gold: 0
+    steel: 0
+    karma: 200
+    weapon: {fileID: 0}
+  - stars: 24
+    gold: 0
+    steel: 0
+    karma: 0
+    weapon: {fileID: 11400000, guid: fc67b6a285f084b5c932c93c4b2ca0c2, type: 2}

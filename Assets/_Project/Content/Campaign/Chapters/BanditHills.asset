@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd62050bf2e24091a594ea4081de6f09, type: 3}
+  m_Name: BanditHills
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Campaign.ChapterDefinition
+  id: chapter.bandit_hills
+  displayName: Bandit Hills
+  number: 1
+  description: Bandits hold the hill roads above the village. Clear them out and
+    face their chief.
+  stages:
+  - {fileID: 11400000, guid: 40c081970619d4528b10fa74fec68ffe, type: 2}
+  - {fileID: 11400000, guid: c176bf72ad749425da9a78a28f648007, type: 2}
+  - {fileID: 11400000, guid: 133c5c19c34c241cfbddf58eff3caeda, type: 2}
+  - {fileID: 11400000, guid: afa7c3b4ac284461d9cee3b2fa65643f, type: 2}
+  - {fileID: 11400000, guid: cb917f9643c154b9b9090d895a0474e1, type: 2}
+  - {fileID: 11400000, guid: cf0565d6f20e2497b8ed8972ef770d65, type: 2}
+  - {fileID: 11400000, guid: e5c813336ad124118a41eb3486b9d028, type: 2}
+  - {fileID: 11400000, guid: 4bc3a8f2a2e1946d4b1ba23f880fcf66, type: 2}
+  chests:
+  - stars: 8
+    gold: 300
+    steel: 20
+    karma: 0
+    weapon: {fileID: 0}
+  - stars: 16
+    gold: 0
+    steel: 0
+    karma: 100
+    weapon: {fileID: 0}
+  - stars: 24
+    gold: 0
+    steel: 0
+    karma: 0
+    weapon: {fileID: 11400000, guid: 2fa7d1cf17aad44c38a9b8c1a4dc0690, type: 2}

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NinjaRealm.Combat;
+using NinjaRealm.Core.Campaign;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
 using UnityEngine;
@@ -8,8 +9,9 @@ using UnityEngine.InputSystem;
 namespace NinjaRealm.Presentation.Battle
 {
     /// <summary>
-    /// Prototype result screen: who won, how long it took, what the fight paid into the save,
-    /// and a damage log with each ninja's damage dealt and taken, healing and shielding.
+    /// Prototype result screen: who won and with how many stars, how long it took, what the
+    /// fight paid into the save, and a damage log with each ninja's damage dealt and taken,
+    /// healing and shielding.
     /// </summary>
     [RequireComponent(typeof(BattleController))]
     public sealed class ResultScreen : MonoBehaviour
@@ -31,7 +33,10 @@ namespace NinjaRealm.Presentation.Battle
             if (keyboard.escapeKey.wasPressedThisFrame) controller.EnterSetup();
             else if (keyboard.rKey.wasPressedThisFrame) controller.Replay();
             else if (keyboard.nKey.wasPressedThisFrame) controller.FightAgain();
+            else if (keyboard.enterKey.wasPressedThisFrame && Won && controller.NextStage != null) controller.GoToNextStage();
         }
+
+        bool Won => controller.Playback.Simulation?.Result?.WinningTeam == 0;
 
         void OnGUI()
         {
@@ -57,7 +62,8 @@ namespace NinjaRealm.Presentation.Battle
             var rows = teams[0].Count + teams[1].Count;
             var rewardLines = RewardLines();
             var rewardsHeight = rewardLines == null ? 0f : 12f + rewardLines.Count * 20f;
-            var height = 150f + rewardsHeight + rows * rowHeight + 2 * 34f;
+            var starsHeight = controller.LastStars > 0 ? 24f : 0f;
+            var height = 150f + starsHeight + rewardsHeight + rows * rowHeight + 2 * 34f;
             var panel = new Rect((PrototypeGui.Width - width) / 2f, Mathf.Max(20f, (PrototypeGui.Height - height) / 2f), width, height);
             PrototypeGui.Panel(panel);
 
@@ -67,12 +73,25 @@ namespace NinjaRealm.Presentation.Battle
             GUI.Label(new Rect(panel.x, panel.y + 10f, panel.width, 48f), $"<color=#{PrototypeGui.Hex(titleColor)}>{title}</color>", PrototypeGui.Banner);
 
             var opponent = controller.Opponent != null ? controller.Opponent.DisplayName : "the enemy";
+            var stage = controller.Stage != null && controller.Campaign != null && controller.Opponent == controller.Stage.Lineup
+                ? $"Stage {controller.Campaign.LabelOf(controller.Stage)}, "
+                : "";
             var timing = result.DecidedByTimeout ? $"Time ran out after {result.DurationSeconds:0.0}s; decided by health left" : $"Fight lasted {result.DurationSeconds:0.0}s";
-            GUI.Label(new Rect(panel.x, panel.y + 60f, panel.width, 22f), $"against {opponent}.  {timing}.  Seed {controller.CurrentSeed}", PrototypeGui.Centered);
+            GUI.Label(new Rect(panel.x, panel.y + 60f, panel.width, 22f), $"{stage}against {opponent}.  {timing}.  Seed {controller.CurrentSeed}", PrototypeGui.Centered);
 
             var y = panel.y + 92f;
             var x = panel.x + 16f;
             var inner = panel.width - 32f;
+            if (starsHeight > 0f)
+            {
+                var gold = PrototypeGui.Hex(PrototypeGui.Gold);
+                var earned = new string('★', controller.LastStars);
+                var missed = new string('★', StageStars.Max - controller.LastStars);
+                GUI.Label(new Rect(panel.x, y - 6f, panel.width, 24f),
+                    $"<size=20><color=#{gold}>{earned}</color><color=#4a4f5a>{missed}</color></size>   {StarsText(controller.LastStars)}", PrototypeGui.Centered);
+                y += starsHeight;
+            }
+
             if (rewardLines != null)
             {
                 PrototypeGui.Fill(new Rect(x, y - 4f, inner, rewardsHeight - 4f), new Color(1f, 1f, 1f, 0.05f));
@@ -101,15 +120,28 @@ namespace NinjaRealm.Presentation.Battle
                 y += 8f;
             }
 
+            // Up to five buttons in a row: the next stage shows after a win that has one, the village when it can be loaded.
             var buttonY = panel.yMax - 44f;
             var toVillage = controller.CanLeaveToVillage;
-            var buttons = toVillage ? 4 : 3;
+            var toNext = won && controller.NextStage != null;
+            var buttons = 3 + (toVillage ? 1 : 0) + (toNext ? 1 : 0);
             var buttonWidth = (inner - (buttons - 1) * 10f) / buttons;
-            if (GUI.Button(new Rect(x, buttonY, buttonWidth, 32f), "Back to lineup (Esc)")) controller.EnterSetup();
-            if (GUI.Button(new Rect(x + buttonWidth + 10f, buttonY, buttonWidth, 32f), "Replay (R)")) controller.Replay();
-            if (GUI.Button(new Rect(x + 2f * (buttonWidth + 10f), buttonY, buttonWidth, 32f), toVillage ? "Fight again (N)" : "Fight again, new seed (N)")) controller.FightAgain();
-            if (toVillage && GUI.Button(new Rect(x + 3f * (buttonWidth + 10f), buttonY, buttonWidth, 32f), "Back to village")) controller.LeaveToVillage();
+            var buttonX = x;
+            bool Button(string text)
+            {
+                var pressed = GUI.Button(new Rect(buttonX, buttonY, buttonWidth, 32f), text);
+                buttonX += buttonWidth + 10f;
+                return pressed;
+            }
+
+            if (Button("Lineup (Esc)")) controller.EnterSetup();
+            if (Button("Replay (R)")) controller.Replay();
+            if (Button("Fight again (N)")) controller.FightAgain();
+            if (toNext && Button("Next stage (Enter)")) controller.GoToNextStage();
+            if (toVillage && Button("Back to village")) controller.LeaveToVillage();
         }
+
+        static string StarsText(int stars) => stars >= StageStars.Max ? "Nobody fell." : stars == 2 ? "At least half your team is standing." : "A win, but most of your team fell.";
 
         /// <summary>What the fight paid, one line each. Null without a save.</summary>
         List<string> RewardLines()
@@ -127,7 +159,19 @@ namespace NinjaRealm.Presentation.Battle
                 (rewards.Steel > 0 ? $"   +{rewards.Steel} Steel" : "") +
                 $"   +{rewards.ClanXp} clan XP   <color=#9a9a9a>(clan {profile.ClanLevel}: {profile.ClanXp} / {profile.ClanXpToNext} XP)</color>",
             };
-            if (rewards.FirstWin) lines.Add($"<color=#{gold}>First win against them: +{rewards.FirstWinGold} Gold</color>");
+            if (rewards.FirstWin)
+            {
+                var first = $"<color=#{gold}>First clear: +{rewards.FirstWinGold} Gold</color>";
+                if (rewards.FirstClearKarma > 0) first += $"   +{rewards.FirstClearKarma} Karma";
+                if (rewards.FirstClearSteel > 0) first += $"   +{rewards.FirstClearSteel} Steel";
+                lines.Add(first);
+            }
+            else if (rewards.NewStars > 0)
+            {
+                lines.Add($"<color=#{gold}>New best: {rewards.BestStars} of {StageStars.Max} stars on this stage.</color>");
+            }
+
+            if (rewards.NinjaMessage != null) lines.Add($"<color=#{gold}>{rewards.NinjaMessage}</color>");
             if (rewards.Drop != null) lines.Add($"Found a weapon: <b>{rewards.Drop.DisplayName}</b>");
             if (rewards.ClanLevelsGained > 0)
             {
