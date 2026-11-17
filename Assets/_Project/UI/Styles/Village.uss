@@ -1,0 +1,80 @@
+.top-bar-row {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.top-bar {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 16px;
+    border-top-width: 3px;
+    border-top-color: var(--red);
+}
+
+.top-bar__heading {
+    margin-right: 28px;
+}
+
+.top-bar__title {
+    font-size: 19px;
+    -unity-font-style: bold;
+}
+
+.top-bar__hint {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.clan {
+    width: 130px;
+    margin-right: 20px;
+}
+
+.clan__level {
+    font-size: 15px;
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+}
+
+.clan__xp {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+}
+
+.resource {
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 10px;
+    margin-left: 6px;
+    border-radius: 14px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.resource__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    margin-right: 6px;
+}
+
+.resource__name {
+    font-size: 13px;
+    color: var(--muted);
+    margin-right: 6px;
+}
+
+.resource__amount {
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+
+.resources {
+    flex-direction: row;
+}

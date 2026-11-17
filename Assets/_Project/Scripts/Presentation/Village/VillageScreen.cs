@@ -9,8 +9,9 @@ using UnityEngine;
 namespace NinjaRealm.Presentation.Village
 {
     /// <summary>
-    /// The village's prototype IMGUI: the clan and wallet along the top, a name over each
-    /// building and each plaza ninja, and the open panel. The Dojo has two tabs, the day's
+    /// The village's prototype IMGUI: a name over each building and each plaza ninja, and the
+    /// open panel. The clan and wallet along the top and the Command Hall are drawn by
+    /// <see cref="VillageUi"/> in UI Toolkit; this draws them only when that is missing. The Dojo has two tabs, the day's
     /// recruits and a hall that shows every ninja with its model; the Shrine and Blacksmith
     /// reuse the roster panels; the Mint and Steel Mine collect their income; the Command Hall
     /// shows the campaign map and sends you to battle; a ninja on the plaza opens its details.
@@ -33,6 +34,7 @@ namespace NinjaRealm.Presentation.Village
         static readonly Color StageColor = new Color(0.11f, 0.13f, 0.18f, 1f);
 
         VillageController controller;
+        VillageUi ui;
         RosterPanels panels;
         DojoTab dojoTab;
         NinjaDefinition hallSelected;
@@ -44,6 +46,8 @@ namespace NinjaRealm.Presentation.Village
         void Awake()
         {
             controller = GetComponent<VillageController>();
+            ui = GetComponent<VillageUi>();
+            if (ui == null) ui = gameObject.AddComponent<VillageUi>();
             panels = new RosterPanels(() => controller.Profile, () => controller.Content);
             controller.OpenedChanged += _ =>
             {
@@ -66,8 +70,8 @@ namespace NinjaRealm.Presentation.Village
                 DrawNames();
             }
 
-            DrawTopBar();
-            if (controller.Opened != null) DrawPanel(controller.Opened);
+            if (ui == null || !ui.Ready) DrawTopBar();
+            if (controller.Opened != null && (ui == null || !ui.Draws(controller.Opened))) DrawPanel(controller.Opened);
             else if (controller.OpenedNinja != null) DrawNinjaPanel(controller.OpenedNinja);
         }
 
@@ -216,6 +220,12 @@ namespace NinjaRealm.Presentation.Village
         /// <summary>Shows a chapter of the campaign map, for checking it from the editor menu.</summary>
         public void ShowChapter(int number)
         {
+            if (ui != null && ui.Ready)
+            {
+                ui.ShowChapter(number);
+                return;
+            }
+
             var profile = controller.Profile;
             if (profile == null) return;
             foreach (var chapter in profile.Campaign.Chapters)

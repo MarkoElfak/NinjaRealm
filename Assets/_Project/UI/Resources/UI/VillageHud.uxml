@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="project://database/Assets/_Project/UI/Styles/Village.uss" />
+    <ui:VisualElement name="root" class="ui-root" picking-mode="Ignore">
+        <ui:VisualElement name="topBarRow" class="top-bar-row" picking-mode="Ignore">
+            <ui:VisualElement name="topBar" class="panel top-bar">
+                <ui:VisualElement class="top-bar__heading">
+                    <ui:Label text="Ninja Village" class="top-bar__title" />
+                    <ui:Label name="hint" text="Click a building or a ninja. Drag to look around, scroll to zoom." class="top-bar__hint" />
+                </ui:VisualElement>
+                <ui:VisualElement name="clan" class="clan">
+                    <ui:Label name="clanLevel" text="Clan 1" class="clan__level" />
+                    <ui:VisualElement class="bar">
+                        <ui:VisualElement name="clanXpFill" class="bar__fill" />
+                    </ui:VisualElement>
+                    <ui:Label name="clanXp" text="0 / 100 XP" class="clan__xp" />
+                </ui:VisualElement>
+                <ui:VisualElement name="resources" class="resources" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="panelLayer" class="panel-layer" picking-mode="Ignore" />
+    </ui:VisualElement>
+</ui:UXML>

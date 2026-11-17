@@ -1,0 +1,254 @@
+.overlay {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    padding-top: 70px;
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+.hall {
+    width: 980px;
+    max-width: 94%;
+    padding: 0 18px 14px 18px;
+    border-top-width: 4px;
+    border-top-color: var(--red);
+}
+
+.hall__header {
+    flex-direction: row;
+    align-items: flex-start;
+    padding-top: 14px;
+    margin-bottom: 12px;
+}
+
+.hall__heading {
+    flex-grow: 1;
+}
+
+.chapter-tabs {
+    flex-direction: row;
+    margin-bottom: 8px;
+}
+
+.chapter-tab {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: 8px;
+    padding: 6px 10px;
+    align-items: flex-start;
+    border-bottom-width: 3px;
+    border-bottom-color: rgba(0, 0, 0, 0);
+}
+
+.chapter-tab--last {
+    margin-right: 0;
+}
+
+.chapter-tab--selected {
+    border-bottom-color: var(--gold);
+    background-color: var(--ink-card-hover);
+}
+
+.chapter-tab__name {
+    font-size: 15px;
+    -unity-font-style: bold;
+}
+
+.chapter-tab__stars {
+    font-size: 12px;
+    color: var(--gold);
+    -unity-font-style: normal;
+}
+
+.chapter-tab:disabled > .chapter-tab__stars {
+    color: var(--locked);
+}
+
+.chapter-description {
+    color: var(--muted);
+    margin: 4px 0 10px 0;
+}
+
+.stage-row {
+    flex-direction: row;
+    margin-bottom: 8px;
+}
+
+.stage-card {
+    flex-grow: 1;
+    flex-basis: 0;
+    height: 78px;
+    margin-right: 8px;
+    padding: 6px 10px;
+    align-items: stretch;
+    justify-content: space-between;
+}
+
+.stage-card--last {
+    margin-right: 0;
+}
+
+.stage-card--selected {
+    background-color: rgb(70, 58, 30);
+    border-color: var(--gold);
+}
+
+.stage-card--selected:hover {
+    background-color: rgb(84, 70, 36);
+}
+
+.stage-card__top {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.stage-card__label {
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+
+.stage-card__level {
+    font-size: 12px;
+    color: var(--muted);
+    -unity-font-style: normal;
+}
+
+.stage-card__name {
+    font-size: 13px;
+    -unity-font-style: normal;
+    -unity-text-align: middle-left;
+}
+
+.stage-card__locked {
+    font-size: 12px;
+    color: var(--locked);
+    -unity-font-style: normal;
+    -unity-text-align: middle-left;
+}
+
+.stage-card:disabled > .stage-card__name {
+    color: var(--locked);
+}
+
+.kind {
+    font-size: 11px;
+    -unity-font-style: bold;
+    padding: 1px 6px;
+    margin-left: 6px;
+    border-radius: 4px;
+}
+
+.kind--elite {
+    background-color: rgb(92, 60, 140);
+}
+
+.kind--boss {
+    background-color: var(--red);
+}
+
+.stage-card__label-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.chests {
+    flex-direction: row;
+    margin: 4px 0 12px 0;
+}
+
+.chest {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: row;
+    align-items: center;
+    margin-right: 8px;
+    padding: 8px 10px;
+    background-color: var(--ink-card);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+}
+
+.chest--last {
+    margin-right: 0;
+}
+
+.chest--ready {
+    border-color: var(--gold);
+    background-color: rgb(70, 58, 30);
+}
+
+.chest__text {
+    flex-grow: 1;
+}
+
+.chest__title {
+    -unity-font-style: bold;
+}
+
+.chest__contents {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: normal;
+}
+
+.chest__state {
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: 8px;
+}
+
+.details {
+    flex-direction: row;
+    padding: 12px 14px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+}
+
+.details__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: 16px;
+}
+
+.details__title-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.details__title {
+    font-size: 18px;
+    -unity-font-style: bold;
+}
+
+.details__info {
+    color: var(--muted);
+    margin-left: 10px;
+}
+
+.details__line {
+    white-space: normal;
+    margin-bottom: 3px;
+}
+
+.details__action {
+    width: 250px;
+}
+
+.to-battle {
+    height: 46px;
+    margin-bottom: 6px;
+}
+
+.details__note {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: normal;
+}
+
+.message {
+    margin-top: 10px;
+    min-height: 18px;
+    color: var(--gold);
+}

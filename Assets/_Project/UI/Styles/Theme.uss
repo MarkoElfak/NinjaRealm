@@ -1,0 +1,151 @@
+:root {
+    --ink: rgba(16, 18, 25, 0.95);
+    --ink-card: rgb(30, 33, 44);
+    --ink-card-hover: rgb(42, 46, 60);
+    --ink-locked: rgba(26, 28, 35, 0.8);
+    --line: rgba(240, 196, 92, 0.28);
+    --line-strong: rgba(240, 196, 92, 0.8);
+    --gold: rgb(240, 196, 92);
+    --gold-dim: rgb(120, 98, 48);
+    --red: rgb(196, 58, 46);
+    --red-hover: rgb(222, 76, 60);
+    --paper: rgb(240, 232, 214);
+    --muted: rgb(156, 163, 176);
+    --locked: rgb(106, 111, 124);
+    --danger: rgb(255, 153, 128);
+    --radius: 8px;
+    color: var(--paper);
+    font-size: 15px;
+}
+
+.ui-root {
+    flex-grow: 1;
+}
+
+.panel-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.hidden {
+    display: none;
+}
+
+.panel {
+    background-color: var(--ink);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: var(--radius);
+}
+
+.title {
+    font-size: 22px;
+    -unity-font-style: bold;
+    color: var(--paper);
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.strong {
+    -unity-font-style: bold;
+}
+
+.wrap {
+    white-space: normal;
+}
+
+.gold-text {
+    color: var(--gold);
+}
+
+.danger-text {
+    color: var(--danger);
+}
+
+.unity-label {
+    padding: 0;
+    margin: 0;
+}
+
+.unity-button {
+    background-color: var(--ink-card);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 6px;
+    color: var(--paper);
+    padding: 6px 14px;
+    margin: 0;
+    font-size: 15px;
+    -unity-font-style: bold;
+    transition-duration: 0.12s;
+}
+
+.unity-button:hover {
+    background-color: var(--ink-card-hover);
+    border-color: var(--line-strong);
+}
+
+.unity-button:active {
+    background-color: var(--gold-dim);
+}
+
+.unity-button:disabled {
+    color: var(--locked);
+    border-color: rgba(255, 255, 255, 0.08);
+    background-color: var(--ink-locked);
+}
+
+.button--primary {
+    background-color: var(--red);
+    border-color: var(--gold);
+    font-size: 17px;
+}
+
+.button--primary:hover {
+    background-color: var(--red-hover);
+}
+
+.button--small {
+    font-size: 13px;
+    padding: 3px 10px;
+}
+
+.pips {
+    flex-direction: row;
+}
+
+.pip {
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+    border-radius: 5px;
+    border-width: 1px;
+    border-color: var(--gold-dim);
+}
+
+.pip--on {
+    background-color: var(--gold);
+    border-color: var(--gold);
+}
+
+.bar {
+    height: 6px;
+    border-radius: 3px;
+    background-color: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.bar__fill {
+    height: 100%;
+    background-color: var(--gold);
+}
