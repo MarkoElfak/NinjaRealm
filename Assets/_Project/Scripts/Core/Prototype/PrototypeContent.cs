@@ -420,6 +420,26 @@ namespace NinjaRealm.Core.Prototype
                     new IncomeSource { id = IncomeIds.Mint, resource = gold, perHour = 40, perHourPerClanLevel = 5, storageHours = 8 },
                     new IncomeSource { id = IncomeIds.SteelMine, resource = steel, perHour = 4, perHourPerClanLevel = 1, storageHours = 8 },
                 };
+
+                // Home villages: one per element. Its ninjas are twice as likely in the Dojo.
+                p.villages = new List<HomeVillage>
+                {
+                    new HomeVillage
+                    {
+                        id = "emberfall", displayName = "Emberfall", element = fire, dojoAffinity = 20000,
+                        description = "A forge town on a smouldering ridge. Its ninjas strike hard and leave their enemies burning.",
+                    },
+                    new HomeVillage
+                    {
+                        id = "mistwater", displayName = "Mistwater", element = water, dojoAffinity = 20000,
+                        description = "A lake village wrapped in fog. Its ninjas heal one another and outlast their enemies.",
+                    },
+                    new HomeVillage
+                    {
+                        id = "stonehollow", displayName = "Stonehollow", element = earth, dojoAffinity = 20000,
+                        description = "A fortress cut into the mountain. Its ninjas wear stone and hold the line.",
+                    },
+                };
             });
         }
 

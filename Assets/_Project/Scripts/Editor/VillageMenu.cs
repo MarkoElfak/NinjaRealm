@@ -12,6 +12,14 @@ namespace NinjaRealm.Editor
     {
         const string Menu = "Ninja Realm/Village/";
 
+        [MenuItem(Menu + "Open New Game Screen")]
+        public static void OpenNewGame()
+        {
+            if (Village() == null) return;
+            var screen = Object.FindAnyObjectByType<NewGameScreen>();
+            if (screen != null) screen.Open();
+        }
+
         [MenuItem(Menu + "Open Command Hall")]
         public static void OpenCommandHall() => Open(VillageBuildingKind.CommandHall);
 

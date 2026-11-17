@@ -36,6 +36,7 @@ namespace NinjaRealm.Presentation.Village
         UIDocument document;
         VisualElement root;
         Label hint;
+        Label villageTitle;
         Label clanLevel;
         Label clanXp;
         VisualElement clanXpFill;
@@ -80,13 +81,14 @@ namespace NinjaRealm.Presentation.Village
 
             root = document.rootVisualElement;
             hint = root.Q<Label>("hint");
+            villageTitle = root.Q<Label>("villageTitle");
             clanLevel = root.Q<Label>("clanLevel");
             clanXp = root.Q<Label>("clanXp");
             clanXpFill = root.Q("clanXpFill");
             resources = root.Q("resources");
             panelLayer = root.Q("panelLayer");
             worldNames = root.Q("worldNames");
-            Ready = hint != null && clanLevel != null && resources != null && panelLayer != null && worldNames != null;
+            Ready = hint != null && villageTitle != null && clanLevel != null && resources != null && panelLayer != null && worldNames != null;
             if (!Ready)
             {
                 Debug.LogError("[Village] VillageHud.uxml is missing an element the village needs.", this);
@@ -124,7 +126,7 @@ namespace NinjaRealm.Presentation.Village
         void LateUpdate()
         {
             if (!Ready) return;
-            var show = !controller.PanelOpen && root.panel != null;
+            var show = !controller.PanelOpen && !controller.Founding && root.panel != null;
             GameUi.Show(worldNames, show);
             if (!show) return;
             PlaceBuildingNames();
@@ -152,16 +154,28 @@ namespace NinjaRealm.Presentation.Village
                     if (resource != null) amounts.Add((resource, AddResource(resource)));
 
             // Only touch the labels when something changed.
-            var wallet = $"{profile.ClanLevel}/{profile.ClanXp}/{profile.ClanXpToNext}";
+            var village = profile.HomeVillage;
+            var wallet = $"{profile.ClanName}/{village?.id}/{profile.ClanLevel}/{profile.ClanXp}/{profile.ClanXpToNext}";
             foreach (var (resource, _) in amounts) wallet += "/" + profile.Balance(resource);
             if (wallet == shownWallet) return;
             shownWallet = wallet;
 
+            villageTitle.text = VillageTitle(profile);
             clanLevel.text = $"Clan {profile.ClanLevel}";
             clanXp.text = $"{profile.ClanXp} / {profile.ClanXpToNext} XP";
             var fraction = profile.ClanXpToNext > 0 ? Mathf.Clamp01(profile.ClanXp / (float)profile.ClanXpToNext) : 1f;
             clanXpFill.style.width = Length.Percent(fraction * 100f);
             foreach (var (resource, amount) in amounts) amount.text = profile.Balance(resource).ToString();
+        }
+
+        /// <summary>The clan and its home village, such as "Silent Moon of Mistwater", in the village's colour.</summary>
+        public static string VillageTitle(ProfileService profile)
+        {
+            if (profile == null || string.IsNullOrEmpty(profile.ClanName)) return "Ninja Village";
+            var village = profile.HomeVillage;
+            if (village == null) return profile.ClanName;
+            var colour = village.element != null ? Color.Lerp(village.element.Color, Color.white, 0.3f) : Color.white;
+            return $"{profile.ClanName} <color=#{PrototypeGui.Hex(colour)}>of {village.displayName}</color>";
         }
 
         Label AddResource(ResourceDefinition resource)

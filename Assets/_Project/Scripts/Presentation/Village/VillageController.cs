@@ -74,12 +74,16 @@ namespace NinjaRealm.Presentation.Village
         /// <summary>True while a building's panel or a ninja's details cover the village.</summary>
         public bool PanelOpen => Opened != null || OpenedNinja != null;
 
+        /// <summary>True while the new game screen asks for the clan's name and home village. Set by <see cref="NewGameScreen"/>.</summary>
+        public bool Founding { get; set; }
+
         /// <summary>Raised when a panel opens or closes, with the building (null for a ninja's details or a close).</summary>
         public event Action<VillageBuilding> OpenedChanged;
 
         void Awake()
         {
             if (GetComponent<VillageScreen>() == null) gameObject.AddComponent<VillageScreen>();
+            if (GetComponent<NewGameScreen>() == null) gameObject.AddComponent<NewGameScreen>();
         }
 
         void Start()
@@ -129,6 +133,7 @@ namespace NinjaRealm.Presentation.Village
 
             initialized = true;
             RefreshNinjas();
+            ApplyHomeVillage();
             return true;
         }
 
@@ -199,6 +204,39 @@ namespace NinjaRealm.Presentation.Village
                 Debug.LogError($"[Village] {GameScenes.PathOf(GameScenes.Battle)} is not in the build settings. Run Ninja Realm > Scenes > Create Village Scene.");
         }
 
+        /// <summary>
+        /// Flies the home village's colour on the banners (objects named Banner...), or takes it
+        /// down when the clan has no home village yet. Call after the clan is founded.
+        /// </summary>
+        public void ApplyHomeVillage()
+        {
+            var village = Profile?.HomeVillage;
+            var tint = village?.element != null ? Color.Lerp(Color.white, village.element.Color, BannerTint) : (Color?)null;
+            var block = new MaterialPropertyBlock();
+            foreach (var root in gameObject.scene.GetRootGameObjects())
+            foreach (var part in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (!part.name.StartsWith("Banner", StringComparison.Ordinal)) continue;
+                foreach (var renderer in part.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (tint == null)
+                    {
+                        renderer.SetPropertyBlock(null);
+                        continue;
+                    }
+
+                    block.Clear();
+                    block.SetColor(BaseColor, tint.Value);
+                    block.SetColor(LegacyColor, tint.Value);
+                    renderer.SetPropertyBlock(block);
+                }
+            }
+        }
+
+        const float BannerTint = 0.7f;
+        static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+        static readonly int LegacyColor = Shader.PropertyToID("_Color");
+
         // ---------------------------------------------------------------- input
 
         void Update()
@@ -207,8 +245,8 @@ namespace NinjaRealm.Presentation.Village
             var keyboard = Keyboard.current;
             if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame && PanelOpen) Close();
 
-            // A panel is open: the village waits behind it.
-            if (PanelOpen)
+            // A panel or the new game screen is open: the village waits behind it.
+            if (PanelOpen || Founding)
             {
                 Hovered = null;
                 HoveredNinja = null;

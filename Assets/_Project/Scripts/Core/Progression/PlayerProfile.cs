@@ -35,6 +35,13 @@ namespace NinjaRealm.Core.Progression
     public sealed class PlayerProfile
     {
         public int version;
+
+        /// <summary>The clan's name, picked on the new game screen. Empty until then.</summary>
+        public string clanName = string.Empty;
+
+        /// <summary>The ID of the clan's home village (see <see cref="HomeVillage"/>). Empty until picked.</summary>
+        public string village = string.Empty;
+
         public Wallet wallet = new Wallet();
         public List<OwnedNinja> ninjas = new List<OwnedNinja>();
         public List<OwnedWeapon> weapons = new List<OwnedWeapon>();

@@ -5,7 +5,7 @@
         <ui:VisualElement name="topBarRow" class="top-bar-row" picking-mode="Ignore">
             <ui:VisualElement name="topBar" class="panel top-bar">
                 <ui:VisualElement class="top-bar__heading">
-                    <ui:Label text="Ninja Village" class="top-bar__title" />
+                    <ui:Label name="villageTitle" text="Ninja Village" class="top-bar__title" />
                     <ui:Label name="hint" text="Click a building or a ninja. Drag to look around, scroll to zoom." class="top-bar__hint" />
                 </ui:VisualElement>
                 <ui:VisualElement name="clan" class="clan">
