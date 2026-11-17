@@ -61,20 +61,21 @@ namespace NinjaRealm.Editor
 
         /// <summary>
         /// Where everything stands, in metres. The plaza is centred at (0, 2); the camera looks
-        /// from -z, and a model faces the camera at yaw 0. The entrance (torii gate and lantern
+        /// from -z, and yaw turns a model round the y axis. The entrance (torii gate and lantern
         /// path) is at the front, the Command Hall at the back.
         /// </summary>
         static IEnumerable<Piece> Layout()
         {
             Piece Building(VillageBuildingKind kind, float x, float z, float size, float yaw) => new Piece(ModelOf(kind), x, z, size, yaw, kind);
 
-            // The six buildings round the plaza.
-            yield return Building(VillageBuildingKind.CommandHall, 0f, 12f, 7f, 0f);
-            yield return Building(VillageBuildingKind.Dojo, -9.5f, 8f, 5.5f, 35f);
-            yield return Building(VillageBuildingKind.Shrine, 9.5f, 8f, 5.5f, -35f);
+            // The six buildings round the plaza. The Command Hall, Dojo, Shrine and Steel Mine
+            // models face away from the camera at yaw 0, so they are turned round to face the plaza.
+            yield return Building(VillageBuildingKind.CommandHall, 0f, 14.3f, 7f, 180f);
+            yield return Building(VillageBuildingKind.Dojo, -9.5f, 8f, 5.5f, 127.7f);
+            yield return Building(VillageBuildingKind.Shrine, 9.5f, 8f, 5.5f, 240f);
             yield return Building(VillageBuildingKind.Blacksmith, -10.5f, -1.5f, 4.5f, 70f);
             yield return Building(VillageBuildingKind.Mint, 10.5f, -1.5f, 4.5f, -70f);
-            yield return Building(VillageBuildingKind.SteelMine, -17f, 12f, 5f, 45f);
+            yield return Building(VillageBuildingKind.SteelMine, -17f, 12f, 5f, 135f);
 
             // The entrance: a torii gate and a path of lanterns into the plaza.
             yield return new Piece("ToriiGate", 0f, -9f, 4.5f);
