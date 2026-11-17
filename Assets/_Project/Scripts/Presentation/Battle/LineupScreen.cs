@@ -7,19 +7,23 @@ using NinjaRealm.Core.Lineups;
 using NinjaRealm.Core.Progression;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 
 namespace NinjaRealm.Presentation.Battle
 {
     /// <summary>
-    /// Prototype lineup screen: drag ninjas from the bench onto your half of the board, drag
-    /// them around or off the board, drag weapons onto them, step through the campaign stages
-    /// and start the fight. The bench and armory hold what the player owns. Drawn with IMGUI; input is read
-    /// from the Input System.
+    /// The lineup screen: drag ninjas from the bench onto your half of the board, drag them
+    /// around or off the board, drag weapons onto them, step through the campaign stages and
+    /// start the fight. The bench and armory hold what the player owns. Drawn with UI Toolkit
+    /// (UI/Resources/UI/Lineup.uxml); the dragging reads the Input System and asks the panel
+    /// what is under the mouse.
     /// </summary>
     [RequireComponent(typeof(BattleController))]
     public sealed class LineupScreen : MonoBehaviour
     {
         const float DragThreshold = 6f;
+        const float MessageSeconds = 3f;
+        const float TooltipWidth = 420f;
 
         enum DragKind
         {
@@ -41,17 +45,68 @@ namespace NinjaRealm.Presentation.Battle
         Vector2 pressPosition;
         bool dragMoved;
         LineupSlot selected;
-        string message;
         float messageUntil;
 
-        // Layout, in scaled GUI units. Rebuilt every frame from the screen size.
-        Rect leftPanel, rightPanel, topBar, bottomPanel;
-        readonly List<Rect> rosterCards = new List<Rect>();
-        readonly List<Rect> armoryCards = new List<Rect>();
+        UIDocument document;
+        VisualElement screen;
+        VisualElement stagePanel;
+        VisualElement infoPanel;
+        Label lineupTitle;
+        Label wallet;
+        Button toVillage;
+        Button fight;
+        Button clear;
+        Button rosterButton;
+        VisualElement ninjaCards;
+        Label armoryTitle;
+        VisualElement weaponCards;
+        VisualElement toast;
+        Label toastText;
+        Label tooltip;
+        Label ghost;
+        WorldLabels names;
+        string shownState;
 
         void Awake()
         {
             controller = GetComponent<BattleController>();
+        }
+
+        void OnEnable()
+        {
+            if (document == null) document = GameUi.Create(transform, "Lineup", 5f);
+            if (document == null) return;
+
+            screen = document.rootVisualElement;
+            stagePanel = screen.Q("stagePanel");
+            infoPanel = screen.Q("infoPanel");
+            lineupTitle = screen.Q<Label>("lineupTitle");
+            wallet = screen.Q<Label>("wallet");
+            toVillage = screen.Q<Button>("toVillage");
+            fight = screen.Q<Button>("fight");
+            clear = screen.Q<Button>("clear");
+            rosterButton = screen.Q<Button>("roster");
+            ninjaCards = screen.Q("ninjaCards");
+            armoryTitle = screen.Q<Label>("armoryTitle");
+            weaponCards = screen.Q("weaponCards");
+            toast = screen.Q("toast");
+            toastText = screen.Q<Label>("toastText");
+            tooltip = screen.Q<Label>("tooltip");
+            ghost = screen.Q<Label>("ghost");
+            names = new WorldLabels(screen.Q("boardLabels"), "board-name");
+
+            toVillage.clicked += () => controller.LeaveToVillage();
+            fight.clicked += () =>
+            {
+                if (controller.CanFight) controller.StartFight();
+            };
+            clear.clicked += () =>
+            {
+                controller.Lineup?.Clear();
+                selected = null;
+            };
+            rosterButton.clicked += () => controller.RosterOpen = true;
+            shownState = null;
         }
 
         void Start()
@@ -59,7 +114,7 @@ namespace NinjaRealm.Presentation.Battle
             if (!controller.Initialize()) return;
             var database = controller.Content;
 
-            foreach (var id in new[] { StatIds.Health, StatIds.AttackDamage, StatIds.AttackSpeed, StatIds.Range, StatIds.Armor, StatIds.MagicResist, StatIds.MaxMana })
+            foreach (var id in RosterViews.ShownStatIds)
                 if (database.TryGet<StatDefinition>(id, out var stat)) shownStats.Add(stat);
 
             RefreshLists();
@@ -78,6 +133,7 @@ namespace NinjaRealm.Presentation.Battle
             var profile = controller.Profile;
             roster.Clear();
             armory.Clear();
+            shownState = null;
             if (profile != null)
             {
                 roster.AddRange(profile.OwnedNinjas());
@@ -98,47 +154,21 @@ namespace NinjaRealm.Presentation.Battle
             return owned - controller.Lineup.EquippedCount(weapon);
         }
 
-        void Layout()
-        {
-            var width = PrototypeGui.Width;
-            var height = PrototypeGui.Height;
-            leftPanel = new Rect(10f, 10f, 250f, height - 210f);
-            rightPanel = new Rect(width - 280f, 10f, 270f, height - 210f);
-            topBar = new Rect(width / 2f - 290f, 10f, 580f, controller.Profile != null ? 100f : 74f);
-            bottomPanel = new Rect(10f, height - 190f, width - 20f, 180f);
-
-            rosterCards.Clear();
-            var cardWidth = Mathf.Min(150f, (bottomPanel.width - 20f) / Mathf.Max(1, roster.Count) - 6f);
-            for (var i = 0; i < roster.Count; i++)
-                rosterCards.Add(new Rect(bottomPanel.x + 10f + i * (cardWidth + 6f), bottomPanel.y + 30f, cardWidth, 56f));
-
-            armoryCards.Clear();
-            var weaponWidth = Mathf.Min(150f, (bottomPanel.width - 20f) / Mathf.Max(1, armory.Count) - 6f);
-            for (var i = 0; i < armory.Count; i++)
-                armoryCards.Add(new Rect(bottomPanel.x + 10f + i * (weaponWidth + 6f), bottomPanel.y + 122f, weaponWidth, 46f));
-        }
-
-        bool OverPanel(Vector2 point) =>
-            leftPanel.Contains(point) || rightPanel.Contains(point) || topBar.Contains(point) || bottomPanel.Contains(point);
-
-        static int IndexAt(List<Rect> rects, Vector2 point)
-        {
-            for (var i = 0; i < rects.Count; i++)
-                if (rects[i].Contains(point)) return i;
-            return -1;
-        }
+        bool Showing => controller.Phase == BattlePhase.Setup && controller.Lineup != null && !controller.RosterOpen;
 
         // ---------------------------------------------------------------- input
 
         void Update()
         {
-            if (controller.Phase != BattlePhase.Setup || controller.Lineup == null || controller.RosterOpen)
+            if (screen == null) return;
+            if (!Showing)
             {
                 drag = DragKind.None;
+                GameUi.Show(screen, false);
                 return;
             }
 
-            Layout();
+            GameUi.Show(screen, true);
             var lineup = controller.Lineup;
             if (selected != null && !Contains(lineup, selected)) selected = null;
 
@@ -154,33 +184,33 @@ namespace NinjaRealm.Presentation.Battle
             }
 
             var mouse = Mouse.current;
-            if (mouse == null) return;
+            if (mouse != null && controller.Phase == BattlePhase.Setup) HandleMouse(mouse, lineup);
+        }
 
-            var point = PrototypeGui.MouseGuiPosition;
+        void HandleMouse(Mouse mouse, PlayerLineup lineup)
+        {
+            var mouseScreen = mouse.position.ReadValue();
+            var under = GameUi.Under(document, mouseScreen);
             var camera = Camera.main;
             var hex = default(HexCoord);
-            var overBoard = !OverPanel(point) && controller.Board.TryGetHex(camera, PrototypeGui.MouseScreenPosition, out hex);
+            var overBoard = under == null && controller.Board.TryGetHex(camera, mouseScreen, out hex);
 
-            if (mouse.leftButton.wasPressedThisFrame) Press(point, overBoard, hex);
+            if (mouse.leftButton.wasPressedThisFrame) Press(mouseScreen, under, overBoard, hex);
 
-            if (drag != DragKind.None)
-            {
-                if ((point - pressPosition).magnitude > DragThreshold) dragMoved = true;
+            if (drag == DragKind.None) return;
+            if ((mouseScreen - pressPosition).magnitude > DragThreshold) dragMoved = true;
 
-                if (drag == DragKind.MoveSlot && dragMoved && controller.Board.TryGetPoint(camera, PrototypeGui.MouseScreenPosition, out var world))
-                    controller.ViewFor(dragSlot)?.Teleport(world + Vector3.up * 0.3f);
+            if (drag == DragKind.MoveSlot && dragMoved && controller.Board.TryGetPoint(camera, mouseScreen, out var world))
+                controller.ViewFor(dragSlot)?.Teleport(world + Vector3.up * 0.3f);
 
-                if (overBoard && dragMoved) controller.Board.Highlight(hex, IsValidDrop(hex));
-                else controller.Board.Highlight(null, false);
+            if (overBoard && dragMoved) controller.Board.Highlight(hex, IsValidDrop(hex));
+            else controller.Board.Highlight(null, false);
 
-                if (mouse.leftButton.wasReleasedThisFrame)
-                {
-                    Drop(point, overBoard, hex);
-                    drag = DragKind.None;
-                    controller.Board.Highlight(null, false);
-                    controller.RebuildPreview();
-                }
-            }
+            if (!mouse.leftButton.wasReleasedThisFrame) return;
+            Drop(overBoard, hex);
+            drag = DragKind.None;
+            controller.Board.Highlight(null, false);
+            controller.RebuildPreview();
         }
 
         static bool Contains(PlayerLineup lineup, LineupSlot slot)
@@ -190,16 +220,15 @@ namespace NinjaRealm.Presentation.Battle
             return false;
         }
 
-        void Press(Vector2 point, bool overBoard, HexCoord hex)
+        void Press(Vector2 point, VisualElement under, bool overBoard, HexCoord hex)
         {
             var lineup = controller.Lineup;
             pressPosition = point;
             dragMoved = false;
 
-            var card = IndexAt(rosterCards, point);
-            if (card >= 0)
+            var ninja = GameUi.DataOf<NinjaDefinition>(under);
+            if (ninja != null)
             {
-                var ninja = roster[card];
                 if (lineup.Contains(ninja))
                 {
                     foreach (var slot in lineup.Slots)
@@ -214,10 +243,9 @@ namespace NinjaRealm.Presentation.Battle
                 return;
             }
 
-            var weaponCard = IndexAt(armoryCards, point);
-            if (weaponCard >= 0)
+            var weapon = GameUi.DataOf<WeaponDefinition>(under);
+            if (weapon != null)
             {
-                var weapon = armory[weaponCard];
                 if (FreeCount(weapon) <= 0)
                 {
                     Say($"Every {weapon.DisplayName} you own is equipped. Remove one from a ninja first.");
@@ -262,7 +290,7 @@ namespace NinjaRealm.Presentation.Battle
             }
         }
 
-        void Drop(Vector2 point, bool overBoard, HexCoord hex)
+        void Drop(bool overBoard, HexCoord hex)
         {
             var lineup = controller.Lineup;
             var onPlayerHex = overBoard && controller.IsPlayerHex(hex, out _, out _);
@@ -328,76 +356,63 @@ namespace NinjaRealm.Presentation.Battle
 
         void Say(string text)
         {
-            message = text;
-            messageUntil = Time.unscaledTime + 3f;
+            if (toastText == null) return;
+            toastText.text = text;
+            messageUntil = Time.unscaledTime + MessageSeconds;
         }
 
         // ---------------------------------------------------------------- drawing
 
-        void OnGUI()
+        void LateUpdate()
         {
-            if (controller == null || controller.Phase != BattlePhase.Setup || controller.Lineup == null || controller.RosterOpen) return;
+            if (screen == null || !Showing) return;
 
-            PrototypeGui.Begin();
-            Layout();
-
-            DrawNames();
-            DrawStage();
-            DrawRight();
-            DrawTopBar();
-            DrawBottom();
-            DrawDragGhost();
-
-            if (!string.IsNullOrEmpty(message) && Time.unscaledTime < messageUntil)
+            var state = State();
+            if (state != shownState)
             {
-                var rect = new Rect(PrototypeGui.Width / 2f - 260f, bottomPanel.y - 44f, 520f, 32f);
-                PrototypeGui.Panel(rect);
-                GUI.Label(rect, message, PrototypeGui.Centered);
+                shownState = state;
+                RefreshTopBar();
+                RefreshStage();
+                RefreshInfo();
+                RefreshBench();
             }
+
+            PlaceNames();
+            GameUi.Show(toast, Time.unscaledTime < messageUntil);
+            RefreshPointer();
         }
 
-        void DrawNames()
+        /// <summary>Everything the panels show, as text, so they are only rebuilt when something changed.</summary>
+        string State()
         {
-            var camera = Camera.main;
-            if (camera == null) return;
-            var scale = PrototypeGui.Scale;
-            foreach (var view in controller.PreviewViews)
+            var text = new StringBuilder();
+            var lineup = controller.Lineup;
+            text.Append(controller.Stage != null ? controller.Stage.Id : "-").Append('|').Append(lineup.MaxUnits).Append('|');
+            foreach (var slot in lineup.Slots)
             {
-                if (view == null) continue;
-                var screen = camera.WorldToScreenPoint(view.BarsPosition);
-                if (screen.z <= 0f) continue;
-                var point = new Vector2(screen.x / scale, (Screen.height - screen.y) / scale);
-                GUI.Label(new Rect(point.x - 60f, point.y - 30f, 120f, 18f), $"<b>{view.DisplayName}</b>", PrototypeGui.NameStyle);
+                text.Append(slot.ninja.Id).Append(slot == selected ? '*' : ' ').Append(slot.column).Append(',').Append(slot.rowFromBack);
+                foreach (var weapon in slot.weapons) text.Append('+').Append(weapon.Id);
+                text.Append(';');
             }
+
+            text.Append('|').Append(roster.Count).Append('|').Append(armory.Count);
+            var profile = controller.Profile;
+            if (profile != null) text.Append('|').Append(WalletLine(profile));
+            return text.ToString();
         }
 
-        void DrawTopBar()
+        void RefreshTopBar()
         {
             var lineup = controller.Lineup;
-            PrototypeGui.Panel(topBar);
-            GUI.Label(new Rect(topBar.x + 14f, topBar.y + 8f, 220f, 24f), $"Your lineup  {lineup.Slots.Count} / {lineup.MaxUnits}", PrototypeGui.Title);
-            GUI.Label(new Rect(topBar.x + 14f, topBar.y + 34f, 290f, 36f),
-                "Drag ninjas onto the near half. Drag one off the board to remove it.", PrototypeGui.Wrap);
-
-            // The way back to the village, next to Fight so it is easy to find.
-            if (controller.CanLeaveToVillage && GUI.Button(new Rect(topBar.xMax - 262f, topBar.y + 10f, 124f, 34f), "Back to village")) controller.LeaveToVillage();
-
-            GUI.enabled = controller.CanFight;
-            if (GUI.Button(new Rect(topBar.xMax - 130f, topBar.y + 10f, 118f, 34f), "Fight! (Enter)")) controller.StartFight();
-            GUI.enabled = lineup.Slots.Count > 0;
-            if (GUI.Button(new Rect(topBar.xMax - 130f, topBar.y + 48f, 118f, 20f), "Clear lineup"))
-            {
-                lineup.Clear();
-                selected = null;
-            }
-
-            GUI.enabled = true;
+            lineupTitle.text = $"Your lineup  {lineup.Slots.Count} / {lineup.MaxUnits}";
+            fight.SetEnabled(controller.CanFight);
+            clear.SetEnabled(lineup.Slots.Count > 0);
+            GameUi.Show(toVillage, controller.CanLeaveToVillage);
 
             var profile = controller.Profile;
-            if (profile == null) return;
-
-            if (GUI.Button(new Rect(topBar.xMax - 130f, topBar.y + 72f, 118f, 22f), "Roster (Tab)")) controller.RosterOpen = true;
-            GUI.Label(new Rect(topBar.x + 14f, topBar.y + 74f, topBar.width - 160f, 20f), WalletLine(profile), PrototypeGui.Small);
+            GameUi.Show(rosterButton, profile != null);
+            GameUi.Show(wallet, profile != null);
+            if (profile != null) wallet.text = WalletLine(profile);
         }
 
         /// <summary>The clan level and the three balances, for the screens' top bars.</summary>
@@ -410,58 +425,50 @@ namespace NinjaRealm.Presentation.Battle
                    Amount(progression.Gold) + Amount(progression.Karma) + Amount(progression.Steel);
         }
 
-        void DrawStage()
+        void RefreshStage()
         {
-            PrototypeGui.Panel(leftPanel);
-            var x = leftPanel.x + 12f;
-            var y = leftPanel.y + 10f;
-            var width = leftPanel.width - 24f;
-
+            stagePanel.Clear();
             var stage = controller.Stage;
             var campaign = controller.Campaign;
             if (stage == null || campaign == null)
             {
-                GUI.Label(new Rect(x, y, width, 60f), "There are no campaign stages. Run Ninja Realm > Content > Create Prototype Content.", PrototypeGui.Wrap);
+                stagePanel.Add(GameUi.Label("There are no campaign stages. Run Ninja Realm > Content > Create Prototype Content.", "note"));
                 return;
             }
 
             var profile = controller.Profile;
             var chapter = campaign.ChapterOf(stage);
-            if (chapter != null)
-            {
-                GUI.Label(new Rect(x, y, width, 18f), $"<color=#9aa3b0>Chapter {chapter.Number}: {chapter.DisplayName}</color>", PrototypeGui.Small);
-                y += 20f;
-            }
-
-            GUI.Label(new Rect(x, y, width, 22f), $"Stage {campaign.LabelOf(stage)}{KindText(stage.Kind)}", PrototypeGui.Title);
-            y += 28f;
+            if (chapter != null) stagePanel.Add(GameUi.Label($"Chapter {chapter.Number}: {chapter.DisplayName}", "small"));
+            stagePanel.Add(GameUi.Label($"Stage {campaign.LabelOf(stage)}{KindText(stage.Kind)}", "title"));
 
             // Step through the stages that can be fought.
             var previous = campaign.Previous(stage);
             var next = campaign.Next(stage);
-            var half = (width - 6f) / 2f;
-            GUI.enabled = controller.IsUnlocked(previous);
-            if (GUI.Button(new Rect(x, y, half, 24f), "< Previous")) controller.SelectStage(previous);
-            GUI.enabled = controller.IsUnlocked(next);
-            if (GUI.Button(new Rect(x + half + 6f, y, half, 24f), next != null && !GUI.enabled ? "Next (locked)" : "Next >")) controller.SelectStage(next);
-            GUI.enabled = true;
-            y += 32f;
+            var nav = GameUi.Element("stage-nav");
+            var back = GameUi.Button("< Previous", () => controller.SelectStage(previous), "stage-nav__first");
+            back.SetEnabled(controller.IsUnlocked(previous));
+            nav.Add(back);
+            var nextOpen = controller.IsUnlocked(next);
+            var forward = GameUi.Button(next != null && !nextOpen ? "Next (locked)" : "Next >", () => controller.SelectStage(next));
+            forward.SetEnabled(nextOpen);
+            nav.Add(forward);
+            stagePanel.Add(nav);
 
             var opponent = stage.Lineup;
-            PrototypeGui.Fill(new Rect(x, y, width, 46f), PrototypeGui.CardColor, true);
-            GUI.Label(new Rect(x + 8f, y + 3f, width - 60f, 20f), $"<b>{(opponent != null ? opponent.DisplayName : "Nobody")}</b>", PrototypeGui.Label);
-            GUI.Label(new Rect(x + width - 52f, y + 5f, 46f, 16f), $"Lv {stage.Level}", PrototypeGui.Small);
+            var card = GameUi.Element("card", "opponent");
+            var top = GameUi.Element("opponent__top");
+            top.Add(GameUi.Label(opponent != null ? opponent.DisplayName : "Nobody", "strong"));
+            top.Add(GameUi.Label($"Lv {stage.Level}", "small"));
+            card.Add(top);
+            var bottom = GameUi.Element("opponent__bottom");
             var stars = profile != null ? profile.StarsOf(stage) : 0;
-            PrototypeGui.Pips(new Vector2(x + 9f, y + 29f), stars, StageStars.Max, PrototypeGui.Gold);
-            GUI.Label(new Rect(x + 60f, y + 24f, width - 68f, 16f), stars > 0 ? $"Best: {stars} of {StageStars.Max} stars" : "Not cleared yet", PrototypeGui.Small);
-            y += 54f;
+            bottom.Add(GameUi.Pips(stars, StageStars.Max));
+            bottom.Add(GameUi.Label(stars > 0 ? $"Best: {stars} of {StageStars.Max} stars" : "Not cleared yet", "small"));
+            card.Add(bottom);
+            stagePanel.Add(card);
 
             if (opponent == null) return;
-
-            var description = opponent.Description;
-            var descriptionHeight = PrototypeGui.Wrap.CalcHeight(new GUIContent(description), width);
-            GUI.Label(new Rect(x, y, width, descriptionHeight), description, PrototypeGui.Wrap);
-            y += descriptionHeight + 6f;
+            stagePanel.Add(GameUi.Label(opponent.Description, "side-line"));
 
             if (profile != null)
             {
@@ -470,22 +477,15 @@ namespace NinjaRealm.Presentation.Battle
                 var pay = $"<b>Win:</b> {gold} Gold, {steel} Steel, {xp} clan XP, {progression.DropChance(stage.RewardTier) / 100}% weapon drop.";
                 if (!profile.HasCleared(stage))
                     pay += $" <color=#{PrototypeGui.Hex(PrototypeGui.Gold)}>First clear: {FirstClearText(stage, progression)}.</color>";
-                var payHeight = PrototypeGui.Wrap.CalcHeight(new GUIContent(pay), width);
-                GUI.Label(new Rect(x, y, width, payHeight), pay, PrototypeGui.Wrap);
-                y += payHeight + 6f;
+                stagePanel.Add(GameUi.Label(pay, "side-line"));
             }
 
-            const string starRules = "<color=#9aa3b0>Stars: 1 for the win, 2 with half your team standing, 3 with nobody fallen.</color>";
-            var rulesHeight = PrototypeGui.Wrap.CalcHeight(new GUIContent(starRules), width);
-            GUI.Label(new Rect(x, y, width, rulesHeight), starRules, PrototypeGui.Wrap);
-            y += rulesHeight + 10f;
-
-            GUI.Label(new Rect(x, y, width, 22f), "Their synergies", PrototypeGui.Title);
-            y += 26f;
-            DrawSynergies(LineupSynergies.Count(opponent.Slots), x, y, width, leftPanel.yMax - 8f);
+            stagePanel.Add(GameUi.Label("Stars: 1 for the win, 2 with half your team standing, 3 with nobody fallen.", "side-line", "muted"));
+            stagePanel.Add(GameUi.Label("Their synergies", "side-title"));
+            AddSynergies(stagePanel, LineupSynergies.Count(opponent.Slots));
         }
 
-        /// <summary>" (Elite)" or " (Boss)" in colour, or nothing for a normal stage.</summary>
+        /// <summary>" Elite" or " Boss" in colour, or nothing for a normal stage.</summary>
         public static string KindText(StageKind kind) => kind switch
         {
             StageKind.Elite => "  <color=#c9a0ff>Elite</color>",
@@ -503,199 +503,186 @@ namespace NinjaRealm.Presentation.Battle
             return string.Join(", ", parts.GetRange(0, parts.Count - 1)) + " and " + parts[parts.Count - 1];
         }
 
-        void DrawRight()
+        void RefreshInfo()
         {
-            PrototypeGui.Panel(rightPanel);
-            var x = rightPanel.x + 12f;
-            var y = rightPanel.y + 10f;
-            var width = rightPanel.width - 24f;
-
-            GUI.Label(new Rect(x, y, width, 22f), "Your synergies", PrototypeGui.Title);
-            y += 26f;
-            y = DrawSynergies(controller.Lineup.Synergies(), x, y, width, rightPanel.y + 300f);
-
-            y = Mathf.Max(y, rightPanel.y + 230f) + 8f;
-            PrototypeGui.Fill(new Rect(x, y, width, 1f), PrototypeGui.BorderColor);
-            y += 10f;
+            infoPanel.Clear();
+            infoPanel.Add(GameUi.Label("Your synergies", "side-title"));
+            AddSynergies(infoPanel, controller.Lineup.Synergies());
+            infoPanel.Add(GameUi.Element("divider"));
 
             if (selected == null)
             {
-                GUI.Label(new Rect(x, y, width, 60f), "Click one of your ninjas to see its stats and weapons.", PrototypeGui.Wrap);
+                infoPanel.Add(GameUi.Label("Click one of your ninjas to see its stats and weapons.", "note"));
                 return;
             }
 
-            DrawNinja(selected, x, y, width);
+            AddNinja(selected);
         }
 
-        float DrawSynergies(List<TraitCount> traits, float x, float y, float width, float maxY)
+        static void AddSynergies(VisualElement parent, List<TraitCount> traits)
         {
             if (traits.Count == 0)
             {
-                GUI.Label(new Rect(x, y, width, 20f), "None yet.", PrototypeGui.Small);
-                return y + 22f;
+                parent.Add(GameUi.Label("None yet.", "small"));
+                return;
             }
 
             foreach (var trait in traits)
             {
-                if (y > maxY - 20f) break;
-
                 var active = trait.ActiveTier;
                 var thresholds = new StringBuilder();
                 foreach (var tier in trait.Trait.Tiers)
                 {
                     if (tier == null) continue;
                     if (thresholds.Length > 0) thresholds.Append(" / ");
-                    var reached = trait.Count >= tier.requiredCount;
-                    thresholds.Append(reached ? $"<b>{tier.requiredCount}</b>" : tier.requiredCount.ToString());
+                    thresholds.Append(trait.Count >= tier.requiredCount ? $"<b>{tier.requiredCount}</b>" : tier.requiredCount.ToString());
                 }
 
-                var color = active != null ? trait.Trait.Color : new Color(0.55f, 0.57f, 0.6f);
-                PrototypeGui.Fill(new Rect(x, y + 3f, 12f, 12f), color);
-                GUI.Label(new Rect(x + 18f, y, width - 18f, 20f),
-                    $"<color=#{PrototypeGui.Hex(active != null ? Color.white : new Color(0.65f, 0.67f, 0.7f))}><b>{trait.Trait.DisplayName}</b>  {trait.Count}   ({thresholds})</color>",
-                    PrototypeGui.Label);
-                y += 20f;
-
-                if (active != null && !string.IsNullOrEmpty(active.description))
-                {
-                    var height = PrototypeGui.Wrap.CalcHeight(new GUIContent(active.description), width - 18f);
-                    GUI.Label(new Rect(x + 18f, y, width - 18f, height), active.description, PrototypeGui.Wrap);
-                    y += height + 4f;
-                }
+                var row = GameUi.Element("synergy");
+                row.EnableInClassList("synergy--inactive", active == null);
+                var top = GameUi.Element("synergy__top");
+                var dot = GameUi.Element("synergy__dot");
+                dot.style.backgroundColor = active != null ? trait.Trait.Color : new Color(0.55f, 0.57f, 0.6f);
+                top.Add(dot);
+                top.Add(GameUi.Label($"<b>{trait.Trait.DisplayName}</b>  {trait.Count}   ({thresholds})", "synergy__name"));
+                row.Add(top);
+                if (active != null && !string.IsNullOrEmpty(active.description)) row.Add(GameUi.Label(active.description, "synergy__description"));
+                parent.Add(row);
             }
-
-            return y;
         }
 
-        void DrawNinja(LineupSlot slot, float x, float y, float width)
+        void AddNinja(LineupSlot slot)
         {
             var ninja = slot.ninja;
-            GUI.Label(new Rect(x, y, width, 22f), $"<b>{ninja.DisplayName}</b>  <color=#{PrototypeGui.Hex(RarityColor(ninja.Rarity))}>{ninja.Rarity}</color>", PrototypeGui.Title);
-            y += 22f;
+            infoPanel.Add(RosterViews.NameLine(ninja));
             var rank = controller.RankOf(ninja);
-            var multiplier = controller.Profile != null ? controller.Profile.Progression.StatMultiplier(rank.Level, rank.Stars) : ProgressionDefinition.BasisPoints;
-            if (controller.Profile != null)
-            {
-                GUI.Label(new Rect(x, y, width, 18f), $"{RankText(rank)}  {controller.Profile.Progression.Belt(rank.Level)} belt", PrototypeGui.Small);
-                y += 18f;
-            }
-            GUI.Label(new Rect(x, y, width, 18f),
-                $"<color=#{PrototypeGui.Hex(ninja.Element != null ? ninja.Element.Color : Color.grey)}>{ninja.Element?.DisplayName}</color>  {ninja.Class?.DisplayName}",
-                PrototypeGui.Small);
-            y += 22f;
+            var profile = controller.Profile;
+            var multiplier = profile != null ? profile.Progression.StatMultiplier(rank.Level, rank.Stars) : ProgressionDefinition.BasisPoints;
+            if (profile != null) infoPanel.Add(GameUi.Label($"{RankText(rank)}  {profile.Progression.Belt(rank.Level)} belt", "small"));
+            infoPanel.Add(GameUi.Label(RosterViews.ElementAndClass(ninja, true), "small"));
 
-            for (var i = 0; i < shownStats.Count; i++)
+            var stats = GameUi.Element("stats");
+            foreach (var stat in shownStats)
             {
-                var stat = shownStats[i];
-                var column = i % 2;
-                var rect = new Rect(x + column * (width / 2f), y + (i / 2) * 17f, width / 2f, 17f);
                 var value = ninja.GetBaseStat(stat);
                 if (stat.Id == StatIds.Health || stat.Id == StatIds.AttackDamage) value = value * multiplier / ProgressionDefinition.BasisPoints;
-                GUI.Label(rect, $"{stat.DisplayName}: <b>{value:0.##}</b>", PrototypeGui.Small);
+                stats.Add(GameUi.Label($"<color=#9ca3b0>{stat.DisplayName}</color>  <b>{value:0.##}</b>", "stat"));
             }
 
-            y += ((shownStats.Count + 1) / 2) * 17f + 6f;
+            infoPanel.Add(stats);
 
             if (ninja.Skill != null)
             {
-                GUI.Label(new Rect(x, y, width, 18f), $"<b>{ninja.Skill.DisplayName}</b>", PrototypeGui.Label);
-                y += 18f;
-                var height = PrototypeGui.Wrap.CalcHeight(new GUIContent(ninja.Skill.Description), width);
-                GUI.Label(new Rect(x, y, width, height), ninja.Skill.Description, PrototypeGui.Wrap);
-                y += height + 6f;
+                infoPanel.Add(GameUi.Label(ninja.Skill.DisplayName, "skill-name"));
+                infoPanel.Add(GameUi.Label(ninja.Skill.Description, "side-line", "muted"));
             }
 
-            GUI.Label(new Rect(x, y, width, 18f), $"<b>Weapons</b>  {slot.weapons.Count} / {LineupRules.MaxWeaponsPerNinja}", PrototypeGui.Label);
-            y += 20f;
+            infoPanel.Add(GameUi.Label($"<b>Weapons</b>  {slot.weapons.Count} / {LineupRules.MaxWeaponsPerNinja}"));
             for (var i = 0; i < slot.weapons.Count; i++)
             {
-                var weapon = slot.weapons[i];
-                GUI.Label(new Rect(x, y, width - 28f, 18f), weapon.DisplayName, PrototypeGui.Small);
-                if (GUI.Button(new Rect(x + width - 24f, y, 22f, 18f), "x"))
-                {
-                    controller.Lineup.Unequip(slot, i);
-                    break;
-                }
-
-                y += 20f;
+                var index = i;
+                var line = GameUi.Element("weapon-line");
+                line.Add(GameUi.Label(slot.weapons[i].DisplayName, "small"));
+                line.Add(GameUi.Button("x", () => controller.Lineup.Unequip(slot, index), "icon-button"));
+                infoPanel.Add(line);
             }
 
-            if (slot.weapons.Count == 0)
-            {
-                GUI.Label(new Rect(x, y, width, 18f), "Drag a weapon from the armory onto this ninja.", PrototypeGui.Small);
-                y += 20f;
-            }
+            if (slot.weapons.Count == 0) infoPanel.Add(GameUi.Label("Drag a weapon from the armory onto this ninja.", "small", "wrap"));
 
-            if (GUI.Button(new Rect(x, Mathf.Min(y + 6f, rightPanel.yMax - 30f), width, 22f), "Remove from lineup (Delete)"))
+            infoPanel.Add(GameUi.Button("Remove from lineup (Delete)", () =>
             {
                 controller.Lineup.Remove(slot);
                 selected = null;
-            }
+            }, "remove"));
         }
 
-        void DrawBottom()
+        void RefreshBench()
         {
             var lineup = controller.Lineup;
-            PrototypeGui.Panel(bottomPanel);
-            GUI.Label(new Rect(bottomPanel.x + 12f, bottomPanel.y + 6f, 600f, 20f), "<b>Ninjas</b>  drag onto your half", PrototypeGui.Label);
-            GUI.Label(new Rect(bottomPanel.x + 12f, bottomPanel.y + 98f, 600f, 20f), controller.Profile != null ? "<b>Armory</b>  the weapons you own, drag onto a ninja" : "<b>Armory</b>  one of each weapon, drag onto a ninja", PrototypeGui.Label);
-
-            var point = PrototypeGui.MouseGuiPosition;
-            string tooltip = null;
-
-            for (var i = 0; i < roster.Count && i < rosterCards.Count; i++)
+            var profile = controller.Profile;
+            ninjaCards.Clear();
+            foreach (var ninja in roster)
             {
-                var ninja = roster[i];
-                var rect = rosterCards[i];
                 var placed = lineup.Contains(ninja);
-                PrototypeGui.Fill(rect, placed ? PrototypeGui.DisabledColor : PrototypeGui.CardColor, true);
-                PrototypeGui.Fill(new Rect(rect.x, rect.y, 4f, rect.height), ninja.Element != null ? ninja.Element.Color : Color.grey);
-                GUI.Label(new Rect(rect.x + 10f, rect.y + 4f, rect.width - 12f, 20f),
-                    $"<b>{ninja.DisplayName}</b>", PrototypeGui.Label);
-                GUI.Label(new Rect(rect.x + 10f, rect.y + 22f, rect.width - 12f, 16f), $"{ninja.Element?.DisplayName} {ninja.Class?.DisplayName}", PrototypeGui.Small);
-                var detail = controller.Profile != null ? RankText(controller.RankOf(ninja)) : $"<color=#{PrototypeGui.Hex(RarityColor(ninja.Rarity))}>{ninja.Rarity}</color>";
-                GUI.Label(new Rect(rect.x + 10f, rect.y + 37f, rect.width - 12f, 16f), placed ? "On the board" : detail, PrototypeGui.Small);
-
-                if (rect.Contains(point) && ninja.Skill != null)
-                    tooltip = $"<b>{ninja.DisplayName}</b>: {ninja.Skill.DisplayName}. {ninja.Skill.Description}";
+                var card = GameUi.Element("card", "bench-card", "bench-card--ninja");
+                card.userData = ninja;
+                card.EnableInClassList("bench-card--used", placed);
+                card.EnableInClassList("bench-card--selected", selected != null && selected.ninja == ninja);
+                card.style.borderLeftColor = RosterViews.ElementColor(ninja);
+                card.Add(GameUi.Label(ninja.DisplayName, "bench-card__name"));
+                card.Add(GameUi.Label(RosterViews.ElementAndClass(ninja), "small"));
+                var detail = profile != null ? RankText(controller.RankOf(ninja)) : $"<color=#{PrototypeGui.Hex(RarityColor(ninja.Rarity))}>{ninja.Rarity}</color>";
+                card.Add(GameUi.Label(placed ? "On the board" : detail, "small"));
+                ninjaCards.Add(card);
             }
 
-            for (var i = 0; i < armory.Count && i < armoryCards.Count; i++)
+            armoryTitle.text = profile != null
+                ? "<b>Armory</b>  the weapons you own, drag onto a ninja"
+                : "<b>Armory</b>  one of each weapon, drag onto a ninja";
+            weaponCards.Clear();
+            foreach (var weapon in armory)
             {
-                var weapon = armory[i];
-                var rect = armoryCards[i];
                 var free = FreeCount(weapon);
-                var used = free <= 0;
                 var combined = weapon.Tier == WeaponTier.Combined;
-                PrototypeGui.Fill(rect, used ? PrototypeGui.DisabledColor : combined ? new Color(0.26f, 0.22f, 0.14f, 0.95f) : PrototypeGui.CardColor, true);
-                GUI.Label(new Rect(rect.x + 8f, rect.y + 4f, rect.width - 10f, 20f), $"<b>{weapon.DisplayName}</b>", PrototypeGui.Label);
+                var card = GameUi.Element("card", "bench-card", "bench-card--weapon");
+                card.userData = weapon;
+                card.EnableInClassList("bench-card--used", free <= 0);
+                card.EnableInClassList("bench-card--combined", combined && free > 0);
+                card.Add(GameUi.Label(weapon.DisplayName, "bench-card__name"));
                 var kind = combined ? "Combined" : "Component";
-                var state = controller.Profile != null ? $"{kind}, {Mathf.Max(0, free)} free" : used ? "Equipped" : kind;
-                GUI.Label(new Rect(rect.x + 8f, rect.y + 23f, rect.width - 10f, 16f), state, PrototypeGui.Small);
-
-                if (rect.Contains(point))
-                    tooltip = $"<b>{weapon.DisplayName}</b>: {weapon.Description}";
-            }
-
-            if (tooltip != null && drag == DragKind.None)
-            {
-                var width = 420f;
-                var height = PrototypeGui.Wrap.CalcHeight(new GUIContent(tooltip), width - 16f) + 12f;
-                var rect = new Rect(Mathf.Clamp(point.x - width / 2f, 10f, PrototypeGui.Width - width - 10f), bottomPanel.y - height - 6f, width, height);
-                PrototypeGui.Panel(rect);
-                GUI.Label(new Rect(rect.x + 8f, rect.y + 6f, width - 16f, height - 12f), tooltip, PrototypeGui.Wrap);
+                card.Add(GameUi.Label(profile != null ? $"{kind}, {Mathf.Max(0, free)} free" : free <= 0 ? "Equipped" : kind, "small"));
+                weaponCards.Add(card);
             }
         }
 
-        void DrawDragGhost()
+        /// <summary>A name over each ninja on the board.</summary>
+        void PlaceNames()
         {
-            if (!dragMoved || (drag != DragKind.NewNinja && drag != DragKind.Weapon)) return;
+            names.Begin();
+            var camera = Camera.main;
+            foreach (var view in controller.PreviewViews)
+                if (view != null) names.Place(view.BarsPosition, camera, view.DisplayName);
+            names.End();
+        }
 
-            var point = PrototypeGui.MouseGuiPosition;
-            var text = drag == DragKind.NewNinja ? dragNinja.DisplayName : dragWeapon.DisplayName;
-            var rect = new Rect(point.x + 12f, point.y + 8f, 130f, 26f);
-            PrototypeGui.Fill(rect, new Color(0.15f, 0.17f, 0.22f, 0.9f), true);
-            GUI.Label(rect, text, PrototypeGui.Centered);
+        /// <summary>The tooltip over a hovered card and the label that follows a dragged ninja or weapon.</summary>
+        void RefreshPointer()
+        {
+            var mouse = Mouse.current;
+            var panel = screen.panel;
+            if (mouse == null || panel == null)
+            {
+                GameUi.Show(tooltip, false);
+                GameUi.Show(ghost, false);
+                return;
+            }
+
+            var mouseScreen = mouse.position.ReadValue();
+            var point = GameUi.ScreenToPanel(panel, mouseScreen);
+            var dragging = dragMoved && (drag == DragKind.NewNinja || drag == DragKind.Weapon);
+            GameUi.Show(ghost, dragging);
+            if (dragging)
+            {
+                ghost.text = drag == DragKind.NewNinja ? dragNinja.DisplayName : dragWeapon.DisplayName;
+                ghost.style.left = point.x + 12f;
+                ghost.style.top = point.y + 8f;
+            }
+
+            string tip = null;
+            if (drag == DragKind.None)
+            {
+                var under = GameUi.Under(document, mouseScreen);
+                var ninja = GameUi.DataOf<NinjaDefinition>(under);
+                var weapon = GameUi.DataOf<WeaponDefinition>(under);
+                if (ninja != null && ninja.Skill != null) tip = $"<b>{ninja.DisplayName}</b>: {ninja.Skill.DisplayName}. {ninja.Skill.Description}";
+                else if (weapon != null) tip = $"<b>{weapon.DisplayName}</b>: {weapon.Description}";
+            }
+
+            GameUi.Show(tooltip, tip != null);
+            if (tip == null) return;
+            if (tooltip.text != tip) tooltip.text = tip;
+            var width = screen.layout.width;
+            tooltip.style.left = Mathf.Clamp(point.x - TooltipWidth / 2f, 10f, Mathf.Max(10f, width - TooltipWidth - 10f));
         }
 
         /// <summary>A ninja's level and stars, such as "Lv 5  ★★".</summary>

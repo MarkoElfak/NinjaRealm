@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="project://database/Assets/_Project/UI/Styles/Battle.uss" />
+    <ui:VisualElement name="overlay" class="overlay">
+        <ui:VisualElement name="result" class="panel result">
+            <ui:Label name="banner" class="result__banner" />
+            <ui:Label name="summary" class="result__line muted" />
+            <ui:VisualElement name="stars" class="result__stars" />
+            <ui:VisualElement name="rewards" class="rewards" />
+            <ui:VisualElement name="log" />
+            <ui:VisualElement name="buttons" class="result__buttons" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

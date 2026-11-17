@@ -1,0 +1,29 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="project://database/Assets/_Project/UI/Styles/Battle.uss" />
+    <ui:VisualElement name="root" class="ui-root" picking-mode="Ignore">
+        <ui:VisualElement name="boardLabels" class="board-labels" picking-mode="Ignore" />
+        <ui:VisualElement name="fightUi" class="panel-layer" picking-mode="Ignore">
+            <ui:VisualElement class="top-row" picking-mode="Ignore">
+                <ui:VisualElement class="panel battle-bar">
+                    <ui:Label name="fightTitle" class="battle-bar__title" />
+                    <ui:VisualElement class="button-row">
+                        <ui:Button name="pause" text="Pause" />
+                        <ui:Button name="speed1" text="1x" />
+                        <ui:Button name="speed2" text="2x" />
+                        <ui:Button name="speed4" text="4x" />
+                        <ui:Button name="skip" text="Skip (S)" />
+                        <ui:Button name="giveUp" text="Give up" class="button-row__last" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="panel side-panel side-panel--left side-panel--hud">
+                <ui:Label text="Your synergies" class="side-title" />
+                <ui:VisualElement name="ourSynergies" />
+            </ui:VisualElement>
+            <ui:VisualElement class="panel side-panel side-panel--right side-panel--hud">
+                <ui:Label text="Enemy synergies" class="side-title" />
+                <ui:VisualElement name="theirSynergies" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -102,7 +102,10 @@ namespace NinjaRealm.Presentation
         // ---------------------------------------------------------------- one ninja
 
         /// <summary>The stats a ninja's details list, in order.</summary>
-        public static readonly string[] ShownStatIds = RosterPanels.ShownStatIds;
+        public static readonly string[] ShownStatIds =
+        {
+            StatIds.Health, StatIds.AttackDamage, StatIds.AttackSpeed, StatIds.Range, StatIds.Armor, StatIds.MagicResist, StatIds.MaxMana,
+        };
 
         /// <summary>
         /// One ninja in full: rarity, element and class, its rank or how to get it, its stats and

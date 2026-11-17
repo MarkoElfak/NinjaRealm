@@ -2,14 +2,15 @@ using System;
 using NinjaRealm.Core.Progression;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 
 namespace NinjaRealm.Presentation.Battle
 {
     /// <summary>
-    /// Prototype roster screen, opened from the lineup screen: level up and star up your ninjas,
+    /// The roster screen, opened from the lineup screen: level up and star up your ninjas,
     /// recruit new ones in the Dojo, and forge weapons in the Armory, without going back to the
-    /// village. The panels are <see cref="RosterPanels"/>, shared with the village's Shrine, Dojo
-    /// and Blacksmith. Drawn with IMGUI.
+    /// village. It shows the same <see cref="RosterViews"/> as the village's Shrine, Dojo and
+    /// Blacksmith, in the village's panel frame (UI/Resources/UI/BuildingPanel.uxml).
     /// </summary>
     [RequireComponent(typeof(BattleController))]
     public sealed class RosterScreen : MonoBehaviour
@@ -24,29 +25,70 @@ namespace NinjaRealm.Presentation.Battle
         static readonly string[] TabNames = { "Ninjas", "Dojo", "Armory" };
 
         BattleController controller;
-        RosterPanels panels;
+        RosterViews views;
+        UIDocument document;
+        VisualElement panel;
+        Label subtitle;
+        VisualElement body;
+        UiMessage message;
         Tab tab;
+        bool shownOpen;
+        string shownWallet;
 
         void Awake()
         {
             controller = GetComponent<BattleController>();
-            panels = new RosterPanels(() => controller.Profile, () => controller.Content);
+            views = new RosterViews(() => controller.Profile, () => controller.Content, (ok, text) => message?.Show(ok, text), Rebuild);
         }
 
         ProfileService Profile => controller.Profile;
+
+        void OnEnable()
+        {
+            if (document == null) document = GameUi.Create(transform, "BuildingPanel", 10f);
+            if (document == null) return;
+
+            var root = document.rootVisualElement;
+            panel = root.Q("overlay");
+            root.Q<Label>("title").text = "Roster";
+            subtitle = root.Q<Label>("subtitle");
+            body = root.Q("body");
+            message = new UiMessage(root.Q<Label>("message"));
+            root.Q("frame").AddToClassList("building-panel--tall");
+            var close = root.Q<Button>("close");
+            close.text = "Close (Tab)";
+            close.clicked += () => SetOpen(false);
+            shownOpen = false;
+            GameUi.Show(panel, false);
+        }
 
         void Update()
         {
             if (controller.Phase != BattlePhase.Setup || Profile == null)
             {
                 controller.RosterOpen = false;
-                return;
+            }
+            else
+            {
+                var keyboard = Keyboard.current;
+                if (keyboard != null && keyboard.tabKey.wasPressedThisFrame) SetOpen(!controller.RosterOpen);
+                else if (keyboard != null && controller.RosterOpen && keyboard.escapeKey.wasPressedThisFrame) SetOpen(false);
             }
 
-            var keyboard = Keyboard.current;
-            if (keyboard == null) return;
-            if (keyboard.tabKey.wasPressedThisFrame) SetOpen(!controller.RosterOpen);
-            else if (controller.RosterOpen && keyboard.escapeKey.wasPressedThisFrame) SetOpen(false);
+            // The lineup screen's button opens the roster too, so follow the flag.
+            var open = controller.RosterOpen;
+            if (open != shownOpen)
+            {
+                shownOpen = open;
+                GameUi.Show(panel, open);
+                if (open)
+                {
+                    message?.Clear();
+                    Rebuild();
+                }
+            }
+
+            if (open) RefreshWallet();
         }
 
         void SetOpen(bool open)
@@ -64,58 +106,35 @@ namespace NinjaRealm.Presentation.Battle
             }
         }
 
-        // ---------------------------------------------------------------- drawing
-
-        void OnGUI()
+        void RefreshWallet()
         {
-            if (controller == null || !controller.RosterOpen || Profile == null || controller.Phase != BattlePhase.Setup) return;
+            var line = LineupScreen.WalletLine(Profile);
+            if (line == shownWallet) return;
+            shownWallet = line;
+            subtitle.text = line;
+        }
 
-            PrototypeGui.Begin();
-            var width = Mathf.Min(900f, PrototypeGui.Width - 40f);
-            var height = Mathf.Min(720f, PrototypeGui.Height - 40f);
-            var panel = new Rect((PrototypeGui.Width - width) / 2f, (PrototypeGui.Height - height) / 2f, width, height);
-            PrototypeGui.Fill(new Rect(0f, 0f, PrototypeGui.Width, PrototypeGui.Height), new Color(0f, 0f, 0f, 0.35f));
-            PrototypeGui.Panel(panel);
+        void Rebuild()
+        {
+            if (body == null || Profile == null) return;
+            body.Clear();
 
-            var x = panel.x + 16f;
-            var inner = panel.width - 32f;
-            var y = panel.y + 12f;
-            GUI.Label(new Rect(x, y, 200f, 26f), "<b>Roster</b>", PrototypeGui.Title);
-            if (GUI.Button(new Rect(panel.xMax - 120f, y, 104f, 26f), "Close (Tab)")) SetOpen(false);
-            GUI.Label(new Rect(x + 90f, y + 4f, inner - 220f, 20f), LineupScreen.WalletLine(Profile), PrototypeGui.Small);
-            y += 36f;
-
+            var tabs = GameUi.Element("tabs");
             for (var i = 0; i < TabNames.Length; i++)
             {
-                var rect = new Rect(x + i * 128f, y, 120f, 28f);
-                var active = (int)tab == i;
-                PrototypeGui.Fill(rect, active ? new Color(0.32f, 0.27f, 0.12f, 0.95f) : PrototypeGui.CardColor, active);
-                if (GUI.Button(rect, GUIContent.none, GUIStyle.none) && !active)
+                var index = (Tab)i;
+                var button = GameUi.Button(TabNames[i], () =>
                 {
-                    tab = (Tab)i;
-                    panels.ResetScroll();
-                }
-
-                GUI.Label(rect, TabNames[i], PrototypeGui.Centered);
+                    if (tab == index) return;
+                    tab = index;
+                    Rebuild();
+                }, "tab");
+                button.EnableInClassList("tab--selected", tab == index);
+                tabs.Add(button);
             }
 
-            y += 40f;
-            var body = new Rect(x, y, inner, panel.yMax - y - 52f);
-            switch (tab)
-            {
-                case Tab.Ninjas:
-                    panels.DrawNinjas(body);
-                    break;
-                case Tab.Dojo:
-                    panels.DrawDojo(body);
-                    break;
-                default:
-                    panels.DrawArmory(body);
-                    break;
-            }
-
-            panels.DrawMessage(new Rect(x, panel.yMax - 40f, inner, 28f));
+            body.Add(tabs);
+            body.Add(tab == Tab.Ninjas ? views.Ninjas() : tab == Tab.Dojo ? views.Recruits() : views.Armory());
         }
     }
 }
-
