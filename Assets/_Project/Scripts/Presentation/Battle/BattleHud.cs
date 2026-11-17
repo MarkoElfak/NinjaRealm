@@ -3,149 +3,152 @@ using NinjaRealm.Combat;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
+using UnityEngine.UIElements;
 
 namespace NinjaRealm.Presentation.Battle
 {
     /// <summary>
-    /// Prototype fight HUD drawn with IMGUI: timer, speed controls, active synergies, names
-    /// and floating numbers. The real UI comes later with the art pass.
-    /// Keys during a fight: Space pause, 1/2/3 speed, S skip to the result.
+    /// The fight HUD in UI Toolkit: who you fight and the time, pause and speed buttons, both
+    /// teams' synergies, and the names and floating numbers over the board. Layout:
+    /// UI/Resources/UI/BattleHud.uxml. Keys during a fight: Space pause, 1/2/3 speed, S skip
+    /// to the result.
     /// </summary>
     public sealed class BattleHud : MonoBehaviour
     {
+        static readonly float[] Speeds = { 1f, 2f, 4f };
+
         [SerializeField, FormerlySerializedAs("demo")] BattleController controller;
 
-        GUIStyle floating;
-        GUIStyle floatingLarge;
-        GUIStyle nameLabel;
-        readonly List<string>[] synergies = { new List<string>(), new List<string>() };
+        UIDocument document;
+        VisualElement fightUi;
+        Label fightTitle;
+        Button pause;
+        readonly Button[] speedButtons = new Button[3];
+        readonly VisualElement[] synergyLists = new VisualElement[2];
+        WorldLabels names;
+        WorldLabels numbers;
+        CombatSimulation shownSynergies;
+        string shownTitle;
 
         void Awake()
         {
             if (controller == null) controller = GetComponent<BattleController>();
         }
 
+        void OnEnable()
+        {
+            if (document == null) document = GameUi.Create(transform, "BattleHud");
+            if (document == null) return;
+
+            var root = document.rootVisualElement;
+            var labels = root.Q("boardLabels");
+            names = new WorldLabels(labels, "board-name");
+            numbers = new WorldLabels(labels, "floating");
+            fightUi = root.Q("fightUi");
+            fightTitle = root.Q<Label>("fightTitle");
+            pause = root.Q<Button>("pause");
+            pause.clicked += () => controller.Playback.Paused = !controller.Playback.Paused;
+            for (var i = 0; i < Speeds.Length; i++)
+            {
+                var speed = Speeds[i];
+                speedButtons[i] = root.Q<Button>("speed" + (int)speed);
+                speedButtons[i].clicked += () => controller.Playback.Speed = speed;
+            }
+
+            root.Q<Button>("skip").clicked += () => controller.SkipFight();
+            root.Q<Button>("giveUp").clicked += () => controller.EnterSetup();
+            synergyLists[0] = root.Q("ourSynergies");
+            synergyLists[1] = root.Q("theirSynergies");
+            shownSynergies = null;
+            shownTitle = null;
+        }
+
         void Update()
         {
+            if (controller == null) return;
             var keyboard = Keyboard.current;
-            if (keyboard == null || controller == null || controller.Phase != BattlePhase.Fight) return;
-
-            var playback = controller.Playback;
-            if (keyboard.spaceKey.wasPressedThisFrame) playback.Paused = !playback.Paused;
-            if (keyboard.digit1Key.wasPressedThisFrame) playback.Speed = 1f;
-            if (keyboard.digit2Key.wasPressedThisFrame) playback.Speed = 2f;
-            if (keyboard.digit3Key.wasPressedThisFrame) playback.Speed = 4f;
-            if (keyboard.sKey.wasPressedThisFrame) controller.SkipFight();
+            if (keyboard != null && controller.Phase == BattlePhase.Fight)
+            {
+                var playback = controller.Playback;
+                if (keyboard.spaceKey.wasPressedThisFrame) playback.Paused = !playback.Paused;
+                if (keyboard.digit1Key.wasPressedThisFrame) playback.Speed = 1f;
+                if (keyboard.digit2Key.wasPressedThisFrame) playback.Speed = 2f;
+                if (keyboard.digit3Key.wasPressedThisFrame) playback.Speed = 4f;
+                if (keyboard.sKey.wasPressedThisFrame) controller.SkipFight();
+            }
         }
 
-        void OnGUI()
+        // The units move in Update, so the labels follow them here.
+        void LateUpdate()
         {
-            if (controller == null || controller.Phase == BattlePhase.Setup) return;
-            var playback = controller.Playback;
+            if (document == null || names == null) return;
+            var playback = controller != null ? controller.Playback : null;
             var simulation = playback != null ? playback.Simulation : null;
-            if (simulation == null) return;
+            var showLabels = simulation != null && controller.Phase != BattlePhase.Setup;
 
-            PrototypeGui.Begin();
-            EnsureStyles();
-            DrawWorldLabels(playback, Camera.main, PrototypeGui.Scale);
+            names.Begin();
+            numbers.Begin();
+            if (showLabels) PlaceLabels(playback, Camera.main);
+            names.End();
+            numbers.End();
 
-            if (controller.Phase != BattlePhase.Fight) return;
-            DrawTopBar(playback, simulation, PrototypeGui.Width);
-            DrawSynergies(simulation, PrototypeGui.Width);
+            var fighting = showLabels && controller.Phase == BattlePhase.Fight;
+            GameUi.Show(fightUi, fighting);
+            if (!fighting) return;
+            RefreshBar(playback, simulation);
+            RefreshSynergies(simulation);
         }
 
-        void DrawTopBar(BattlePlayback playback, CombatSimulation simulation, float width)
+        void RefreshBar(BattlePlayback playback, CombatSimulation simulation)
         {
             var overtime = simulation.Tick >= simulation.Setup.OvertimeStartTicks;
             var opponent = controller.Opponent != null ? controller.Opponent.DisplayName : "Enemy";
-            var time = $"{playback.FightSeconds:0.0}s{(overtime ? "  <color=#FF7744>OVERTIME</color>" : "")}";
-            var bar = new Rect(width / 2f - 270f, 8f, 540f, 70f);
-            PrototypeGui.Panel(bar);
-            GUI.Label(new Rect(bar.x, bar.y + 4f, bar.width, 26f), $"You vs {opponent}    {time}", PrototypeGui.Centered);
-
-            var x = bar.x + 12f;
-            var y = bar.y + 36f;
-            if (GUI.Button(new Rect(x, y, 80f, 26f), playback.Paused ? "Play" : "Pause")) playback.Paused = !playback.Paused;
-            x += 86f;
-            foreach (var speed in new[] { 1f, 2f, 4f })
+            var title = $"You vs {opponent}    {playback.FightSeconds:0.0}s{(overtime ? "  <color=#FF7744>OVERTIME</color>" : "")}";
+            if (title != shownTitle)
             {
-                var text = Mathf.Approximately(playback.Speed, speed) ? $"[{speed}x]" : $"{speed}x";
-                if (GUI.Button(new Rect(x, y, 56f, 26f), text)) playback.Speed = speed;
-                x += 62f;
+                shownTitle = title;
+                fightTitle.text = title;
             }
 
-            if (GUI.Button(new Rect(x, y, 120f, 26f), "Skip (S)")) controller.SkipFight();
-            x += 126f;
-            if (GUI.Button(new Rect(x, y, bar.xMax - x - 12f, 26f), "Give up")) controller.EnterSetup();
+            pause.text = playback.Paused ? "Play" : "Pause";
+            for (var i = 0; i < Speeds.Length; i++)
+                speedButtons[i].EnableInClassList("speed--on", Mathf.Approximately(playback.Speed, Speeds[i]));
         }
 
-        void DrawSynergies(CombatSimulation simulation, float width)
+        /// <summary>The synergies each team started the fight with. They only change with a new fight.</summary>
+        void RefreshSynergies(CombatSimulation simulation)
         {
-            synergies[0].Clear();
-            synergies[1].Clear();
+            if (simulation == shownSynergies) return;
+            shownSynergies = simulation;
+            var lines = new[] { new List<string>(), new List<string>() };
             foreach (var e in simulation.Events)
             {
                 if (e.Tick > 0) break;
                 if (e.Type == CombatEventType.TraitActivated && e.Amount >= 0 && e.Amount <= 1)
-                    synergies[e.Amount].Add($"{controller.NameOf(e.Id)}  {e.Detail}");
+                    lines[e.Amount].Add($"<b>{controller.NameOf(e.Id)}</b>  {e.Detail}");
             }
 
-            DrawList(new Rect(10f, 90f, 200f, 0f), "Your synergies", synergies[0]);
-            DrawList(new Rect(width - 210f, 90f, 200f, 0f), "Enemy synergies", synergies[1]);
-        }
-
-        static void DrawList(Rect area, string title, List<string> lines)
-        {
-            area.height = 34f + 22f * Mathf.Max(1, lines.Count);
-            PrototypeGui.Panel(area);
-            GUI.Label(new Rect(area.x + 10f, area.y + 6f, area.width - 20f, 22f), $"<b>{title}</b>", PrototypeGui.Label);
-            if (lines.Count == 0)
-                GUI.Label(new Rect(area.x + 10f, area.y + 30f, area.width - 20f, 22f), "None", PrototypeGui.Label);
-            for (var i = 0; i < lines.Count; i++)
-                GUI.Label(new Rect(area.x + 10f, area.y + 30f + 22f * i, area.width - 20f, 22f), lines[i], PrototypeGui.Label);
-        }
-
-        void DrawWorldLabels(BattlePlayback playback, Camera viewCamera, float scale)
-        {
-            if (viewCamera == null) return;
-
-            foreach (var view in playback.Views)
+            for (var team = 0; team < 2; team++)
             {
-                if (view.IsDead) continue;
-                if (!ToGui(viewCamera, view.BarsPosition, scale, out var point)) continue;
-                GUI.Label(new Rect(point.x - 60f, point.y - 30f, 120f, 18f), view.DisplayName, nameLabel);
+                synergyLists[team].Clear();
+                if (lines[team].Count == 0) synergyLists[team].Add(GameUi.Label("None", "muted"));
+                foreach (var line in lines[team]) synergyLists[team].Add(GameUi.Label(line, "side-line"));
             }
+        }
+
+        void PlaceLabels(BattlePlayback playback, Camera viewCamera)
+        {
+            foreach (var view in playback.Views)
+                if (!view.IsDead) names.Place(view.BarsPosition, viewCamera, view.DisplayName);
 
             foreach (var text in playback.FloatingTexts)
             {
-                if (!ToGui(viewCamera, text.Position, scale, out var point)) continue;
-                var style = text.Large ? floatingLarge : floating;
+                var label = numbers.Place(text.Position, viewCamera, text.Text);
+                if (label == null) continue;
                 var alpha = 1f - Mathf.Clamp01((text.Age - BattlePlayback.FloatingTextSeconds * 0.6f) / (BattlePlayback.FloatingTextSeconds * 0.4f));
-                var rect = new Rect(point.x - 80f, point.y - 30f, 160f, 30f);
-
-                GUI.color = new Color(0f, 0f, 0f, alpha * 0.8f);
-                GUI.Label(new Rect(rect.x + 1.5f, rect.y + 1.5f, rect.width, rect.height), text.Text, style);
-                GUI.color = new Color(text.Color.r, text.Color.g, text.Color.b, alpha);
-                GUI.Label(rect, text.Text, style);
+                label.style.color = new Color(text.Color.r, text.Color.g, text.Color.b, alpha);
+                label.EnableInClassList("floating--large", text.Large);
             }
-
-            GUI.color = Color.white;
-        }
-
-        static bool ToGui(Camera viewCamera, Vector3 world, float scale, out Vector2 point)
-        {
-            var screen = viewCamera.WorldToScreenPoint(world);
-            point = new Vector2(screen.x / scale, (Screen.height - screen.y) / scale);
-            return screen.z > 0f;
-        }
-
-        void EnsureStyles()
-        {
-            if (floating != null) return;
-
-            nameLabel = new GUIStyle(PrototypeGui.Label) { alignment = TextAnchor.MiddleCenter, fontSize = 12, fontStyle = FontStyle.Bold };
-            floating = new GUIStyle(PrototypeGui.Label) { alignment = TextAnchor.MiddleCenter, fontSize = 17, fontStyle = FontStyle.Bold, richText = false };
-            floatingLarge = new GUIStyle(floating) { fontSize = 22 };
         }
     }
 }

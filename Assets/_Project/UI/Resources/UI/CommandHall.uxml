@@ -1,0 +1,35 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="project://database/Assets/_Project/UI/Styles/CommandHall.uss" />
+    <ui:VisualElement name="overlay" class="overlay">
+        <ui:VisualElement name="hall" class="panel hall">
+            <ui:VisualElement class="panel-header">
+                <ui:VisualElement class="panel-header__heading">
+                    <ui:Label text="Command Hall" class="title" />
+                    <ui:Label text="Fight the campaign: pick a stage, set up your lineup and win its stars." class="subtitle" />
+                </ui:VisualElement>
+                <ui:Button name="close" text="Close (Esc)" class="button--small" />
+            </ui:VisualElement>
+            <ui:VisualElement name="chapterTabs" class="chapter-tabs" />
+            <ui:Label name="chapterDescription" class="chapter-description wrap" />
+            <ui:VisualElement name="stages" />
+            <ui:VisualElement name="chests" class="chests" />
+            <ui:VisualElement name="details" class="details">
+                <ui:VisualElement class="details__text">
+                    <ui:VisualElement class="details__title-row">
+                        <ui:Label name="stageTitle" class="details__title" />
+                        <ui:Label name="stageKind" class="kind hidden" />
+                        <ui:Label name="stageInfo" class="details__info" />
+                    </ui:VisualElement>
+                    <ui:Label name="stageDescription" class="details__line" />
+                    <ui:Label name="stagePay" class="details__line" />
+                    <ui:Label name="stageFirstClear" class="details__line gold-text" />
+                </ui:VisualElement>
+                <ui:VisualElement class="details__action">
+                    <ui:Button name="toBattle" text="To battle" class="button--primary to-battle" />
+                    <ui:Label name="lineupNote" class="details__note" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Label name="message" class="message wrap" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

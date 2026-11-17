@@ -40,6 +40,15 @@ namespace NinjaRealm.Editor
             if (battle != null) battle.EnterSetup();
         }
 
+        [MenuItem(Menu + "Open Roster")]
+        public static void OpenRoster()
+        {
+            var battle = Battle();
+            if (battle == null) return;
+            battle.EnterSetup();
+            if (battle.Profile != null) battle.RosterOpen = true;
+        }
+
         [MenuItem(Menu + "Back to Village")]
         public static void BackToVillage()
         {

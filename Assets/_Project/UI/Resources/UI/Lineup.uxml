@@ -1,0 +1,38 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="project://database/Assets/_Project/UI/Styles/Battle.uss" />
+    <ui:VisualElement name="root" class="ui-root" picking-mode="Ignore">
+        <ui:VisualElement name="boardLabels" class="board-labels" picking-mode="Ignore" />
+        <ui:VisualElement name="stagePanel" class="panel side-panel side-panel--left" />
+        <ui:VisualElement name="infoPanel" class="panel side-panel side-panel--right" />
+        <ui:VisualElement class="top-row" picking-mode="Ignore">
+            <ui:VisualElement class="panel lineup-bar">
+                <ui:VisualElement class="lineup-bar__text">
+                    <ui:Label name="lineupTitle" class="title" />
+                    <ui:Label text="Drag ninjas onto the near half. Drag one off the board to remove it." class="note" />
+                    <ui:Label name="wallet" class="small" />
+                </ui:VisualElement>
+                <ui:VisualElement class="lineup-bar__buttons">
+                    <ui:VisualElement class="button-row">
+                        <ui:Button name="toVillage" text="Back to village" class="button--small" />
+                        <ui:Button name="fight" text="Fight! (Enter)" class="button--primary fight button-row__last" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="button-row">
+                        <ui:Button name="clear" text="Clear lineup" class="button--small" />
+                        <ui:Button name="roster" text="Roster (Tab)" class="button--small button-row__last" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="bench" class="panel bench">
+            <ui:Label text="&lt;b&gt;Ninjas&lt;/b&gt;  drag onto your half" class="bench__title" />
+            <ui:VisualElement name="ninjaCards" class="bench__row" />
+            <ui:Label name="armoryTitle" class="bench__title" />
+            <ui:VisualElement name="weaponCards" class="bench__row" />
+        </ui:VisualElement>
+        <ui:VisualElement name="toast" class="toast hidden" picking-mode="Ignore">
+            <ui:Label name="toastText" class="panel toast__text" picking-mode="Ignore" />
+        </ui:VisualElement>
+        <ui:Label name="tooltip" class="panel tooltip hidden" picking-mode="Ignore" />
+        <ui:Label name="ghost" class="ghost hidden" picking-mode="Ignore" />
+    </ui:VisualElement>
+</ui:UXML>

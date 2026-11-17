@@ -21,6 +21,7 @@ Assets/
     Tests/
       EditMode/      NinjaRealm.Tests.EditMode: NUnit tests run by the Unity Test Runner
     Content/         ContentDatabase.asset and content assets, created as they are added
+    UI/              UI Toolkit: Styles/ (USS) and Resources/UI/ (UXML layouts and the theme)
   Scenes/            Unity scenes
   Settings/          URP pipeline, renderer and volume assets
 ```
@@ -167,12 +168,12 @@ Both menu items rebuild the database. To change a number, change it in `Prototyp
 * `VillageController` loads the save (`GameProfile`), moves the camera (drag to pan, scroll to zoom) and opens what is clicked: a building's panel, or the details of a ninja on the plaza. Esc closes it.
 * `VillageBuilding` marks a clickable building and says what it is (`VillageBuildingKind`): the **Command Hall** shows the campaign map and goes to the battle scene, the **Dojo** recruits and shows every ninja, the **Shrine** levels up ninjas, the **Blacksmith** forges, and the **Mint** and **Steel Mine** make Gold and Steel over time (see Income below). A building without a Meshy model gets a placeholder house built in code in play mode, and a box collider round whatever it shows.
 * `VillageNinjas` stands the player's ninjas on the plaza in rows: every ninja they own, so every ninja they can put in a fight (every ninja in the content when there is no save). Each is a `UnitView` without its ring and bars, 2.4 times its board size, facing the camera, with a capsule collider so it can be clicked. A new recruit joins them when the Dojo closes.
-* `VillageScreen` draws the wallet, a name over each building and plaza ninja, and the open panel. The Dojo, Shrine and Blacksmith panels are `RosterPanels`, the same panels as the battle scene's roster screen (Tab).
-* **Ninja Realm > Village** (editor menu, while the Village scene plays) opens each panel, a chapter of the campaign map or a plaza ninja, and goes to the battle scene, so a panel can be checked without clicking through the scene.
+* `VillageScreen` is the village's UI (see UI below): the clan and wallet along the top, a name over each building and plaza ninja, and the open panel. The Command Hall is `CommandHallView`; the Dojo, Shrine and Blacksmith show `RosterViews`, the same views as the battle scene's roster screen (Tab).
+* **Ninja Realm > Village** (editor menu, while the Village scene plays) opens each panel (Command Hall, Dojo, Shrine, Blacksmith, Mint, Steel Mine), a chapter of the campaign map or a plaza ninja, and goes to the battle scene, so a panel can be checked without clicking through the scene.
 * The Command Hall's panel is the campaign map: a tab per chapter with its stars, a card per stage (level, best stars, locked or not), the chapter's three star chests with an Open button, and the picked stage's enemy, pay and first clear rewards with the **To battle** button.
 * The Dojo has two tabs: **Recruits**, and **All ninjas**, a hall with a card for every ninja in the content (owned or not), the picked ninja's model, its stats and skill, and how to get it.
-* Clicking a ninja on the plaza opens its details with its model and a level up button (`RosterPanels.DrawNinjaDetails`).
-* `NinjaPreview` is what puts a model in a panel: a small stage 600 m from the village with its own camera, filmed into a render texture that the panel draws. The ninja turns slowly, and dragging across the picture turns it by hand.
+* Clicking a ninja on the plaza opens its details with its model and a level up button (`RosterViews.Details`).
+* `NinjaPreview` is what puts a model in a panel: a small stage 600 m from the village with its own camera, filmed into a render texture that the panel shows as its background image. The ninja turns slowly, and dragging across the picture turns it by hand.
 
 ### Income
 
@@ -196,16 +197,28 @@ From the command line, `-executeMethod NinjaRealm.Editor.VillageSceneBuilder.Cap
 3. **Fight** (`BattleHud`): the timer, overtime, speed (1, 2, 3), pause (Space), skip (S) and give up, with synergies, names and floating numbers.
 4. **Result** (`ResultScreen`): victory, defeat or draw, the stars won, the duration and seed, what the fight paid (Gold, Steel, clan XP, the first clear's rewards, a weapon drop, clan levels), and a damage log per team (damage dealt and taken, healing and shields). Esc goes back to the lineup, R replays the same fight to watch it (a replay pays nothing), N fights again with a new seed, and after a win Enter goes on to the next stage.
 
-**Ninja Realm > Battle** (editor menu, while the battle scene plays) fights the picked stage, skips to the result, goes to the next stage, back to the lineup or back to the village.
+**Ninja Realm > Battle** (editor menu, while the battle scene plays) fights the picked stage, skips to the result, goes to the next stage, back to the lineup, opens the roster or goes back to the village.
 
 * `BattleController` owns the phases. It builds each fight from the two lineups with `CombatSetupBuilder.AddLineup`, the player's ninjas at their rank in the save and the enemy's at the stage's rank (`StageDefinition.RankOf`), and pays the result and its stars into the save. Without a save every stage is open. Outside play mode, or without a progression asset, there is no save and every ninja and weapon is available at the base rank. A seed of 0 picks a new seed for each fight; any other seed replays the same fight.
 * `BattlePlayback` steps the simulation at 20 ticks per second times the speed, and turns new events into animations. It never changes the fight.
 * `HexBoardView` is built in code (`PrototypeVisuals`): low poly hex tiles with a stone texture, grass ground, and the arena prefab (fences, braziers, banners and the village behind the board) placed around it. The art is linked by **Ninja Realm > Art > Set Up Battle Arena**; without it the board falls back to plain colours. `HexBoardView.TryGetHex` turns a screen point into a hex for drag and drop.
 * `UnitView` shows a ninja's `ModelPrefab` (see `docs/ART_STYLE.md`), scaled to 1.2 m, with a team ring and health, shield and mana bars. Combat events become animator triggers (`NinjaAnimation`: `Attack`, `Cast`, `Hit`, `Die`, and the `Moving` bool). A ninja without a model gets a placeholder chibi body built in code, in dark cloth with the element colour.
-* The screens are temporary IMGUI, drawn with `PrototypeGui` and scaled to a 900 pixel tall reference screen. They will be replaced by real UI.
+* The screens are UI Toolkit (see UI below). `LineupScreen` reads the mouse from the Input System and asks the panel what is under it (`GameUi.Under`): a bench card carries its ninja or weapon in `userData`, and anything else that is UI keeps the click off the board.
 * `HexLayout` maps board hexes to world positions: pointy-top hexes, 0.75 m radius, board centred on the origin, team 0 nearest the camera.
 
 From the command line, `-executeMethod NinjaRealm.Editor.BattleSceneBuilder.CaptureBattle -captureOut <png> -captureSeed 7 -captureSeconds 6 -captureOpponent lineup.ember_clan` plays a fight against that lineup at level 1 without entering play mode and saves a screenshot.
+
+## UI
+
+The game's screens are UI Toolkit. Layouts are UXML in `UI/Resources/UI`, loaded by name, so a scene needs no UI setup; styles are USS in `UI/Styles`.
+
+* `GameUi` makes the one `PanelSettings` every screen shares (scaled to a 1600 by 900 reference, matching height) with the theme `UI/Resources/UI/NinjaTheme.tss`, which imports Unity's default runtime theme and `Theme.uss`. `GameUi.Create(host, layout, sortingOrder)` puts a layout on a new `UIDocument` under the host.
+* `Theme.uss` holds the colour tokens (`--ink`, `--gold`, `--red` and the rest), the restyled labels, buttons and scroll bars, and shared classes: `.panel`, `.overlay`, `.card`, `.title`, `.note`, `.small`, `.pips`, `.bar`, `.hidden`.
+* Each screen builds its changing parts in C# with `GameUi.Label`, `GameUi.Element` and `GameUi.Button`, and styles them with classes. Colours that come from content (an element, a resource, a trait) are set inline. Text uses rich text tags for bold and colour.
+* `RosterViews` builds the Shrine's ninja list, the Dojo's recruits, the Blacksmith's armory and one ninja's details for any screen. After a button changes the save it reports the result and asks its screen to rebuild.
+* `WorldLabels` keeps labels over points of the 3D world (names over ninjas and buildings, damage numbers), reusing them from frame to frame.
+* `UiMessage` shows the result of the last action under a panel for a few seconds.
+* Village layouts: `VillageHud`, `BuildingPanel` (the frame every building panel and the battle roster use) and `CommandHall`. Battle layouts: `Lineup`, `BattleHud` and `Result`.
 
 ## Determinism
 

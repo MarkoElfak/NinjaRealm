@@ -39,6 +39,12 @@ namespace NinjaRealm.Editor
             if (screen != null) screen.ShowAllNinjas();
         }
 
+        [MenuItem(Menu + "Open Shrine")]
+        public static void OpenShrine() => Open(VillageBuildingKind.Shrine);
+
+        [MenuItem(Menu + "Open Blacksmith")]
+        public static void OpenBlacksmith() => Open(VillageBuildingKind.Blacksmith);
+
         [MenuItem(Menu + "Open Mint")]
         public static void OpenMint() => Open(VillageBuildingKind.Mint);
 

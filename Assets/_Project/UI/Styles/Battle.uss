@@ -1,0 +1,474 @@
+/* Names and numbers over the board */
+
+.board-labels {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.board-name {
+    position: absolute;
+    translate: -50% -100%;
+    font-size: 12px;
+    -unity-font-style: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.floating {
+    position: absolute;
+    translate: -50% -100%;
+    font-size: 17px;
+    -unity-font-style: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.floating--large {
+    font-size: 22px;
+}
+
+/* Bars along the top */
+
+.top-row {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.battle-bar {
+    padding: 8px 14px;
+    border-top-width: 3px;
+    border-top-color: var(--red);
+}
+
+.battle-bar__title {
+    font-size: 17px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-bottom: 8px;
+}
+
+.button-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.button-row > .unity-button {
+    margin-right: 6px;
+}
+
+.button-row > .unity-button.button-row__last {
+    margin-right: 0;
+}
+
+.speed--on {
+    border-color: var(--gold);
+    background-color: var(--gold-dim);
+}
+
+.overtime {
+    color: rgb(255, 119, 68);
+}
+
+/* Side panels */
+
+.side-panel {
+    position: absolute;
+    top: 10px;
+    padding: 10px 12px;
+}
+
+.side-panel--left {
+    left: 10px;
+    width: 250px;
+    bottom: 200px;
+}
+
+.side-panel--right {
+    right: 10px;
+    width: 270px;
+    bottom: 200px;
+}
+
+.side-panel--hud {
+    top: 100px;
+    bottom: auto;
+    width: 210px;
+}
+
+.side-title {
+    font-size: 16px;
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+}
+
+.divider {
+    height: 1px;
+    background-color: var(--line);
+    margin: 10px 0;
+}
+
+.side-line {
+    font-size: 13px;
+    white-space: normal;
+    margin-bottom: 6px;
+}
+
+.stage-nav {
+    flex-direction: row;
+    margin: 6px 0 8px 0;
+}
+
+.stage-nav > .unity-button {
+    flex-grow: 1;
+    flex-basis: 0;
+    font-size: 13px;
+    padding: 3px 6px;
+}
+
+.stage-nav__first {
+    margin-right: 6px;
+}
+
+.opponent {
+    margin-bottom: 8px;
+}
+
+.opponent__top {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.opponent__bottom {
+    flex-direction: row;
+    align-items: center;
+}
+
+.opponent__bottom .pips {
+    margin-right: 8px;
+}
+
+.synergy {
+    margin-bottom: 5px;
+}
+
+.synergy__top {
+    flex-direction: row;
+    align-items: center;
+}
+
+.synergy__dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    margin-right: 7px;
+}
+
+.synergy__name {
+    font-size: 13px;
+}
+
+.synergy--inactive .synergy__name {
+    color: var(--muted);
+}
+
+.synergy__description {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: normal;
+    margin-left: 18px;
+}
+
+.weapon-line {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 3px;
+}
+
+.icon-button {
+    font-size: 12px;
+    padding: 0 7px;
+}
+
+.remove {
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+/* The lineup's top bar */
+
+.lineup-bar {
+    width: 600px;
+    flex-direction: row;
+    padding: 8px 12px;
+    border-top-width: 3px;
+    border-top-color: var(--red);
+}
+
+.lineup-bar__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: 10px;
+}
+
+.lineup-bar__buttons {
+    width: 260px;
+}
+
+.lineup-bar__buttons .button-row {
+    justify-content: flex-end;
+    margin-bottom: 5px;
+}
+
+.fight {
+    width: 130px;
+}
+
+/* The bench and armory along the bottom */
+
+.bench {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    height: 180px;
+    padding: 6px 10px;
+}
+
+.bench__title {
+    margin-bottom: 5px;
+}
+
+.bench__row {
+    flex-direction: row;
+    margin-bottom: 8px;
+}
+
+.bench-card {
+    width: 150px;
+    flex-shrink: 1;
+    margin-right: 6px;
+    padding: 4px 8px;
+    border-left-width: 4px;
+}
+
+.bench-card--ninja {
+    height: 58px;
+}
+
+.bench-card--weapon {
+    height: 46px;
+}
+
+.bench-card--used {
+    background-color: var(--ink-locked);
+    border-color: rgba(255, 255, 255, 0.04);
+}
+
+.bench-card--used .unity-label {
+    color: var(--locked);
+}
+
+.bench-card--combined {
+    background-color: rgb(66, 56, 36);
+}
+
+.bench-card--selected {
+    border-color: var(--gold);
+}
+
+.bench-card__name {
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+
+.toast {
+    position: absolute;
+    bottom: 200px;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.toast__text {
+    padding: 6px 18px;
+    font-size: 15px;
+    -unity-font-style: bold;
+}
+
+.tooltip {
+    position: absolute;
+    bottom: 196px;
+    width: 420px;
+    padding: 6px 10px;
+    font-size: 13px;
+    white-space: normal;
+}
+
+.ghost {
+    position: absolute;
+    padding: 4px 12px;
+    font-size: 14px;
+    -unity-font-style: bold;
+    background-color: rgba(38, 43, 56, 0.92);
+    border-radius: 5px;
+    border-width: 1px;
+    border-color: var(--line-strong);
+}
+
+/* The result */
+
+.result {
+    width: 780px;
+    max-width: 94%;
+    padding: 14px 18px;
+    border-top-width: 4px;
+}
+
+.result--victory {
+    border-top-color: var(--gold);
+}
+
+.result--defeat {
+    border-top-color: var(--red);
+}
+
+.result__banner {
+    font-size: 42px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.result__line {
+    -unity-text-align: middle-center;
+    margin-bottom: 6px;
+}
+
+.result__stars {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.big-star {
+    font-size: 24px;
+    color: rgb(74, 79, 90);
+}
+
+.big-star--on {
+    color: var(--gold);
+}
+
+.rewards {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+}
+
+.rewards .unity-label {
+    margin-bottom: 3px;
+}
+
+.log-row {
+    flex-direction: row;
+    align-items: center;
+    height: 26px;
+}
+
+.log-row--header .unity-label {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.log__name {
+    width: 140px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.log__swatch {
+    width: 4px;
+    height: 18px;
+    margin-right: 6px;
+}
+
+.log__dealt {
+    width: 270px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.log__taken {
+    width: 90px;
+    font-size: 13px;
+}
+
+.log__support {
+    width: 160px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.log__status {
+    flex-grow: 1;
+    -unity-text-align: middle-right;
+    font-size: 13px;
+}
+
+.log__bar {
+    height: 12px;
+    margin-right: 6px;
+    border-radius: 2px;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.log__dealt .log__bar {
+    width: 200px;
+}
+
+.log__support .log__bar {
+    width: 90px;
+}
+
+.log__dealt .bar__fill {
+    background-color: rgb(255, 140, 64);
+}
+
+.log__support .bar__fill {
+    background-color: rgb(102, 230, 128);
+}
+
+.log__number {
+    font-size: 13px;
+}
+
+.team-title {
+    -unity-font-style: bold;
+    margin: 6px 0 2px 0;
+}
+
+.result__buttons {
+    flex-direction: row;
+    margin-top: 12px;
+}
+
+.result__buttons > .unity-button {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: 8px;
+    padding: 6px 4px;
+    font-size: 14px;
+}
+
+.result__buttons > .unity-button.button-row__last {
+    margin-right: 0;
+}

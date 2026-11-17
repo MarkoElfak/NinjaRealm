@@ -1,0 +1,356 @@
+.building-panel {
+    width: 900px;
+    max-width: 94%;
+    max-height: 86%;
+    padding: 0 18px 14px 18px;
+    border-top-width: 4px;
+    border-top-color: var(--red);
+}
+
+.building-panel--tall {
+    height: 680px;
+}
+
+.building-panel--medium {
+    width: 760px;
+}
+
+.building-panel--narrow {
+    width: 620px;
+}
+
+.building-panel__body {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.panel-note {
+    flex-grow: 1;
+    -unity-text-align: middle-center;
+    color: var(--muted);
+    padding: 40px 0;
+}
+
+/* Tabs */
+
+.tabs {
+    flex-direction: row;
+    margin-bottom: 12px;
+}
+
+.tab {
+    margin-right: 8px;
+    border-bottom-width: 3px;
+    border-bottom-color: rgba(0, 0, 0, 0);
+}
+
+.tab--selected {
+    border-bottom-color: var(--gold);
+    background-color: var(--ink-card-hover);
+}
+
+/* A ninja's name with its rarity */
+
+.name-line {
+    flex-direction: row;
+    align-items: center;
+}
+
+.ninja-name {
+    font-size: 16px;
+    -unity-font-style: bold;
+    margin-right: 8px;
+}
+
+.ninja-name--big {
+    font-size: 22px;
+}
+
+.rarity {
+    font-size: 12px;
+    -unity-font-style: bold;
+}
+
+/* Lists */
+
+.roster {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.section-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.section-row .note {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: 12px;
+}
+
+.list {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+/* The Shrine */
+
+.ninja-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+    border-left-width: 4px;
+}
+
+.ninja-row__name {
+    width: 200px;
+}
+
+.ninja-row__rank {
+    width: 250px;
+}
+
+.ninja-row__stats {
+    width: 130px;
+}
+
+.ninja-row__action {
+    width: 200px;
+}
+
+.cap {
+    width: 200px;
+    -unity-text-align: middle-center;
+    color: var(--muted);
+}
+
+/* The Dojo's recruits */
+
+.recruits {
+    flex-direction: row;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+}
+
+.recruit {
+    flex-grow: 1;
+    flex-basis: 0;
+    height: 176px;
+    margin-right: 10px;
+    border-top-width: 4px;
+}
+
+.recruit--last {
+    margin-right: 0;
+}
+
+.recruit--taken {
+    background-color: var(--ink-locked);
+    align-items: center;
+    justify-content: center;
+}
+
+.recruit__line {
+    font-size: 13px;
+    white-space: normal;
+    margin-top: 3px;
+}
+
+.buy-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 5px 10px;
+    margin-bottom: 4px;
+}
+
+.buy-row__name {
+    width: 360px;
+}
+
+.buy-row__owned {
+    flex-grow: 1;
+    font-size: 13px;
+}
+
+.buy-row__action {
+    width: 170px;
+}
+
+/* The Blacksmith */
+
+.columns {
+    flex-direction: row;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.column {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: 20px;
+}
+
+.column--last {
+    margin-right: 0;
+}
+
+.column__title {
+    margin-bottom: 8px;
+}
+
+.weapon {
+    margin-bottom: 6px;
+}
+
+.weapon--combined {
+    background-color: rgb(66, 56, 36);
+    border-color: var(--line);
+}
+
+.weapon__top {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.recipe {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.recipe__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: 10px;
+}
+
+.recipe__action {
+    width: 110px;
+}
+
+/* The hall of all ninjas and a ninja's details */
+
+.hall-layout {
+    flex-direction: row;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.preview-column {
+    width: 300px;
+    margin-right: 16px;
+}
+
+.preview {
+    width: 300px;
+    height: 375px;
+    border-radius: 6px;
+    background-color: rgb(28, 33, 46);
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.preview-caption {
+    margin-top: 6px;
+    -unity-text-align: middle-center;
+}
+
+.hall-right {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.hall-grid {
+    height: 196px;
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+
+.hall-row {
+    flex-direction: row;
+    margin-bottom: 8px;
+}
+
+.hall-card {
+    flex-grow: 1;
+    flex-basis: 0;
+    height: 56px;
+    margin-right: 8px;
+    padding: 6px 10px;
+    align-items: flex-start;
+    justify-content: center;
+    border-left-width: 4px;
+    -unity-font-style: normal;
+}
+
+.hall-card--last {
+    margin-right: 0;
+}
+
+.hall-card--selected {
+    background-color: rgb(82, 69, 31);
+    border-color: var(--gold);
+}
+
+.ninja-details__rank {
+    margin-top: 8px;
+}
+
+.stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+.stat {
+    width: 50%;
+    font-size: 13px;
+    margin-bottom: 3px;
+}
+
+.skill-name {
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+
+.level-up {
+    align-self: flex-start;
+    width: 240px;
+    margin-top: 12px;
+}
+
+/* The Mint and the Steel Mine */
+
+.income {
+    align-items: center;
+    padding: 6px 30px;
+}
+
+.income__line {
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.income__big {
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.income__bar {
+    width: 100%;
+    height: 22px;
+    border-radius: 6px;
+    margin: 22px 0 10px 0;
+}
+
+.income__ready {
+    font-size: 18px;
+    -unity-font-style: bold;
+}
+
+.income__collect {
+    width: 260px;
+    height: 46px;
+    margin-top: 16px;
+}
