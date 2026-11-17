@@ -133,7 +133,6 @@ namespace NinjaRealm.Presentation.Village
 
             initialized = true;
             RefreshNinjas();
-            ApplyHomeVillage();
             return true;
         }
 
@@ -203,39 +202,6 @@ namespace NinjaRealm.Presentation.Village
             if (!GameScenes.Load(GameScenes.Battle))
                 Debug.LogError($"[Village] {GameScenes.PathOf(GameScenes.Battle)} is not in the build settings. Run Ninja Realm > Scenes > Create Village Scene.");
         }
-
-        /// <summary>
-        /// Flies the home village's colour on the banners (objects named Banner...), or takes it
-        /// down when the clan has no home village yet. Call after the clan is founded.
-        /// </summary>
-        public void ApplyHomeVillage()
-        {
-            var village = Profile?.HomeVillage;
-            var tint = village?.element != null ? Color.Lerp(Color.white, village.element.Color, BannerTint) : (Color?)null;
-            var block = new MaterialPropertyBlock();
-            foreach (var root in gameObject.scene.GetRootGameObjects())
-            foreach (var part in root.GetComponentsInChildren<Transform>(true))
-            {
-                if (!part.name.StartsWith("Banner", StringComparison.Ordinal)) continue;
-                foreach (var renderer in part.GetComponentsInChildren<Renderer>(true))
-                {
-                    if (tint == null)
-                    {
-                        renderer.SetPropertyBlock(null);
-                        continue;
-                    }
-
-                    block.Clear();
-                    block.SetColor(BaseColor, tint.Value);
-                    block.SetColor(LegacyColor, tint.Value);
-                    renderer.SetPropertyBlock(block);
-                }
-            }
-        }
-
-        const float BannerTint = 0.7f;
-        static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
-        static readonly int LegacyColor = Shader.PropertyToID("_Color");
 
         // ---------------------------------------------------------------- input
 

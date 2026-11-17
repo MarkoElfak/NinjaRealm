@@ -5,7 +5,7 @@ namespace NinjaRealm.Core.Progression
 {
     /// <summary>
     /// A village a new clan can call home, picked once on the new game screen. It belongs to an
-    /// element: its ninjas show up more often in the Dojo, and the village flies its colour.
+    /// element: its ninjas show up more often in the Dojo.
     /// Part of <see cref="ProgressionDefinition"/>.
     /// </summary>
     [Serializable]

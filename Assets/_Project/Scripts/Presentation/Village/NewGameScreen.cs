@@ -98,6 +98,18 @@ namespace NinjaRealm.Presentation.Village
             forced = true;
         }
 
+        /// <summary>Founds the clan with a random name and village, for testing from the editor menu.</summary>
+        public void FoundRandom()
+        {
+            var profile = controller.Profile;
+            if (profile == null || document == null) return;
+            if (!shown) Build(profile);
+            RandomName();
+            var villages = profile.Progression.Villages;
+            if (villages.Count > 0) selected = villages[names.Next(villages.Count)];
+            Found();
+        }
+
         void Update()
         {
             if (document == null) return;
@@ -179,6 +191,7 @@ namespace NinjaRealm.Presentation.Village
             var ninjas = NinjasOf(village);
             if (ninjas.Count > 0) card.Add(GameUi.Label($"<b>Its ninjas:</b> {string.Join(", ", ninjas)}", "village-card__line", "wrap"));
 
+            card.Add(GameUi.Element("spacer"));
             card.Add(GameUi.Label("Choose", "village-card__pick"));
             return card;
         }
@@ -263,7 +276,6 @@ namespace NinjaRealm.Presentation.Village
             Debug.Log($"[Village] {text}");
             forced = false;
             profile.RefreshDojoIfNewDay(DateTime.Now);
-            controller.ApplyHomeVillage();
         }
     }
 }
