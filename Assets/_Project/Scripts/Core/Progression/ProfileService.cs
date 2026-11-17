@@ -518,6 +518,105 @@ namespace NinjaRealm.Core.Progression
             return rewards;
         }
 
+        // ---------------------------------------------------------------- income
+
+        static long UnixSeconds(DateTime time)
+        {
+            var utc = time.Kind == DateTimeKind.Local ? time.ToUniversalTime() : DateTime.SpecifyKind(time, DateTimeKind.Utc);
+            return new DateTimeOffset(utc).ToUnixTimeSeconds();
+        }
+
+        IncomeTimer Timer(string id) => Profile.incomes.Find(timer => timer.id == id);
+
+        /// <summary>
+        /// Starts every income source that isn't running yet, with one hour already worked so
+        /// there is something to collect on the first visit. Call when the village opens.
+        /// Returns true if anything changed.
+        /// </summary>
+        public bool StartIncome(DateTime now)
+        {
+            var seconds = UnixSeconds(now);
+            var changed = false;
+            foreach (var income in Progression.Incomes)
+            {
+                if (income == null || string.IsNullOrEmpty(income.id)) continue;
+                var timer = Timer(income.id);
+                if (timer == null)
+                {
+                    Profile.incomes.Add(new IncomeTimer { id = income.id, collectedAt = seconds - IncomeSource.SecondsPerHour });
+                    changed = true;
+                }
+                else if (timer.collectedAt > seconds)
+                {
+                    // The clock went back. Count from now, so the source can't stall.
+                    timer.collectedAt = seconds;
+                    changed = true;
+                }
+            }
+
+            if (changed) Save();
+            return changed;
+        }
+
+        /// <summary>How much an income source (see <see cref="IncomeIds"/>) has ready to collect.</summary>
+        public int PendingIncome(string id, DateTime now)
+        {
+            var income = Progression.Income(id);
+            var timer = Timer(id);
+            if (income == null || timer == null) return 0;
+            return income.Made(UnixSeconds(now) - timer.collectedAt, ClanLevel);
+        }
+
+        /// <summary>What an income source makes per hour at the player's clan level.</summary>
+        public int IncomePerHour(string id) => Progression.Income(id)?.PerHour(ClanLevel) ?? 0;
+
+        /// <summary>The most an income source holds at the player's clan level.</summary>
+        public int IncomeCapacity(string id) => Progression.Income(id)?.Capacity(ClanLevel) ?? 0;
+
+        /// <summary>How long until an income source is full. Zero when it is full or doesn't exist.</summary>
+        public TimeSpan IncomeTimeToFull(string id, DateTime now)
+        {
+            var income = Progression.Income(id);
+            var timer = Timer(id);
+            if (income == null || timer == null) return TimeSpan.Zero;
+            var worked = Math.Max(0L, UnixSeconds(now) - timer.collectedAt);
+            return TimeSpan.FromSeconds(Math.Max(0L, income.StorageSeconds - worked));
+        }
+
+        /// <summary>Moves what an income source has made into the wallet.</summary>
+        public bool TryCollectIncome(string id, DateTime now, out string message)
+        {
+            var income = Progression.Income(id);
+            if (income == null)
+            {
+                message = "Nothing is made here.";
+                return false;
+            }
+
+            if (Timer(id) == null) StartIncome(now);
+            var timer = Timer(id);
+            var seconds = UnixSeconds(now);
+            var worked = Math.Max(0L, seconds - timer.collectedAt);
+            var amount = income.Made(worked, ClanLevel);
+            if (amount <= 0)
+            {
+                message = $"No {Name(income.resource)} to collect yet.";
+                return false;
+            }
+
+            // Below a full store, keep the seconds that haven't made a whole unit yet.
+            var perHour = income.PerHour(ClanLevel);
+            var leftover = 0L;
+            if (worked < income.StorageSeconds && perHour > 0)
+                leftover = Math.Max(0L, worked - ((long)amount * IncomeSource.SecondsPerHour + perHour - 1) / perHour);
+            timer.collectedAt = seconds - leftover;
+
+            Profile.wallet.Add(income.resource, amount);
+            message = $"Collected {amount} {Name(income.resource)}.";
+            Save();
+            return true;
+        }
+
         // ---------------------------------------------------------------- lineup
 
         /// <summary>Stores the player's lineup and chosen opponent in the save.</summary>
@@ -612,6 +711,10 @@ namespace NinjaRealm.Core.Progression
             for (var i = 0; i < profile.dojoOffers.Count; i++)
                 if (!Content.TryGet<NinjaDefinition>(profile.dojoOffers[i], out _)) profile.dojoOffers[i] = string.Empty;
             profile.dojoDate ??= string.Empty;
+
+            profile.incomes ??= new List<IncomeTimer>();
+            var seenIncomes = new HashSet<string>();
+            profile.incomes.RemoveAll(timer => timer == null || Progression.Income(timer.id) == null || !seenIncomes.Add(timer.id));
         }
 
         static string Name(ContentDefinition definition) => definition != null ? definition.DisplayName : "?";

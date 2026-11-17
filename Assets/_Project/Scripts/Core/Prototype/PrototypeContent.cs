@@ -321,6 +321,13 @@ namespace NinjaRealm.Core.Prototype
                     new ProgressionDefinition.TeamSizeStep { clanLevel = 6, teamSize = 5 },
                     new ProgressionDefinition.TeamSizeStep { clanLevel = 10, teamSize = 6 },
                 };
+
+                // Income: the Mint fills in 8 hours with about what four easy wins pay; the Steel Mine with enough for a forge and a half.
+                p.incomes = new List<IncomeSource>
+                {
+                    new IncomeSource { id = IncomeIds.Mint, resource = gold, perHour = 40, perHourPerClanLevel = 5, storageHours = 8 },
+                    new IncomeSource { id = IncomeIds.SteelMine, resource = steel, perHour = 4, perHourPerClanLevel = 1, storageHours = 8 },
+                };
             });
         }
 

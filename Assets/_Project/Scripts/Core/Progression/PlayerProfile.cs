@@ -56,6 +56,9 @@ namespace NinjaRealm.Core.Progression
         public long randomSeed;
 
         public int randomRolls;
+
+        /// <summary>When each income source (the Mint, the Steel Mine) was last emptied.</summary>
+        public List<IncomeTimer> incomes = new List<IncomeTimer>();
     }
 
     [Serializable]

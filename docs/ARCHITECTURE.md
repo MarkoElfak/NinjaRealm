@@ -150,10 +150,22 @@ Both menu items rebuild the database. To change a number, change it in `Prototyp
 
 `Assets/Scenes/Village.unity` is the hub the game starts in. Create or recreate it with **Ninja Realm > Scenes > Create Village Scene**, which also puts it first in the build settings with the battle scene after it.
 
-* `VillageController` loads the save (`GameProfile`), moves the camera (drag to pan, scroll to zoom) and opens a building when it is clicked. Esc closes it.
-* `VillageBuilding` marks a clickable building and says what it is (`VillageBuildingKind`): the **Command Hall** goes to the battle scene, the **Dojo** recruits, the **Shrine** levels up ninjas and the **Blacksmith** forges. The **Mint** and **Steel Mine** stand in the village but are not open yet. A building without a Meshy model gets a placeholder house built in code in play mode, and a box collider round whatever it shows.
-* `VillageNinjas` stands the player's ninjas on the plaza in rows: every ninja they own, so every ninja they can put in a fight (every ninja in the content when there is no save). Each is a `UnitView` without its ring and bars, 2.4 times its board size, facing the camera. A new recruit joins them when the Dojo closes.
-* `VillageScreen` draws the wallet, a name over each building, and the open building's panel. The Dojo, Shrine and Blacksmith panels are `RosterPanels`, the same panels as the battle scene's roster screen (Tab).
+* `VillageController` loads the save (`GameProfile`), moves the camera (drag to pan, scroll to zoom) and opens what is clicked: a building's panel, or the details of a ninja on the plaza. Esc closes it.
+* `VillageBuilding` marks a clickable building and says what it is (`VillageBuildingKind`): the **Command Hall** goes to the battle scene, the **Dojo** recruits and shows every ninja, the **Shrine** levels up ninjas, the **Blacksmith** forges, and the **Mint** and **Steel Mine** make Gold and Steel over time (see Income below). A building without a Meshy model gets a placeholder house built in code in play mode, and a box collider round whatever it shows.
+* `VillageNinjas` stands the player's ninjas on the plaza in rows: every ninja they own, so every ninja they can put in a fight (every ninja in the content when there is no save). Each is a `UnitView` without its ring and bars, 2.4 times its board size, facing the camera, with a capsule collider so it can be clicked. A new recruit joins them when the Dojo closes.
+* `VillageScreen` draws the wallet, a name over each building and plaza ninja, and the open panel. The Dojo, Shrine and Blacksmith panels are `RosterPanels`, the same panels as the battle scene's roster screen (Tab).
+* The Dojo has two tabs: **Recruits**, and **All ninjas**, a hall with a card for every ninja in the content (owned or not), the picked ninja's model, its stats and skill, and how to get it.
+* Clicking a ninja on the plaza opens its details with its model and a level up button (`RosterPanels.DrawNinjaDetails`).
+* `NinjaPreview` is what puts a model in a panel: a small stage 600 m from the village with its own camera, filmed into a render texture that the panel draws. The ninja turns slowly, and dragging across the picture turns it by hand.
+
+### Income
+
+The Mint and the Steel Mine fill up while the player is away and are emptied with a Collect button.
+
+* `ProgressionDefinition.incomes` lists the sources (`IncomeSource`): an ID from `IncomeIds`, the resource, the amount per hour, how much that grows per clan level, and how many hours it stores. A new income building is one more entry plus a `VillageBuildingKind` that returns its ID from `VillageBuilding.IncomeIdOf`.
+* The save keeps one `IncomeTimer` per source: the time it has been filling from, in seconds since 1970 (UTC). Nothing ticks in the background; `ProfileService.PendingIncome` works the amount out from the clock.
+* `ProfileService.StartIncome` starts new sources with one hour already worked, and counts from now if the clock was set back. `TryCollectIncome` pays the wallet and keeps the seconds that have not made a whole unit yet.
+* Every income method takes the time as a parameter, so tests pass their own clock. The village passes `DateTime.UtcNow`.
 * `GameScenes` names the scenes and loads them. The battle scene's lineup screen and result screen have a **Back to village** button; the save stays loaded between scenes.
 * The layout (buildings, houses, trees, lanterns) is in `VillageSceneBuilder.Layout`. Models come from `Art/Meshy/Buildings` and `Art/Meshy/Props` (see `docs/ART_STYLE.md`), placed with `MeshyPlacement` like the battle arena. Run the menu item again after adding a model.
 

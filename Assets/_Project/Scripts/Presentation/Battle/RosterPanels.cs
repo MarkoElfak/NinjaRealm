@@ -8,9 +8,9 @@ using UnityEngine;
 namespace NinjaRealm.Presentation.Battle
 {
     /// <summary>
-    /// The roster's three panels, drawn with IMGUI into any rect: the ninjas with their level ups
-    /// (the Shrine), the Dojo's recruits, and the weapons and forge (the Blacksmith). Shared by the
-    /// battle scene's roster screen and the village's buildings.
+    /// The roster's panels, drawn with IMGUI into any rect: the ninjas with their level ups
+    /// (the Shrine), the Dojo's recruits, the weapons and forge (the Blacksmith), and one ninja's
+    /// details. Shared by the battle scene's roster screen and the village.
     /// </summary>
     public sealed class RosterPanels
     {
@@ -100,6 +100,105 @@ namespace NinjaRealm.Presentation.Battle
             }
 
             GUI.EndScrollView();
+        }
+
+        /// <summary>The stats a ninja's details list, in order.</summary>
+        public static readonly string[] ShownStatIds =
+        {
+            StatIds.Health, StatIds.AttackDamage, StatIds.AttackSpeed, StatIds.Range, StatIds.Armor, StatIds.MagicResist, StatIds.MaxMana,
+        };
+
+        /// <summary>
+        /// One ninja in full: rarity, element and class, its rank or how to get it, its stats and
+        /// its skill. With <paramref name="levelUp"/> an owned ninja also gets a level up button.
+        /// Works without a save, with base stats. Returns the y below the last line.
+        /// </summary>
+        public float DrawNinjaDetails(NinjaDefinition ninja, Rect area, bool levelUp)
+        {
+            var save = Profile;
+            var x = area.x;
+            var y = area.y;
+            var width = area.width;
+
+            GUI.Label(new Rect(x, y, width, 24f),
+                $"<b>{ninja.DisplayName}</b>  <color=#{PrototypeGui.Hex(LineupScreen.RarityColor(ninja.Rarity))}>{ninja.Rarity}</color>", PrototypeGui.Title);
+            y += 24f;
+            var elementColor = ninja.Element != null ? ninja.Element.Color : Color.grey;
+            GUI.Label(new Rect(x, y, width, 18f),
+                $"<color=#{PrototypeGui.Hex(elementColor)}>{ninja.Element?.DisplayName}</color>  {ninja.Class?.DisplayName}", PrototypeGui.Small);
+            y += 24f;
+
+            var owned = save?.Find(ninja);
+            var multiplier = ProgressionDefinition.BasisPoints;
+            if (owned != null)
+            {
+                var progression = save.Progression;
+                var rank = owned.Rank;
+                multiplier = progression.StatMultiplier(rank.Level, rank.Stars);
+                var next = progression.ShardsForNextStar(rank.Stars);
+                var shards = next > 0 ? $"{owned.shards} / {next} shards to {rank.Stars + 1} stars" : "Most stars";
+                GUI.Label(new Rect(x, y, width, 20f), $"{LineupScreen.RankText(rank)}   {progression.Belt(rank.Level)} belt   {shards}", PrototypeGui.Label);
+                y += 26f;
+            }
+            else if (save != null)
+            {
+                var how = HowToGet(ninja);
+                var height = PrototypeGui.Wrap.CalcHeight(new GUIContent(how), width);
+                GUI.Label(new Rect(x, y, width, height), how, PrototypeGui.Wrap);
+                y += height + 8f;
+            }
+
+            var shown = 0;
+            foreach (var id in ShownStatIds)
+            {
+                var stat = Stat(id);
+                if (stat == null) continue;
+                var value = ninja.GetBaseStat(stat);
+                if (id == StatIds.Health || id == StatIds.AttackDamage) value = value * multiplier / ProgressionDefinition.BasisPoints;
+                GUI.Label(new Rect(x + (shown % 2) * (width / 2f), y + (shown / 2) * 18f, width / 2f, 18f),
+                    $"{stat.DisplayName}: <b>{value:0.##}</b>", PrototypeGui.Small);
+                shown++;
+            }
+
+            y += ((shown + 1) / 2) * 18f + 10f;
+
+            if (ninja.Skill != null)
+            {
+                GUI.Label(new Rect(x, y, width, 20f), $"<b>{ninja.Skill.DisplayName}</b>", PrototypeGui.Label);
+                y += 20f;
+                var height = PrototypeGui.Wrap.CalcHeight(new GUIContent(ninja.Skill.Description), width);
+                GUI.Label(new Rect(x, y, width, height), ninja.Skill.Description, PrototypeGui.Wrap);
+                y += height + 10f;
+            }
+
+            if (!levelUp || owned == null) return y;
+
+            var cost = save.Progression.LevelCost(owned.level);
+            var button = new Rect(x, y + 4f, Mathf.Min(width, 220f), 32f);
+            if (cost < 0)
+            {
+                GUI.Label(button, "Level cap", PrototypeGui.Centered);
+                return button.yMax;
+            }
+
+            GUI.enabled = save.Balance(save.Progression.Karma) >= cost;
+            if (GUI.Button(button, $"Level up  ({cost} Karma)")) Show(save.TryLevelUp(ninja, out var result), result);
+            GUI.enabled = true;
+            GUI.Label(new Rect(x, button.yMax + 6f, width, 18f), "Each level adds 4% health and attack damage.", PrototypeGui.Small);
+            return button.yMax + 24f;
+        }
+
+        /// <summary>Where a ninja the player doesn't own comes from, with the prices.</summary>
+        string HowToGet(NinjaDefinition ninja)
+        {
+            var progression = Profile.Progression;
+            var recruit = progression.RecruitPrice(ninja.Rarity);
+            var direct = progression.DirectBuyPrice(ninja.Rarity);
+            const string missing = "<color=#9aa3b0>Not recruited yet.</color>";
+            if (recruit <= 0) return missing;
+            return direct > 0
+                ? $"{missing} It can show up in the Dojo's daily recruits for {recruit} Gold, or you can buy it there directly for {direct} Gold."
+                : $"{missing} It can show up in the Dojo's daily recruits for {recruit} Gold.";
         }
 
         /// <summary>The day's four recruits and the direct buy list. The Dojo.</summary>

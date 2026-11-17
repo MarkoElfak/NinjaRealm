@@ -98,3 +98,14 @@ MonoBehaviour:
     teamSize: 5
   - clanLevel: 10
     teamSize: 6
+  incomes:
+  - id: mint
+    resource: {fileID: 11400000, guid: 78def9f59f9534804ae1254ec50a037b, type: 2}
+    perHour: 40
+    perHourPerClanLevel: 5
+    storageHours: 8
+  - id: steel_mine
+    resource: {fileID: 11400000, guid: 427ce70c419774a1f94fc91164b0bdfb, type: 2}
+    perHour: 4
+    perHourPerClanLevel: 1
+    storageHours: 8

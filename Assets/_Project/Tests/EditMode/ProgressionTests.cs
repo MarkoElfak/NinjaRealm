@@ -457,5 +457,97 @@ namespace NinjaRealm.Tests
             service.TryLevelUp(Ninja("nami"), out _);
             Assert.AreEqual(writes + 3, storage.Writes, "a refused change writes nothing");
         }
+
+        // ---------------------------------------------------------------- income
+
+        static readonly DateTime Noon = new DateTime(2026, 11, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        [Test]
+        public void Income_StartsWithOneHourReady()
+        {
+            Assert.AreEqual(0, service.PendingIncome(IncomeIds.Mint, Noon), "nothing before the village starts it");
+
+            Assert.IsTrue(service.StartIncome(Noon));
+
+            Assert.AreEqual(40, service.PendingIncome(IncomeIds.Mint, Noon));
+            Assert.AreEqual(4, service.PendingIncome(IncomeIds.SteelMine, Noon));
+            Assert.IsFalse(service.StartIncome(Noon.AddHours(1)), "starting again changes nothing");
+        }
+
+        [Test]
+        public void Income_FillsOverTimeUpToEightHours()
+        {
+            service.StartIncome(Noon);
+
+            Assert.AreEqual(60, service.PendingIncome(IncomeIds.Mint, Noon.AddMinutes(30)));
+            Assert.AreEqual(320, service.PendingIncome(IncomeIds.Mint, Noon.AddHours(7)));
+            Assert.AreEqual(320, service.PendingIncome(IncomeIds.Mint, Noon.AddDays(3)), "full after eight hours");
+            Assert.AreEqual(320, service.IncomeCapacity(IncomeIds.Mint));
+            Assert.AreEqual(TimeSpan.FromHours(7), service.IncomeTimeToFull(IncomeIds.Mint, Noon));
+            Assert.AreEqual(TimeSpan.Zero, service.IncomeTimeToFull(IncomeIds.Mint, Noon.AddDays(3)));
+        }
+
+        [Test]
+        public void Income_CollectingPaysTheWalletAndStartsAgain()
+        {
+            service.StartIncome(Noon);
+            var gold = Gold;
+            var later = Noon.AddMinutes(30);
+
+            Assert.IsTrue(service.TryCollectIncome(IncomeIds.Mint, later, out var message));
+
+            StringAssert.Contains("60", message);
+            Assert.AreEqual(gold + 60, Gold);
+            Assert.AreEqual(0, service.PendingIncome(IncomeIds.Mint, later));
+            Assert.IsFalse(service.TryCollectIncome(IncomeIds.Mint, later, out _), "nothing to collect twice");
+            Assert.AreEqual(gold + 60, Gold);
+            Assert.AreEqual(40, service.PendingIncome(IncomeIds.Mint, later.AddHours(1)));
+        }
+
+        [Test]
+        public void Income_KeepsThePartThatHasNotMadeAWholeUnit()
+        {
+            service.StartIncome(Noon);
+
+            // Steel comes every 15 minutes. Collecting after 70 minutes pays 4 and keeps 10 minutes.
+            service.TryCollectIncome(IncomeIds.SteelMine, Noon.AddMinutes(10), out _);
+
+            Assert.AreEqual(4, Steel);
+            Assert.AreEqual(0, service.PendingIncome(IncomeIds.SteelMine, Noon.AddMinutes(14)));
+            Assert.AreEqual(1, service.PendingIncome(IncomeIds.SteelMine, Noon.AddMinutes(15)));
+        }
+
+        [Test]
+        public void Income_GrowsWithTheClanLevel()
+        {
+            service.StartIncome(Noon);
+            service.Profile.clanLevel = 3;
+
+            Assert.AreEqual(50, service.IncomePerHour(IncomeIds.Mint));
+            Assert.AreEqual(6, service.IncomePerHour(IncomeIds.SteelMine));
+            Assert.AreEqual(400, service.IncomeCapacity(IncomeIds.Mint));
+        }
+
+        [Test]
+        public void Income_SurvivesAClockSetBackAndALoad()
+        {
+            service.StartIncome(Noon);
+            var yesterday = Noon.AddDays(-1);
+
+            Assert.AreEqual(0, service.PendingIncome(IncomeIds.Mint, yesterday), "a clock set back pays nothing");
+            Assert.IsTrue(service.StartIncome(yesterday), "and the timer counts from the new time");
+            Assert.AreEqual(40, service.PendingIncome(IncomeIds.Mint, yesterday.AddHours(1)));
+
+            var loaded = ProfileService.Load(storage, database, 1);
+            Assert.AreEqual(40, loaded.PendingIncome(IncomeIds.Mint, yesterday.AddHours(1)));
+        }
+
+        [Test]
+        public void Income_OfAnUnknownSourceIsRefused()
+        {
+            Assert.IsFalse(service.TryCollectIncome("income.nowhere", Noon, out var message));
+            Assert.IsNotEmpty(message);
+            Assert.AreEqual(0, service.IncomePerHour("income.nowhere"));
+        }
     }
 }
