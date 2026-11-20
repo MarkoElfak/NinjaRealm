@@ -4,6 +4,7 @@ using NinjaRealm.Combat;
 using NinjaRealm.Core.Campaign;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
+using NinjaRealm.Core.Definitions.Effects;
 using NinjaRealm.Core.Fights;
 using NinjaRealm.Core.Lineups;
 using NinjaRealm.Core.Progression;
@@ -205,6 +206,10 @@ namespace NinjaRealm.Presentation.Battle
         /// <summary>A ninja's level and stars in the player's save, or the base rank without one.</summary>
         public NinjaRank RankOf(NinjaDefinition ninja) => Profile != null ? Profile.RankOf(ninja) : NinjaRank.Base;
 
+        /// <summary>The Shrine runes a player's ninja fights with. None without a save.</summary>
+        public IEnumerable<PassiveEffect> RunePassives(NinjaDefinition ninja) =>
+            Profile != null ? Profile.RunePassives(ninja) : (IEnumerable<PassiveEffect>)Array.Empty<PassiveEffect>();
+
         /// <summary>The player's ninja view for a slot, while in setup.</summary>
         public UnitView ViewFor(LineupSlot slot) => slot != null && playerViews.TryGetValue(slot, out var view) ? view : null;
 
@@ -297,7 +302,7 @@ namespace NinjaRealm.Presentation.Battle
             var database = Content;
             CurrentSeed = fightSeed;
             var builder = CombatSetupBuilder.FromDatabase(database);
-            builder.AddLineup(0, playerSlots, RankOf);
+            builder.AddLineup(0, playerSlots, RankOf, RunePassives);
             if (opponent != null) builder.AddLineup(1, opponent.Slots, enemyRank);
             var setup = builder.Build();
             board.Build(setup.BoardColumns, setup.BoardRows);

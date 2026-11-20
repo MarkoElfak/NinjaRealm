@@ -56,7 +56,7 @@ namespace NinjaRealm.Core.Prototype
     }
 
     /// <summary>
-    /// The prototype's content: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas,
+    /// The prototype's content: 22 Shrine runes, 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas,
     /// 6 components, 4 combined weapons, 24 enemy lineups, a campaign of 3 chapters with 8
     /// stages each, 3 resources and the progression settings. This is the source of truth for
     /// prototype numbers; the content assets are created from it.
@@ -101,7 +101,7 @@ namespace NinjaRealm.Core.Prototype
             var abilityPower = Stat("ability_power", "Ability Power", 100f, false, "Scales skill damage. 100 is normal.");
             var maxMana = Stat("max_mana", "Max Mana", 60f, false, "The skill fires when mana reaches this.");
             var startMana = Stat("start_mana", "Starting Mana", 0f, false, "Mana at the start of a fight.");
-            Stat("crit_chance", "Crit Chance", 25f, true, "Chance for a basic attack to crit.");
+            var critChance = Stat("crit_chance", "Crit Chance", 25f, true, "Chance for a basic attack to crit.");
             var critDamage = Stat("crit_damage", "Crit Damage", 150f, true, "Damage of a crit, as a percentage of a normal hit.");
             var dodge = Stat("dodge", "Dodge", 0f, true, "Chance to avoid a basic attack.");
             Stat("move_speed", "Move Speed", 2f, false, "Hexes moved per second.");
@@ -367,6 +367,68 @@ namespace NinjaRealm.Core.Prototype
             var karma = Resource("karma", "Karma", new Color(0.7f, 0.55f, 1f), "Earned from clan levels. Levels up ninjas.");
             var steel = Resource("steel", "Steel", new Color(0.72f, 0.78f, 0.84f), "Earned from wins. Forges weapons.");
 
+            // Runes: carved stones the Shrine sells. Each covers every ninja in the lineup (a Seal only its element's).
+            // Values run evenly from rank I to rank V; see RuneRanks.
+            var blade = new Color(0.95f, 0.36f, 0.3f);
+            var shell = new Color(0.56f, 0.74f, 0.92f);
+            var spirit = new Color(0.74f, 0.52f, 1f);
+            var fortune = new Color(1f, 0.82f, 0.35f);
+
+            RuneOf("ember_fang", "Ember Fang", Rarity.Common, RuneFamily.Blade, null, blade, "A fang of red slate, warm to the touch.",
+                StatRanks(attackDamage, ModifierOperation.AddPercent, 3f, 8f));
+            RuneOf("hummingbird_sigil", "Hummingbird Sigil", Rarity.Common, RuneFamily.Blade, null, blade, "Hands move before the mind decides.",
+                StatRanks(attackSpeed, ModifierOperation.AddPercent, 3f, 8f));
+            RuneOf("oak_heart", "Oak Heart", Rarity.Common, RuneFamily.Shell, null, shell, "Old wood that bends and never breaks.",
+                StatRanks(health, ModifierOperation.AddPercent, 3f, 8f));
+            RuneOf("iron_bark", "Iron Bark", Rarity.Common, RuneFamily.Shell, null, shell, "Skin like the bark of a mountain pine.",
+                StatRanks(armor, ModifierOperation.Add, 4f, 12f));
+            RuneOf("still_pond", "Still Pond", Rarity.Common, RuneFamily.Shell, null, shell, "Spells sink into it like stones into calm water.",
+                StatRanks(magicResist, ModifierOperation.Add, 4f, 12f));
+            RuneOf("dawn_coal", "Dawn Coal", Rarity.Common, RuneFamily.Spirit, null, spirit, "A coal that glows before the fight begins.",
+                StatRanks(startMana, ModifierOperation.Add, 4f, 12f));
+            RuneOf("coin_lantern", "Coin Lantern", Rarity.Common, RuneFamily.Fortune, null, fortune, "Lights the way to a fuller purse.",
+                EconomyRanks(400, 1200, (rank, value) => rank.fightGold = value));
+
+            RuneOf("hawk_eye", "Hawk Eye", Rarity.Rare, RuneFamily.Blade, null, blade, "Sees the gap in every guard.",
+                StatRanks(critChance, ModifierOperation.Add, 3f, 8f));
+            RuneOf("split_moon", "Split Moon", Rarity.Rare, RuneFamily.Blade, null, blade, "A crescent cut clean in two.",
+                StatRanks(critDamage, ModifierOperation.Add, 8f, 20f));
+            RuneOf("paper_crane_step", "Paper Crane Step", Rarity.Rare, RuneFamily.Shell, null, shell, "Light enough to ride the wind of a blade.",
+                StatRanks(dodge, ModifierOperation.Add, 2f, 6f));
+            RuneOf("ink_storm", "Ink Storm", Rarity.Rare, RuneFamily.Spirit, null, spirit, "Every brush stroke lands like thunder.",
+                StatRanks(abilityDamage, ModifierOperation.Add, 4f, 10f));
+            RuneOf("lotus_breath", "Lotus Breath", Rarity.Rare, RuneFamily.Spirit, null, spirit, "Calm breath, stronger mending.",
+                StatRanks(healingPower, ModifierOperation.Add, 5f, 12f));
+            RuneOf("scholars_brush", "Scholar's Brush", Rarity.Rare, RuneFamily.Fortune, null, fortune, "Every fight is a lesson written down.",
+                EconomyRanks(500, 1500, (rank, value) => rank.clanXp = value));
+            RuneOf("kindling_seal", "Kindling Seal", Rarity.Rare, RuneFamily.Seal, fire, fire.Color, "Fans the fire in every Fire ninja.",
+                StatRanks(attackDamage, ModifierOperation.AddPercent, 5f, 12f));
+            RuneOf("tide_seal", "Tide Seal", Rarity.Rare, RuneFamily.Seal, water, water.Color, "The tide carries every Water ninja's healing further.",
+                StatRanks(healingPower, ModifierOperation.Add, 8f, 20f));
+            RuneOf("bedrock_seal", "Bedrock Seal", Rarity.Rare, RuneFamily.Seal, earth, earth.Color, "Earth ninjas stand on the roots of the mountain.",
+                StatRanks(armor, ModifierOperation.Add, 8f, 20f));
+
+            RuneOf("leech_fang", "Leech Fang", Rarity.Epic, RuneFamily.Spirit, null, spirit, "Every wound given closes one taken.",
+                StatRanks(omnivamp, ModifierOperation.Add, 3f, 8f));
+            RuneOf("twin_current", "Twin Current", Rarity.Epic, RuneFamily.Blade, null, blade, "Two streams, one faster blade.",
+                StatRanks(attackSpeed, ModifierOperation.AddPercent, 5f, 10f, attackDamage, ModifierOperation.AddPercent, 3f, 6f));
+            RuneOf("mountain_bell", "Mountain Bell", Rarity.Epic, RuneFamily.Fortune, null, fortune, "Its ring calls the village to work.",
+                EconomyRanks(1000, 2500, (rank, value) => rank.income = value));
+
+            RuneOf("phoenix_ash", "Phoenix Ash", Rarity.Legendary, RuneFamily.Spirit, null, new Color(1f, 0.55f, 0.2f),
+                "Ash that remembers the flame. Once a fight, a falling ninja rises again.",
+                Ranks(20f, 40f, value => new RuneRank(new TriggeredEffect(EffectTrigger.HealthBelowThreshold, EffectScope.Self,
+                        new HealAction(Target(TargetKind.Self), value)) { healthThresholdPercent = 30f, oncePerFight = true })
+                    { text = $"Once a fight, below 30% health: heal {value:0.##}% of max health" }));
+            RuneOf("heart_of_the_realm", "Heart of the Realm", Rarity.Legendary, RuneFamily.Shell, null, new Color(1f, 0.93f, 0.7f),
+                "The realm's own strength, shared by the clan.",
+                StatRanks(health, ModifierOperation.AddPercent, 6f, 12f, attackDamage, ModifierOperation.AddPercent, 6f, 12f));
+            RuneOf("thunder_script", "Thunder Script", Rarity.Legendary, RuneFamily.Blade, null, new Color(0.45f, 0.9f, 1f),
+                "Words of lightning carved in black stone.",
+                Ranks(40f, 100f, value => new RuneRank(new TriggeredEffect(EffectTrigger.OnAttackHit, EffectScope.Self,
+                        new DamageAction(Target(TargetKind.CurrentTarget), DamageType.Magic, value, 0f, false)) { everyNth = 3 })
+                    { text = $"Every 3rd attack: +{value:0.##} magic damage" }));
+
             // Progression: levels cost 20 Karma, growing 8% a level; each level adds 4% health and attack damage.
             var levelCosts = new List<int>();
             for (var level = 1; level < 60; level++)
@@ -434,6 +496,36 @@ namespace NinjaRealm.Core.Prototype
                     new IncomeSource { id = IncomeIds.SteelMine, resource = steel, perHour = 4, perHourPerClanLevel = 1, storageHours = 8 },
                 };
 
+                // Runes (the Shrine): six altar slots opened by clan level and lit with Karma, ranks II to V for Gold.
+                p.runeSlots = new List<ProgressionDefinition.RuneSlotStep>
+                {
+                    new ProgressionDefinition.RuneSlotStep { clanLevel = 1, karma = 0 },
+                    new ProgressionDefinition.RuneSlotStep { clanLevel = 2, karma = 40 },
+                    new ProgressionDefinition.RuneSlotStep { clanLevel = 4, karma = 80 },
+                    new ProgressionDefinition.RuneSlotStep { clanLevel = 7, karma = 150 },
+                    new ProgressionDefinition.RuneSlotStep { clanLevel = 10, karma = 250 },
+                    new ProgressionDefinition.RuneSlotStep { clanLevel = 14, karma = 400 },
+                };
+                p.runeRanks = new List<ProgressionDefinition.RuneRankStep>
+                {
+                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 5000, clanLevel = 3 },
+                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 10000, clanLevel = 6 },
+                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 15000, clanLevel = 9 },
+                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 20000, clanLevel = 12 },
+                };
+                p.runeOffers = new List<ProgressionDefinition.RuneOffer>
+                {
+                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Common, weight = 55, price = 300, alwaysForSale = true },
+                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Rare, weight = 32, price = 800 },
+                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Epic, weight = 11, price = 2000 },
+                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Legendary, weight = 2, price = 5000, karma = 200 },
+                };
+                p.shrineOfferCount = 4;
+                p.shrineRefreshCost = 50;
+                p.runeSellRefund = 5000;
+                p.homeSealPrice = 7500;
+                p.maxLegendaryRunes = 1;
+
                 // Home villages: one per element. Its ninjas are twice as likely in the Dojo.
                 p.villages = new List<HomeVillage>
                 {
@@ -459,6 +551,49 @@ namespace NinjaRealm.Core.Prototype
 
         LineupDefinition Lineup(string id, string name, string description, params LineupSlot[] slots) =>
             sink.Provide<LineupDefinition>("Lineups", "lineup." + id, name, l => l.Configure(description, slots));
+
+        RuneDefinition RuneOf(string id, string name, Rarity rarity, RuneFamily family, TraitDefinition element, Color color, string description,
+            IEnumerable<RuneRank> ranks) =>
+            sink.Provide<RuneDefinition>("Runes", "rune." + id, name, r => r.Configure(rarity, family, element, color, description, ranks));
+
+        /// <summary>The value at each rank, evenly from rank I to rank V, to the nearest half.</summary>
+        static float RankValue(float first, float last, int rank)
+        {
+            var value = first + (last - first) * rank / (RuneDefinition.MaxRanks - 1);
+            return (float)(Math.Round(value * 2.0, MidpointRounding.AwayFromZero) / 2.0);
+        }
+
+        static List<RuneRank> Ranks(float first, float last, Func<float, RuneRank> rankOf)
+        {
+            var ranks = new List<RuneRank>();
+            for (var i = 0; i < RuneDefinition.MaxRanks; i++) ranks.Add(rankOf(RankValue(first, last, i)));
+            return ranks;
+        }
+
+        List<RuneRank> StatRanks(StatDefinition stat, ModifierOperation operation, float first, float last) =>
+            Ranks(first, last, value => new RuneRank(Mod(stat, operation, value)));
+
+        List<RuneRank> StatRanks(StatDefinition stat, ModifierOperation operation, float first, float last,
+            StatDefinition stat2, ModifierOperation operation2, float first2, float last2)
+        {
+            var ranks = new List<RuneRank>();
+            for (var i = 0; i < RuneDefinition.MaxRanks; i++)
+                ranks.Add(new RuneRank(Mod(stat, operation, RankValue(first, last, i)), Mod(stat2, operation2, RankValue(first2, last2, i))));
+            return ranks;
+        }
+
+        static List<RuneRank> EconomyRanks(int first, int last, Action<RuneRank, int> set)
+        {
+            var ranks = new List<RuneRank>();
+            for (var i = 0; i < RuneDefinition.MaxRanks; i++)
+            {
+                var rank = new RuneRank();
+                set(rank, (int)Math.Round(RankValue(first / 100f, last / 100f, i) * 100f));
+                ranks.Add(rank);
+            }
+
+            return ranks;
+        }
 
         ResourceDefinition Resource(string id, string name, Color color, string description) =>
             sink.Provide<ResourceDefinition>("Economy", "resource." + id, name, r => r.Configure(description, color));

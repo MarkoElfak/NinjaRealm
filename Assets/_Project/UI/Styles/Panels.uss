@@ -354,3 +354,128 @@
     height: 46px;
     margin-top: 16px;
 }
+
+/* The Shrine's runes */
+
+.altar {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-bottom: 8px;
+}
+
+.rune-slot {
+    flex-grow: 1;
+    flex-basis: 0;
+    height: 112px;
+    margin-right: 8px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--ink-card);
+    border-radius: 8px;
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.08);
+    padding: 4px;
+}
+
+.rune-slot:hover {
+    background-color: var(--ink-card-hover);
+}
+
+.rune-slot--last {
+    margin-right: 0;
+}
+
+.rune-slot--picked {
+    border-color: var(--gold);
+}
+
+.rune-slot--locked {
+    background-color: var(--ink-locked);
+}
+
+.rune-slot__icon {
+    width: 46px;
+    height: 46px;
+}
+
+.rune-slot__empty {
+    font-size: 26px;
+    color: var(--muted);
+    height: 46px;
+    -unity-text-align: middle-center;
+}
+
+.rune-slot__name {
+    font-size: 11px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.rune-slot__action {
+    margin-top: 2px;
+    font-size: 11px;
+}
+
+.rune-icon {
+    -unity-background-scale-mode: scale-to-fit;
+    flex-shrink: 0;
+}
+
+.rune-bonus {
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+.rune-columns {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rune-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 5px 8px;
+    margin-bottom: 4px;
+    border-left-width: 4px;
+}
+
+.rune-row--taken {
+    background-color: var(--ink-locked);
+    -unity-text-align: middle-center;
+    height: 40px;
+}
+
+.rune-row__icon {
+    width: 40px;
+    height: 40px;
+    margin-right: 8px;
+}
+
+.rune-row__text {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.rune-row__action {
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.rune-row__buttons {
+    flex-shrink: 0;
+    margin-left: 8px;
+    align-items: stretch;
+}
+
+.rune-row__buttons > .unity-button {
+    margin-bottom: 2px;
+}
+
+.rune-row__set {
+    color: var(--gold);
+    -unity-text-align: middle-center;
+}
+
+.rune-subtitle {
+    margin-top: 8px;
+}

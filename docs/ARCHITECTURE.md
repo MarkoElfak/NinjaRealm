@@ -69,8 +69,9 @@ All live in `NinjaRealm.Core.Definitions` and are created from **Assets > Create
 | `LineupDefinition` | `lineup.` | An enemy lineup: description and slots (ninja, hex, weapons) |
 | `StageDefinition` | `stage.` | One campaign fight: a lineup, the level it fights at, its kind (normal, elite, boss), its reward tier, an optional boss with stars, and what the first clear pays (in `NinjaRealm.Core.Campaign`) |
 | `ChapterDefinition` | `chapter.` | A chapter of the campaign: its number, its stages in order and its star chests (in `NinjaRealm.Core.Campaign`) |
+| `RuneDefinition` | `rune.` | A Shrine rune: rarity, family, the element a Seal covers, colour, and its ranks (passives plus Gold, clan XP and income bonuses per rank) |
 | `ResourceDefinition` | `resource.` | A currency: Gold, Karma, Steel (in `NinjaRealm.Core.Progression`) |
-| `ProgressionDefinition` | `progression.` | Every progression number: the new save, level costs, belts, stars, the Dojo, forging, fight rewards, clan levels and team sizes (in `NinjaRealm.Core.Progression`) |
+| `ProgressionDefinition` | `progression.` | Every progression number: the new save, level costs, belts, stars, the Dojo, forging, fight rewards, clan levels, team sizes and the Shrine's runes (in `NinjaRealm.Core.Progression`) |
 
 ## Effects
 
@@ -136,6 +137,19 @@ Known limits for now: a timed buff to health does not change max health, and uni
 * `ApplyStageResult(stage, stars, seed)` pays every fight by the stage's reward tier (Gold, Steel, clan XP, a chance of a component). The first clear adds the first-win Gold, a certain component, and the stage's own Karma, Steel and ninja. A ninja the player already owns arrives as a shard.
 * `CampaignWalker` plays the whole campaign headless with a simple player (strongest ninjas, star chests opened, Karma into the lowest level, Dojo offers that help, weapons handed out, farming the stage before after two losses) and reports the fights each stage and chapter took. **Ninja Realm > Balance > Walk the Campaign** writes the report to `Logs/campaign_walk.md`.
 
+## Runes (the Shrine)
+
+The Shrine sells runes: carved stones set into the altar's slots, each giving the player's ninjas a passive bonus in every fight. Enemies never get runes.
+
+* `RuneDefinition` (`rune.` IDs) lists its ranks, rank I first. Each `RuneRank` holds passive effects (the same `StatModifierEffect` and `TriggeredEffect` blocks weapons use, with holders `Self`) and optional economy bonuses in basis points: `fightGold`, `clanXp` and `income`. `text` overrides the generated description for effects that can't describe themselves (triggers). A Seal names an element and only covers that element's ninjas.
+* The numbers live on `ProgressionDefinition` under **Runes**: the altar's slots (`runeSlots`: the clan level that opens each and the Karma to light it), the ranks (`runeRanks`: the share of the price each costs and the clan level it needs), prices and offer weights per rarity (`runeOffers`; Common is always for sale, Legendary also costs Karma), the daily offer size and refresh cost, the sell refund, the home village Seal discount and the Legendary limit.
+* The save (version 3) keeps `runes` (ID, rank, Gold spent), `runeSlots` (one entry per lit slot, empty for no rune), and the Shrine's `shrineOffers` and `shrineDate`. Free slots are lit on load, so older saves start with one.
+* `ProfileService` has the rules: `TryBuyRune`, `TryRankUpRune`, `TrySellRune`, `TryLightRuneSlot`, `TrySetRune`, `ClearRuneSlot`, `RefreshShrineIfNewDay` and `TryRefreshShrine`. Two set runes covering the same ninjas may not raise the same stat, and only `maxLegendaryRunes` Legendaries fit.
+* Fights: `ProfileService.RunePassives(ninja)` goes to `CombatSetupBuilder.AddLineup(team, slots, rankOf, bonusesOf)` for the player's team, and the builder adds them after the weapons. Fortune runes raise the normal fight Gold and clan XP in `ApplyStageResult` (not first win Gold) and the per-hour rate of income sources.
+* Art: icons are `Art/Runes/Resources/RuneIcons/<name>.png`, where the name is the ID without `rune.`; `RuneArt.Icon` loads them, and a rune's own `icon` wins when linked. `Tools/RuneIcons/make_rune_icons.py` draws them (a faceted stone in the rarity colour with a glowing glyph); a new rune needs a glyph there and a run of the script. In the village, `ShrineAltar` stands a stone per lit slot in front of the Shrine, glowing in the set rune's colour.
+
+To add a rune: add it in `PrototypeContent` (or as an asset from **Create > Ninja Realm > Rune**), give it a glyph in the icon script, run the script, then **Reset Prototype Content to Defaults** and **Rebuild Database**.
+
 ## Progression and the save file
 
 `NinjaRealm.Core.Progression` holds the persistent roster.
@@ -143,7 +157,7 @@ Known limits for now: a timed buff to health does not change max health, and uni
 * `PlayerProfile` is everything the save holds, by content ID: the clan's name and home village, the `Wallet` (balances by resource ID), owned ninjas (level, stars, shards), weapon counts, clan level and XP, the lineup, the campaign (best stars per stage, opened chests, the stage picked), income timers, and the Dojo's offers, date and random seed.
 * `SaveFile` writes it as JSON with a `version`, and runs older files through `Migrations` in order. To change the format, raise `CurrentVersion` and add one migration. A file from a newer version, or one that isn't JSON, is refused. When an older file is loaded, a copy of it is kept beside the save (`profile.v1.json`) before it is rewritten. Version 2 added the campaign: the lineups a version 1 save had beaten become cleared stages, which `ProfileService` does on load because it needs the content.
 * `ISaveStorage` is where it lives: `FileSaveStorage` writes to a temporary file and then replaces the old one; `MemorySaveStorage` is for tests.
-* `ProfileService` is the only thing that changes a profile: `TryLevelUp`, `TryRecruitOffer`, `TryRefreshDojo`, `RefreshDojoIfNewDay`, `TryBuyDirect`, `TryForge`, `ApplyStageResult`, `SelectStage`, `TryOpenChest`, `TryCollectIncome` and `SaveLineup`. Each checks its cost, changes the profile and saves; a refusal changes nothing and says why. `FitLineup` keeps a lineup to what the player owns and the team size. On load it drops unknown IDs and duplicates and keeps numbers in range, so old or damaged saves still load; an unreadable file is set aside and a new save starts.
+* `ProfileService` is the only thing that changes a profile: `TryLevelUp`, the rune methods, `TryRecruitOffer`, `TryRefreshDojo`, `RefreshDojoIfNewDay`, `TryBuyDirect`, `TryForge`, `ApplyStageResult`, `SelectStage`, `TryOpenChest`, `TryCollectIncome` and `SaveLineup`. Each checks its cost, changes the profile and saves; a refusal changes nothing and says why. `FitLineup` keeps a lineup to what the player owns and the team size. On load it drops unknown IDs and duplicates and keeps numbers in range, so old or damaged saves still load; an unreadable file is set aside and a new save starts.
 * Dojo offers use `DeterministicRandom` with the profile's seed and roll count, and fight drops use the fight's seed, so tests can check exact results.
 * **Home villages** (`HomeVillage`, listed on the progression settings) are the villages a new clan can pick: Emberfall (Fire), Mistwater (Water) and Stonehollow (Earth). `NeedsFounding` is true until the clan has a valid name (`ClanName`: 3 to 16 letters, digits, spaces, hyphens or apostrophes) and a home village; `TryFoundClan` sets both and leaves everything else as it was, so a save from before the new game screen keeps its progress. In the Dojo, a ninja of the home village's element weighs the village's `dojoAffinity` (20000, twice as likely) against 10000 for the others of its rarity. With no home village the roll is the same as before villages existed.
 

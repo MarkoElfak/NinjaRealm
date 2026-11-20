@@ -30,20 +30,24 @@ namespace NinjaRealm.Core.Progression
         /// <summary>It stops filling after this many hours without a collection.</summary>
         public int storageHours = 8;
 
-        /// <summary>Made per hour at this clan level.</summary>
-        public int PerHour(int clanLevel) => Math.Max(0, perHour + perHourPerClanLevel * (Math.Max(1, clanLevel) - 1));
+        /// <summary>Made per hour at this clan level, raised by a bonus in basis points (2500 = +25%, from runes).</summary>
+        public int PerHour(int clanLevel, int bonusBasisPoints = 0)
+        {
+            var hourly = (long)Math.Max(0, perHour + perHourPerClanLevel * (Math.Max(1, clanLevel) - 1));
+            return (int)(hourly * (ProgressionDefinition.BasisPoints + Math.Max(0, bonusBasisPoints)) / ProgressionDefinition.BasisPoints);
+        }
 
         /// <summary>The most it holds at this clan level.</summary>
-        public int Capacity(int clanLevel) => PerHour(clanLevel) * Math.Max(1, storageHours);
+        public int Capacity(int clanLevel, int bonusBasisPoints = 0) => PerHour(clanLevel, bonusBasisPoints) * Math.Max(1, storageHours);
 
         /// <summary>Seconds of work it can store.</summary>
         public long StorageSeconds => (long)Math.Max(1, storageHours) * SecondsPerHour;
 
         /// <summary>What this many seconds of work makes at this clan level, up to the capacity.</summary>
-        public int Made(long seconds, int clanLevel)
+        public int Made(long seconds, int clanLevel, int bonusBasisPoints = 0)
         {
             var worked = Math.Max(0L, Math.Min(seconds, StorageSeconds));
-            return (int)(worked * PerHour(clanLevel) / SecondsPerHour);
+            return (int)(worked * PerHour(clanLevel, bonusBasisPoints) / SecondsPerHour);
         }
     }
 

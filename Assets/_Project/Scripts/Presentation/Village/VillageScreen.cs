@@ -26,6 +26,12 @@ namespace NinjaRealm.Presentation.Village
             AllNinjas,
         }
 
+        enum ShrineTab
+        {
+            Ninjas,
+            Runes,
+        }
+
         const int HallColumns = 3;
         const float PreviewDegreesPerPixel = 0.6f;
         const float PreviewClickSlop = 6f;
@@ -66,6 +72,7 @@ namespace NinjaRealm.Presentation.Village
         UiMessage message;
         RosterViews roster;
         DojoTab dojoTab;
+        ShrineTab shrineTab;
         NinjaDefinition hallSelected;
         List<NinjaDefinition> allNinjas;
         IncomeView income;
@@ -454,7 +461,7 @@ namespace NinjaRealm.Presentation.Village
             else if (building.IncomeId != null)
                 body.Add(IncomeBody(building));
             else if (building.Kind == VillageBuildingKind.Shrine)
-                body.Add(roster.Ninjas());
+                body.Add(ShrineBody());
             else if (building.Kind == VillageBuildingKind.Blacksmith)
                 body.Add(roster.Armory());
 
@@ -467,6 +474,40 @@ namespace NinjaRealm.Presentation.Village
         }
 
         static Label Note(string text) => GameUi.Label(text, "panel-note", "wrap");
+
+        // ---------------------------------------------------------------- the Shrine
+
+        /// <summary>The Shrine's two tabs: level ups for your ninjas, and the runes on the altar.</summary>
+        VisualElement ShrineBody()
+        {
+            var content = GameUi.Element("roster");
+            var profile = controller.Profile;
+            var tabs = GameUi.Element("tabs");
+            tabs.Add(ShrineTabButton("Ninjas", ShrineTab.Ninjas));
+            tabs.Add(ShrineTabButton($"Runes  ({profile.SetRunes().Count} / {profile.RuneSlotsLit})", ShrineTab.Runes));
+            content.Add(tabs);
+            content.Add(shrineTab == ShrineTab.Runes ? roster.Runes() : roster.Ninjas());
+            return content;
+        }
+
+        Button ShrineTabButton(string text, ShrineTab tab)
+        {
+            var button = GameUi.Button(text, () =>
+            {
+                if (shrineTab == tab) return;
+                shrineTab = tab;
+                Rebuild();
+            }, "tab");
+            button.EnableInClassList("tab--selected", shrineTab == tab);
+            return button;
+        }
+
+        /// <summary>Opens the Shrine's panel on its runes.</summary>
+        public void ShowRunes()
+        {
+            shrineTab = ShrineTab.Runes;
+            if (controller.Opened != null && controller.Opened.Kind == VillageBuildingKind.Shrine) Rebuild();
+        }
 
         // ---------------------------------------------------------------- the Dojo and its hall
 

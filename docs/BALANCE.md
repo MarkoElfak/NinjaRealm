@@ -99,6 +99,23 @@ The Mint and the Steel Mine pay for coming back, not for waiting. The numbers ar
 * A full Mint buys one Common recruit (200 Gold) with some left over. A full Steel Mine pays for one forge (20 Steel) and most of a second.
 * Fights should stay the main source of Gold. If players stop fighting between collections, lower the Mint before raising fight pay.
 
+## Runes
+
+The Shrine's runes are worth about 6 to 8 ninja levels at the end of the game. One level adds 4% health and attack damage; a mid-game altar (4 slots at rank III, around clan level 7) adds roughly 12 to 15% power, and a full one (6 slots at rank V with a Legendary) about 25 to 30%.
+
+| Rarity | Buy | Rank II / III / IV / V | Total to rank V | Offer weight |
+| --- | --- | --- | --- | --- |
+| Common | 300 Gold | 150 / 300 / 450 / 600 | 1,800 Gold | 55, always for sale |
+| Rare | 800 Gold | 400 / 800 / 1,200 / 1,600 | 4,800 Gold | 32 |
+| Epic | 2,000 Gold | 1,000 / 2,000 / 3,000 / 4,000 | 12,000 Gold | 11 |
+| Legendary | 5,000 Gold + 200 Karma | 2,500 / 5,000 / 7,500 / 10,000 | 30,000 Gold | 2 |
+
+Ranks II to V need clan level 3, 6, 9 and 12. The home village's Seal costs 25% less. Selling returns half the Gold spent.
+
+Altar slots open at clan levels 1, 2, 4, 7, 10 and 14 and cost 0, 40, 80, 150, 250 and 400 Karma to light, about one or two clan levels' Karma each.
+
+Guard rails: two runes covering the same ninjas can't raise the same stat (a Seal may stack with a rune for everyone), one Legendary at a time, and Fortune runes only raise normal fight pay and building income, never chests or first win Gold. The campaign walk doesn't buy runes, so the campaign stays beatable without them.
+
 ## Campaign
 
 Three chapters of eight stages. Every fourth stage is an elite and every eighth a boss.
