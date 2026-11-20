@@ -156,7 +156,7 @@ namespace NinjaRealm.Presentation.Battle
             if (fightRewards.Drop != null) lines.Add($"Found a weapon: <b>{fightRewards.Drop.DisplayName}</b>");
             if (fightRewards.ClanLevelsGained > 0)
             {
-                var line = $"<color=#{gold}>Clan level {profile.ClanLevel}!</color>  +{fightRewards.Karma} Karma";
+                var line = $"<color=#{gold}>Clan level {profile.ClanLevel}!</color>";
                 if (fightRewards.TeamSizeAfter > fightRewards.TeamSizeBefore) line += $". Your team can now hold {fightRewards.TeamSizeAfter} ninjas.";
                 lines.Add(line);
             }

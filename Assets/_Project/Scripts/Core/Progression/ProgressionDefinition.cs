@@ -58,6 +58,9 @@ namespace NinjaRealm.Core.Progression
 
             [Tooltip("Always for sale in the Shrine's list, not only in the daily offer.")]
             public bool alwaysForSale;
+
+            [Tooltip("Karma a rune of this rarity makes per hour on the altar, at rank I.")]
+            public int karmaPerHour;
         }
 
         [Serializable]
@@ -78,6 +81,22 @@ namespace NinjaRealm.Core.Progression
 
             [Tooltip("The clan level this rank needs.")]
             public int clanLevel = 1;
+
+            [Tooltip("Karma the rune makes at this rank, as a share of its rank I output, in basis points (15000 = x1.5).")]
+            public int karmaBasisPoints = BasisPoints;
+        }
+
+        /// <summary>Karma sold for real money. The store (in-app purchases) is not hooked up yet.</summary>
+        [Serializable]
+        public sealed class KarmaPack
+        {
+            [Tooltip("Stable ID, used as the store's product ID.")]
+            public string id;
+
+            public string displayName;
+
+            [Tooltip("Karma the pack gives.")]
+            public int karma;
         }
 
         [Serializable]
@@ -140,8 +159,6 @@ namespace NinjaRealm.Core.Progression
         [Header("Clan")]
         [SerializeField, Tooltip("Clan XP to the next clan level is this times the current level.")]
         internal int clanXpPerLevel = 100;
-        [SerializeField] internal int clanLevelKarma = 50;
-        [SerializeField] internal int clanLevelKarmaPerLevel = 10;
         [SerializeField, Tooltip("From which clan level each team size applies, lowest first.")]
         internal List<TeamSizeStep> teamSizes = new List<TeamSizeStep>();
 
@@ -168,6 +185,12 @@ namespace NinjaRealm.Core.Progression
 
         [SerializeField, Tooltip("Most Legendary runes set at once.")]
         internal int maxLegendaryRunes = 1;
+
+        [SerializeField, Tooltip("The altar's Karma stops filling after this many hours without a collection.")]
+        internal int runeKarmaStorageHours = 12;
+
+        [Header("Karma packs (in-app purchases, later)")]
+        [SerializeField] internal List<KarmaPack> karmaPacks = new List<KarmaPack>();
 
         [Header("Home villages")]
         [SerializeField, Tooltip("The villages a new clan can pick on the new game screen. Empty skips the pick.")]
@@ -218,6 +241,32 @@ namespace NinjaRealm.Core.Progression
         public int MaxLegendaryRunes => maxLegendaryRunes;
 
         public IReadOnlyList<RuneOffer> RuneOffers => runeOffers;
+
+        public int RuneKarmaStorageHours => Math.Max(1, runeKarmaStorageHours);
+
+        public IReadOnlyList<KarmaPack> KarmaPacks => karmaPacks;
+
+        /// <summary>The Karma pack with this ID, or null.</summary>
+        public KarmaPack KarmaPackFor(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            foreach (var pack in karmaPacks)
+                if (pack != null && pack.id == id) return pack;
+            return null;
+        }
+
+        /// <summary>
+        /// Karma a rune makes per hour on the altar at this rank, in basis points of one Karma
+        /// (so a rank's share can be fractional). 0 when its rarity has no offer.
+        /// </summary>
+        public long RuneKarmaPerHourBasisPoints(Rarity rarity, int rank)
+        {
+            var offer = RuneOfferFor(rarity);
+            if (offer == null || rank < 1) return 0;
+            var share = BasisPoints;
+            if (rank >= 2 && runeRanks.Count > 0) share = runeRanks[Math.Min(rank - 2, runeRanks.Count - 1)]?.karmaBasisPoints ?? BasisPoints;
+            return (long)Math.Max(0, offer.karmaPerHour) * Math.Max(0, share);
+        }
 
         public RuneOffer RuneOfferFor(Rarity rarity)
         {
@@ -302,9 +351,6 @@ namespace NinjaRealm.Core.Progression
 
         /// <summary>Clan XP to go from this clan level to the next.</summary>
         public int ClanXpToNext(int clanLevel) => clanXpPerLevel * Math.Max(1, clanLevel);
-
-        /// <summary>Karma paid for reaching this clan level.</summary>
-        public int ClanLevelKarma(int newClanLevel) => clanLevelKarma + clanLevelKarmaPerLevel * newClanLevel;
 
         /// <summary>How many ninjas a lineup can hold at this clan level.</summary>
         public int TeamSize(int clanLevel)
@@ -411,13 +457,34 @@ namespace NinjaRealm.Core.Progression
                     break;
                 }
 
+            foreach (var step in runeRanks)
+                if (step != null && step.karmaBasisPoints < 0)
+                {
+                    yield return "has a rune rank with negative Karma output.";
+                    break;
+                }
+
+            if (runeKarmaStorageHours <= 0)
+                yield return "has no storage hours for the altar's Karma.";
+
             var runeRarities = new HashSet<Rarity>();
             foreach (var offer in runeOffers)
             {
-                if (offer == null || offer.weight < 0 || offer.price <= 0 || offer.karma < 0)
-                    yield return "has a rune offer with a negative weight or no price.";
+                if (offer == null || offer.weight < 0 || offer.price <= 0 || offer.karma < 0 || offer.karmaPerHour < 0)
+                    yield return "has a rune offer with a negative weight, Karma or hourly Karma, or no price.";
                 else if (!runeRarities.Add(offer.rarity))
                     yield return $"lists {offer.rarity} runes more than once.";
+            }
+
+            var packIds = new HashSet<string>();
+            foreach (var pack in karmaPacks)
+            {
+                if (pack == null || string.IsNullOrEmpty(pack.id))
+                    yield return "has a Karma pack with no ID.";
+                else if (!packIds.Add(pack.id))
+                    yield return $"lists Karma pack '{pack.id}' more than once.";
+                else if (pack.karma <= 0)
+                    yield return $"Karma pack '{pack.id}' gives no Karma.";
             }
 
             if (teamSizes.Count == 0)

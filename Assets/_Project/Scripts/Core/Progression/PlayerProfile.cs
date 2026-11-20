@@ -89,6 +89,15 @@ namespace NinjaRealm.Core.Progression
 
         /// <summary>The day the Shrine offers were rolled, as yyyy-MM-dd.</summary>
         public string shrineDate = string.Empty;
+
+        /// <summary>Karma the altar made before its runes last changed, waiting to be collected.</summary>
+        public int runeKarma;
+
+        /// <summary>Seconds since 1970 (UTC) from which the altar has been making Karma at its current rate. 0 until it starts.</summary>
+        public long runeKarmaSince;
+
+        /// <summary>Store transaction IDs already paid out, so one purchase never gives Karma twice.</summary>
+        public List<string> purchases = new List<string>();
     }
 
     /// <summary>A rune the player owns and its rank, 1 or more.</summary>

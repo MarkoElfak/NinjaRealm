@@ -42,7 +42,7 @@ namespace NinjaRealm.Core.Campaign
         [SerializeField, Range(1, 3)] int bossStars = 1;
 
         [Header("First clear, on top of the first-win Gold and weapon")]
-        [SerializeField, Min(0)] int firstClearKarma;
+        [SerializeField, Min(0), Tooltip("Bosses only: Karma comes from runes, bosses and purchases.")] int firstClearKarma;
 
         [SerializeField, Min(0)] int firstClearSteel;
 
@@ -80,6 +80,10 @@ namespace NinjaRealm.Core.Campaign
                 yield return "It has no lineup to fight.";
                 yield break;
             }
+
+            // Karma comes only from runes, bosses and purchases (see docs/BALANCE.md).
+            if (firstClearKarma > 0 && kind != StageKind.Boss)
+                yield return $"It pays {firstClearKarma} Karma on the first clear but isn't a boss. Only bosses pay Karma.";
 
             if (boss == null) yield break;
 

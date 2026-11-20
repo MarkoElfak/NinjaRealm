@@ -278,6 +278,27 @@
     white-space: normal;
 }
 
+.rune-rail__karma {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top-width: 1px;
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.rune-rail__karma-text {
+    font-size: 12px;
+    -unity-font-style: bold;
+    flex-shrink: 1;
+}
+
+.rune-rail__collect {
+    margin: 0;
+    flex-shrink: 0;
+}
+
 .rune-rail__hint {
     font-size: 11px;
     color: var(--muted);

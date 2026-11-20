@@ -358,7 +358,7 @@ namespace NinjaRealm.Tests
             Assert.AreEqual(WeaponTier.Component, rewards.Drop.Tier);
             Assert.AreEqual(500 + 290, Gold);
             Assert.AreEqual(5, Steel);
-            Assert.AreEqual(100 + 20, Karma, "the first clear of a chapter 1 stage pays 20 Karma");
+            Assert.AreEqual(100, Karma, "only a boss's first clear pays Karma");
             Assert.IsTrue(service.HasCleared(bandits));
 
             var again = service.ApplyStageResult(bandits, 3, 7);
@@ -395,7 +395,7 @@ namespace NinjaRealm.Tests
         }
 
         [Test]
-        public void ClanLevels_PayKarmaAndGrowTheTeam()
+        public void ClanLevels_GrowTheTeamButPayNoKarma()
         {
             // Already cleared, so the first clear's own Karma stays out of the count.
             var shogun = Stage("3_8");
@@ -409,7 +409,7 @@ namespace NinjaRealm.Tests
             }
 
             Assert.AreEqual(1, levels);
-            Assert.AreEqual(100 + progression.ClanLevelKarma(2), Karma);
+            Assert.AreEqual(100, Karma, "clan levels pay no Karma");
             Assert.AreEqual(4, service.TeamSize);
             Assert.AreEqual(4, rewards.TeamSizeAfter);
         }

@@ -86,7 +86,7 @@ namespace NinjaRealm.Tests
                 Assert.IsNotNull(stage.Lineup, stage.Id);
                 Assert.AreEqual(place == 8 ? StageKind.Boss : place == 4 ? StageKind.Elite : StageKind.Normal, stage.Kind, stage.Id);
                 Assert.AreEqual(Mathf.Min(5, i / 5 + 1), stage.RewardTier, stage.Id);
-                Assert.AreEqual(20 * (i / 8 + 1), stage.FirstClearKarma, stage.Id);
+                Assert.AreEqual(stage.Kind == StageKind.Boss ? 250 * (i / 8 + 1) : 0, stage.FirstClearKarma, stage.Id + ": only bosses pay Karma");
                 Assert.AreEqual(stage.Kind == StageKind.Elite, stage.FirstClearSteel > 0, stage.Id);
                 Assert.AreEqual(stage.Kind == StageKind.Boss, stage.FirstClearNinja != null, stage.Id);
                 Assert.AreEqual(stage.Kind == StageKind.Boss, stage.Boss != null, stage.Id);
@@ -247,7 +247,7 @@ namespace NinjaRealm.Tests
 
             var first = service.ApplyStageResult(elite, 2, 5);
             Assert.AreEqual(20, first.FirstClearSteel);
-            Assert.AreEqual(20, first.FirstClearKarma);
+            Assert.AreEqual(0, first.FirstClearKarma, "an elite pays no Karma");
             Assert.AreEqual(steelBefore + first.Steel + 20, Steel);
 
             var again = service.ApplyStageResult(elite, 2, 5);
@@ -327,10 +327,12 @@ namespace NinjaRealm.Tests
             var chapter = Chapter("bandit_hills");
             foreach (var stage in chapter.Stages) service.ApplyStageResult(stage, 3, 1);
             var karma = Karma;
+            var gold = Gold;
             var boots = database.Get<WeaponDefinition>("weapon.wind_boots");
 
             Assert.IsTrue(service.TryOpenChest(chapter, chapter.Chests[1], out _));
-            Assert.AreEqual(karma + 100, Karma);
+            Assert.AreEqual(gold + 500, Gold);
+            Assert.AreEqual(karma, Karma, "star chests hold no Karma");
             Assert.IsTrue(service.TryOpenChest(chapter, chapter.Chests[2], out var message));
             Assert.AreEqual(1, service.WeaponCount(boots));
             StringAssert.Contains("Wind Boots", message);

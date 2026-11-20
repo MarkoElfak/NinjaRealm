@@ -115,6 +115,7 @@ namespace NinjaRealm.Presentation
 
             root.Add(Altar(save, target));
             root.Add(GameUi.Label(RuneBonusText(save), "note", "wrap", "rune-bonus"));
+            root.Add(AltarKarma(save));
 
             var columns = GameUi.Element("columns", "rune-columns");
             columns.Add(RuneShop(save));
@@ -183,6 +184,40 @@ namespace NinjaRealm.Presentation
             return altar;
         }
 
+        /// <summary>What the altar's runes make in Karma, what is ready, and a button to collect it.</summary>
+        VisualElement AltarKarma(ProfileService save)
+        {
+            var now = DateTime.UtcNow;
+            var karma = save.Progression.Karma;
+            var hex = karma != null ? PrototypeGui.Hex(karma.Color) : "b38cff";
+            var row = GameUi.Element("section-row", "altar-karma");
+            var perHour = save.AltarKarmaPerHour;
+            var ready = save.PendingAltarKarma(now);
+            string line;
+            if (perHour <= 0)
+                line = "Every rune on the altar makes Karma, more for rarer runes and higher ranks. It's the main way to earn Karma.";
+            else
+            {
+                var toFull = save.AltarKarmaTimeToFull(now);
+                line = $"The altar makes <color=#{hex}><b>{perHour} Karma</b></color> an hour and holds up to {save.AltarKarmaCapacity}. " +
+                       (toFull > TimeSpan.Zero ? $"Full in {NinjaRealm.Presentation.Village.VillageScreen.Duration(toFull)}." : "It's full.");
+            }
+
+            row.Add(GameUi.Label(line, "note", "wrap", "altar-karma__text"));
+            var collect = GameUi.Button(ready > 0 ? $"Collect {ready} Karma" : "No Karma yet",
+                () => Did(save.TryCollectAltarKarma(DateTime.UtcNow, out var result), result), "button--small", "altar-karma__collect");
+            collect.SetEnabled(ready > 0);
+            row.Add(collect);
+            return row;
+        }
+
+        /// <summary>Karma a rune makes on the altar at a rank, such as ", 4 Karma an hour", or empty.</summary>
+        static string KarmaText(ProfileService save, RuneDefinition rune, int rank)
+        {
+            var perHour = save.RuneKarmaPerHour(rune, rank);
+            return perHour > 0 ? $", {perHour} Karma an hour" : string.Empty;
+        }
+
         /// <summary>"Your runes give: +5.5% Attack Damage. Fire ninjas: +8% Attack Damage." or how to start.</summary>
         static string RuneBonusText(ProfileService save)
         {
@@ -239,7 +274,7 @@ namespace NinjaRealm.Presentation
             var row = RuneRow(rune);
             var text = GameUi.Element("rune-row__text");
             text.Add(RuneName(rune));
-            text.Add(GameUi.Label(rune.Describe(1), "small", "wrap"));
+            text.Add(GameUi.Label(rune.Describe(1) + KarmaText(save, rune, 1), "small", "wrap"));
             row.Add(text);
 
             if (save.OwnsRune(rune))
@@ -278,9 +313,9 @@ namespace NinjaRealm.Presentation
                 var name = RuneName(rune);
                 name.Add(GameUi.Pips(rank, save.RuneMaxRank(rune)));
                 text.Add(name);
-                text.Add(GameUi.Label($"Rank {ProfileService.RomanRank(rank)}: {rune.Describe(rank)}", "small", "wrap"));
+                text.Add(GameUi.Label($"Rank {ProfileService.RomanRank(rank)}: {rune.Describe(rank)}{KarmaText(save, rune, rank)}", "small", "wrap"));
                 var cost = save.RuneRankCost(rune);
-                if (cost > 0) text.Add(GameUi.Label($"Rank {ProfileService.RomanRank(rank + 1)}: {rune.Describe(rank + 1)}", "small", "muted", "wrap"));
+                if (cost > 0) text.Add(GameUi.Label($"Rank {ProfileService.RomanRank(rank + 1)}: {rune.Describe(rank + 1)}{KarmaText(save, rune, rank + 1)}", "small", "muted", "wrap"));
                 row.Add(text);
 
                 var actions = GameUi.Element("rune-row__buttons");

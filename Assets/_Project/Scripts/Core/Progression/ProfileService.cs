@@ -40,7 +40,6 @@ namespace NinjaRealm.Core.Progression
 
         public WeaponDefinition Drop;
         public int ClanLevelsGained;
-        public int Karma;
         public int TeamSizeBefore;
         public int TeamSizeAfter;
     }
@@ -69,6 +68,12 @@ namespace NinjaRealm.Core.Progression
         const string DateFormat = "yyyy-MM-dd";
 
         readonly ISaveStorage storage;
+
+        /// <summary>
+        /// The time now, read when the altar's runes change so the Karma made at the old rate is
+        /// kept. Tests and the campaign walker set their own clock.
+        /// </summary>
+        public Func<DateTime> Clock { get; set; } = () => DateTime.UtcNow;
 
         public ProfileService(PlayerProfile profile, ContentDatabase content, ProgressionDefinition progression, ISaveStorage storage = null)
         {
@@ -198,6 +203,39 @@ namespace NinjaRealm.Core.Progression
             foreach (var amount in amounts)
                 if (amount?.resource != null && amount.amount > 0) Profile.wallet.Add(amount.resource, amount.amount);
             Save();
+        }
+
+        /// <summary>
+        /// Pays out a Karma pack bought with real money. The store (in-app purchases) calls it once
+        /// the payment is confirmed; the transaction ID makes a repeated call for the same
+        /// purchase give nothing, so a restored or replayed receipt is safe.
+        /// </summary>
+        public bool TryGrantKarmaPack(string packId, string transactionId, out string message)
+        {
+            var pack = Progression.KarmaPackFor(packId);
+            if (pack == null || pack.karma <= 0)
+            {
+                message = $"There's no Karma pack '{packId}'.";
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(transactionId))
+            {
+                message = "The purchase has no transaction ID.";
+                return false;
+            }
+
+            if (Profile.purchases.Contains(transactionId))
+            {
+                message = "That purchase was already paid out.";
+                return false;
+            }
+
+            Profile.purchases.Add(transactionId);
+            Profile.wallet.Add(Progression.Karma, pack.karma);
+            message = $"Added {pack.karma} {Name(Progression.Karma)}.";
+            Save();
+            return true;
         }
 
         // ---------------------------------------------------------------- ninjas
@@ -672,6 +710,7 @@ namespace NinjaRealm.Core.Progression
             var slot = Profile.runeSlots.IndexOf(string.Empty);
             if (slot >= 0 && CannotSetRune(slot, rune) == null)
             {
+                BankRuneKarma();
                 Profile.runeSlots[slot] = rune.Id;
                 message = $"You bought {rune.DisplayName} and set it on the altar.";
             }
@@ -705,6 +744,7 @@ namespace NinjaRealm.Core.Progression
 
             var owned = FindRune(rune);
             var cost = RuneRankCost(rune);
+            BankRuneKarma();
             Profile.wallet.TrySpend(Progression.Gold, cost);
             owned.rank++;
             owned.goldSpent += cost;
@@ -731,6 +771,7 @@ namespace NinjaRealm.Core.Progression
             }
 
             var refund = RuneSellValue(rune);
+            BankRuneKarma();
             Profile.runes.Remove(owned);
             for (var i = 0; i < Profile.runeSlots.Count; i++)
                 if (Profile.runeSlots[i] == rune.Id) Profile.runeSlots[i] = string.Empty;
@@ -792,7 +833,21 @@ namespace NinjaRealm.Core.Progression
             if (slot < 0 || slot >= RuneSlotsLit) return "That altar slot isn't lit yet.";
             if (rune == null) return "There's no rune there.";
             if (!OwnsRune(rune)) return $"You don't have {rune.DisplayName}.";
+            return AltarConflict(slot, rune);
+        }
 
+        /// <summary>True when the rune, owned or not, could go in one of the empty lit slots.</summary>
+        public bool FitsOnAltar(RuneDefinition rune)
+        {
+            if (rune == null) return false;
+            for (var i = 0; i < Profile.runeSlots.Count; i++)
+                if (string.IsNullOrEmpty(Profile.runeSlots[i]) && AltarConflict(i, rune) == null) return true;
+            return false;
+        }
+
+        /// <summary>Why the altar's other runes keep this rune out of this slot (a shared stat, too many Legendaries), or null.</summary>
+        string AltarConflict(int slot, RuneDefinition rune)
+        {
             var stats = rune.RaisedStats();
             var legendaries = rune.Rarity == Rarity.Legendary ? 1 : 0;
             for (var i = 0; i < Profile.runeSlots.Count; i++)
@@ -820,6 +875,7 @@ namespace NinjaRealm.Core.Progression
             message = CannotSetRune(slot, rune);
             if (message != null) return false;
 
+            BankRuneKarma();
             for (var i = 0; i < Profile.runeSlots.Count; i++)
                 if (Profile.runeSlots[i] == rune.Id) Profile.runeSlots[i] = string.Empty;
             Profile.runeSlots[slot] = rune.Id;
@@ -832,6 +888,7 @@ namespace NinjaRealm.Core.Progression
         public bool ClearRuneSlot(int slot)
         {
             if (slot < 0 || slot >= Profile.runeSlots.Count || string.IsNullOrEmpty(Profile.runeSlots[slot])) return false;
+            BankRuneKarma();
             Profile.runeSlots[slot] = string.Empty;
             Save();
             return true;
@@ -885,6 +942,100 @@ namespace NinjaRealm.Core.Progression
             var total = 0;
             foreach (var set in SetRunes()) total += Math.Max(0, of(set.Rune.Rank(set.Rank)));
             return total;
+        }
+
+        // The altar's Karma: every set rune makes some, by its rarity and rank, until the altar is full.
+
+        /// <summary>Karma the set runes make per hour, in basis points of one Karma.</summary>
+        long RuneKarmaRate()
+        {
+            long rate = 0;
+            foreach (var set in SetRunes()) rate += Progression.RuneKarmaPerHourBasisPoints(set.Rune.Rarity, set.Rank);
+            return rate;
+        }
+
+        /// <summary>Karma one rune makes per hour on the altar at this rank, rounded down.</summary>
+        public int RuneKarmaPerHour(RuneDefinition rune, int rank) =>
+            rune == null ? 0 : (int)(Progression.RuneKarmaPerHourBasisPoints(rune.Rarity, rank) / ProgressionDefinition.BasisPoints);
+
+        /// <summary>Karma all the set runes make per hour, rounded down.</summary>
+        public int AltarKarmaPerHour => (int)(RuneKarmaRate() / ProgressionDefinition.BasisPoints);
+
+        /// <summary>The most Karma the altar holds before it stops filling, at its current runes.</summary>
+        public int AltarKarmaCapacity => (int)(RuneKarmaRate() * Progression.RuneKarmaStorageHours / ProgressionDefinition.BasisPoints);
+
+        long AltarStorageSeconds => (long)Progression.RuneKarmaStorageHours * IncomeSource.SecondsPerHour;
+
+        /// <summary>Karma the altar has ready to collect.</summary>
+        public int PendingAltarKarma(DateTime now) => PendingAltarKarma(UnixSeconds(now));
+
+        int PendingAltarKarma(long now)
+        {
+            var banked = Math.Max(0, Profile.runeKarma);
+            if (Profile.runeKarmaSince <= 0) return banked;
+            var seconds = Math.Max(0L, Math.Min(now - Profile.runeKarmaSince, AltarStorageSeconds));
+            var made = RuneKarmaRate() * seconds / IncomeSource.SecondsPerHour / ProgressionDefinition.BasisPoints;
+            var room = Math.Max(0L, AltarKarmaCapacity - banked);
+            return banked + (int)Math.Min(made, room);
+        }
+
+        /// <summary>How long until the altar is full. Zero when it is full or makes nothing.</summary>
+        public TimeSpan AltarKarmaTimeToFull(DateTime now)
+        {
+            var rate = RuneKarmaRate();
+            var missing = AltarKarmaCapacity - PendingAltarKarma(now);
+            if (rate <= 0 || missing <= 0) return TimeSpan.Zero;
+            var seconds = ((long)missing * IncomeSource.SecondsPerHour * ProgressionDefinition.BasisPoints + rate - 1) / rate;
+            return TimeSpan.FromSeconds(Math.Min(seconds, AltarStorageSeconds));
+        }
+
+        /// <summary>
+        /// Keeps the Karma made so far at the old rate and starts counting again from now. Called
+        /// just before the altar's runes or ranks change, so a change never rewrites past hours.
+        /// </summary>
+        void BankRuneKarma()
+        {
+            var now = UnixSeconds(Clock());
+            Profile.runeKarma = PendingAltarKarma(now);
+            Profile.runeKarmaSince = now;
+        }
+
+        /// <summary>Starts the altar's clock if it isn't running yet, or restarts it when the clock went back.</summary>
+        bool StartAltarKarma(long now)
+        {
+            if (Profile.runeKarmaSince > 0 && Profile.runeKarmaSince <= now) return false;
+            Profile.runeKarmaSince = now;
+            return true;
+        }
+
+        /// <summary>Moves the altar's Karma into the wallet. The part-made Karma is kept, as with the Mint.</summary>
+        public bool TryCollectAltarKarma(DateTime now, out string message)
+        {
+            var seconds = UnixSeconds(now);
+            var amount = PendingAltarKarma(seconds);
+            if (amount <= 0)
+            {
+                StartAltarKarma(seconds);
+                message = SetRunes().Count == 0 ? "Set a rune on the altar to make Karma." : $"No {Name(Progression.Karma)} to collect yet.";
+                return false;
+            }
+
+            var rate = RuneKarmaRate();
+            var leftover = 0L;
+            if (rate > 0 && Profile.runeKarmaSince > 0 && amount < AltarKarmaCapacity)
+            {
+                var worked = Math.Max(0L, Math.Min(seconds - Profile.runeKarmaSince, AltarStorageSeconds));
+                var made = (long)(amount - Math.Max(0, Profile.runeKarma));
+                var used = (made * IncomeSource.SecondsPerHour * ProgressionDefinition.BasisPoints + rate - 1) / rate;
+                leftover = Math.Max(0L, worked - used);
+            }
+
+            Profile.runeKarma = 0;
+            Profile.runeKarmaSince = seconds - leftover;
+            Profile.wallet.Add(Progression.Karma, amount);
+            message = $"Collected {amount} {Name(Progression.Karma)} from the altar.";
+            Save();
+            return true;
         }
 
         static int WithBonus(int amount, int bonusBasisPoints) =>
@@ -1024,6 +1175,10 @@ namespace NinjaRealm.Core.Progression
             for (var i = 0; i < profile.shrineOffers.Count; i++)
                 if (!Content.TryGet<RuneDefinition>(profile.shrineOffers[i], out _)) profile.shrineOffers[i] = string.Empty;
             profile.shrineDate ??= string.Empty;
+            profile.runeKarma = Math.Max(0, profile.runeKarma);
+            profile.runeKarmaSince = Math.Max(0L, profile.runeKarmaSince);
+            profile.purchases ??= new List<string>();
+            profile.purchases.RemoveAll(string.IsNullOrEmpty);
         }
 
         // ---------------------------------------------------------------- clan
@@ -1095,9 +1250,8 @@ namespace NinjaRealm.Core.Progression
 
         /// <summary>
         /// Pays for a finished fight on a stage. Every fight pays Gold, Steel and clan XP by the
-        /// stage's reward tier, a win has a chance of a weapon component, and each clan level
-        /// reached pays Karma. The first clear adds bonus Gold, a certain component and the
-        /// stage's own Karma, Steel and ninja. <paramref name="stars"/> is 0 for a loss; the best
+        /// stage's reward tier, and a win has a chance of a weapon component. The first clear adds
+        /// bonus Gold, a certain component and the stage's own Karma (bosses only), Steel and ninja. <paramref name="stars"/> is 0 for a loss; the best
         /// stars are kept. The seed makes the drop the same every time for the same fight.
         /// </summary>
         public FightRewards ApplyStageResult(StageDefinition stage, int stars, int seed)
@@ -1153,10 +1307,9 @@ namespace NinjaRealm.Core.Progression
                 Profile.clanXp -= Progression.ClanXpToNext(Profile.clanLevel);
                 Profile.clanLevel++;
                 rewards.ClanLevelsGained++;
-                rewards.Karma += Progression.ClanLevelKarma(Profile.clanLevel);
             }
 
-            Profile.wallet.Add(Progression.Karma, rewards.Karma + rewards.FirstClearKarma);
+            Profile.wallet.Add(Progression.Karma, rewards.FirstClearKarma);
             rewards.TeamSizeAfter = TeamSize;
             Save();
             return rewards;
@@ -1200,7 +1353,6 @@ namespace NinjaRealm.Core.Progression
             Profile.chests.Add(new OpenedChest { chapter = chapter.Id, stars = chest.stars });
             Profile.wallet.Add(Progression.Gold, chest.gold);
             Profile.wallet.Add(Progression.Steel, chest.steel);
-            Profile.wallet.Add(Progression.Karma, chest.karma);
             if (chest.weapon != null) AddWeapon(Profile, chest.weapon.Id, 1);
             message = $"The chest held {ChestContents(chest)}.";
             Save();
@@ -1214,7 +1366,6 @@ namespace NinjaRealm.Core.Progression
             if (chest == null) return string.Empty;
             if (chest.gold > 0) parts.Add($"{chest.gold} {Name(Progression.Gold)}");
             if (chest.steel > 0) parts.Add($"{chest.steel} {Name(Progression.Steel)}");
-            if (chest.karma > 0) parts.Add($"{chest.karma} {Name(Progression.Karma)}");
             if (chest.weapon != null) parts.Add(chest.weapon.DisplayName);
             if (parts.Count == 0) return "nothing";
             if (parts.Count == 1) return parts[0];
@@ -1240,13 +1391,13 @@ namespace NinjaRealm.Core.Progression
 
         /// <summary>
         /// Starts every income source that isn't running yet, with one hour already worked so
-        /// there is something to collect on the first visit. Call when the village opens.
+        /// there is something to collect on the first visit, and the altar's Karma. Call when the village opens.
         /// Returns true if anything changed.
         /// </summary>
         public bool StartIncome(DateTime now)
         {
             var seconds = UnixSeconds(now);
-            var changed = false;
+            var changed = StartAltarKarma(seconds);
             foreach (var income in Progression.Incomes)
             {
                 if (income == null || string.IsNullOrEmpty(income.id)) continue;

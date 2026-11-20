@@ -15,12 +15,11 @@ namespace NinjaRealm.Core.Campaign
 
         [Min(0)] public int gold;
         [Min(0)] public int steel;
-        [Min(0)] public int karma;
 
         [Tooltip("Optional weapon inside the chest.")]
         public WeaponDefinition weapon;
 
-        public bool IsEmpty => gold <= 0 && steel <= 0 && karma <= 0 && weapon == null;
+        public bool IsEmpty => gold <= 0 && steel <= 0 && weapon == null;
     }
 
     /// <summary>

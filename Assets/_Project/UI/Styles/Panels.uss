@@ -479,3 +479,21 @@
 .rune-subtitle {
     margin-top: 8px;
 }
+
+/* The altar's Karma under the rune bonus line */
+
+.altar-karma {
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.altar-karma__text {
+    flex-shrink: 1;
+    flex-grow: 1;
+    margin-right: 8px;
+}
+
+.altar-karma__collect {
+    flex-shrink: 0;
+}
