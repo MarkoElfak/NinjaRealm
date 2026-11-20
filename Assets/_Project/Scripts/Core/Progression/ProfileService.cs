@@ -5,6 +5,7 @@ using NinjaRealm.Combat;
 using NinjaRealm.Core.Campaign;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
+using NinjaRealm.Core.Definitions.Effects;
 using NinjaRealm.Core.Lineups;
 
 namespace NinjaRealm.Core.Progression
@@ -44,9 +45,22 @@ namespace NinjaRealm.Core.Progression
         public int TeamSizeAfter;
     }
 
+    /// <summary>A rune set on the altar and the rank it fights at.</summary>
+    public readonly struct SetRune
+    {
+        public readonly RuneDefinition Rune;
+        public readonly int Rank;
+
+        public SetRune(RuneDefinition rune, int rank)
+        {
+            Rune = rune;
+            Rank = rank;
+        }
+    }
+
     /// <summary>
     /// The player's progress: owning, levelling and starring ninjas, the Dojo, the weapon
-    /// inventory and forging, fight rewards and clan levels. Every change checks its cost first,
+    /// inventory and forging, the Shrine's runes, fight rewards and clan levels. Every change checks its cost first,
     /// changes the <see cref="PlayerProfile"/>, then saves. Methods that can be refused return
     /// false with a message saying why; on success the message says what happened.
     /// </summary>
@@ -546,6 +560,472 @@ namespace NinjaRealm.Core.Progression
             if (amount > 0) profile.weapons.Add(new OwnedWeapon { id = id, count = amount });
         }
 
+        // ---------------------------------------------------------------- runes (the Shrine)
+
+        /// <summary>Every rune in the content, by rarity then ID.</summary>
+        public List<RuneDefinition> AllRunes()
+        {
+            var runes = new List<RuneDefinition>(Content.GetAll<RuneDefinition>());
+            runes.Sort((a, b) => a.Rarity != b.Rarity ? a.Rarity.CompareTo(b.Rarity) : string.CompareOrdinal(a.Id, b.Id));
+            return runes;
+        }
+
+        public OwnedRune FindRune(RuneDefinition rune)
+        {
+            if (rune == null) return null;
+            foreach (var entry in Profile.runes)
+                if (entry.id == rune.Id) return entry;
+            return null;
+        }
+
+        public bool OwnsRune(RuneDefinition rune) => FindRune(rune) != null;
+
+        /// <summary>The rune's rank, or 0 when it isn't owned.</summary>
+        public int RuneRankOf(RuneDefinition rune) => FindRune(rune)?.rank ?? 0;
+
+        /// <summary>Owned runes whose content exists, by rarity then ID.</summary>
+        public List<RuneDefinition> OwnedRunes()
+        {
+            var owned = new List<RuneDefinition>();
+            foreach (var rune in AllRunes())
+                if (OwnsRune(rune)) owned.Add(rune);
+            return owned;
+        }
+
+        /// <summary>The highest rank a rune can reach: its own ranks, cut to the price list.</summary>
+        public int RuneMaxRank(RuneDefinition rune) => rune == null ? 0 : Math.Min(rune.MaxRank, Progression.MaxRuneRank);
+
+        /// <summary>True when the rune is the Seal of the clan's home village element, which is cheaper.</summary>
+        public bool IsHomeSeal(RuneDefinition rune) =>
+            rune != null && rune.Element != null && HomeVillage != null && HomeVillage.element == rune.Element;
+
+        /// <summary>Gold to buy a rune at rank I, or -1 when its rarity has no price.</summary>
+        public int RunePrice(RuneDefinition rune)
+        {
+            var offer = rune != null ? Progression.RuneOfferFor(rune.Rarity) : null;
+            return offer == null ? -1 : Discounted(rune, offer.price);
+        }
+
+        /// <summary>Karma to buy a rune, on top of its Gold.</summary>
+        public int RuneKarmaPrice(RuneDefinition rune) => rune != null ? Progression.RuneOfferFor(rune.Rarity)?.karma ?? 0 : 0;
+
+        /// <summary>Gold to raise an owned rune to its next rank, or -1 when it isn't owned or is at its top rank.</summary>
+        public int RuneRankCost(RuneDefinition rune)
+        {
+            var owned = FindRune(rune);
+            var offer = rune != null ? Progression.RuneOfferFor(rune.Rarity) : null;
+            if (owned == null || offer == null || owned.rank >= RuneMaxRank(rune)) return -1;
+            var share = Progression.RuneRankCostBasisPoints(owned.rank + 1);
+            return share < 0 ? -1 : Discounted(rune, (int)((long)offer.price * share / ProgressionDefinition.BasisPoints));
+        }
+
+        int Discounted(RuneDefinition rune, int gold) =>
+            IsHomeSeal(rune) ? (int)((long)gold * Progression.HomeSealPrice / ProgressionDefinition.BasisPoints) : gold;
+
+        /// <summary>Why the player can't buy this rune right now, or null if they can.</summary>
+        public string CannotBuyRune(RuneDefinition rune)
+        {
+            if (rune == null) return "There's no rune there.";
+            if (OwnsRune(rune)) return $"You already have {rune.DisplayName}. Rank it up instead.";
+            var price = RunePrice(rune);
+            if (price < 0) return $"{rune.Rarity} runes aren't for sale.";
+            if (!Profile.wallet.CanAfford(Progression.Gold, price))
+                return $"{rune.DisplayName} costs {price} {Name(Progression.Gold)}. You have {Balance(Progression.Gold)}.";
+            var karma = RuneKarmaPrice(rune);
+            if (!Profile.wallet.CanAfford(Progression.Karma, karma))
+                return $"{rune.DisplayName} also costs {karma} {Name(Progression.Karma)}. You have {Balance(Progression.Karma)}.";
+            return null;
+        }
+
+        /// <summary>True when a rune can be bought straight from the Shrine's list, not only from the daily offer.</summary>
+        public bool AlwaysForSale(RuneDefinition rune) => rune != null && (Progression.RuneOfferFor(rune.Rarity)?.alwaysForSale ?? false);
+
+        /// <summary>The runes always for sale, by rarity then ID.</summary>
+        public List<RuneDefinition> RunesForSale()
+        {
+            var runes = new List<RuneDefinition>();
+            foreach (var rune in AllRunes())
+                if (AlwaysForSale(rune)) runes.Add(rune);
+            return runes;
+        }
+
+        /// <summary>Buys a rune at rank I. It must be always for sale or in today's offer.</summary>
+        public bool TryBuyRune(RuneDefinition rune, out string message)
+        {
+            var offered = rune != null && Profile.shrineOffers.Contains(rune.Id);
+            if (rune != null && !offered && !AlwaysForSale(rune))
+            {
+                message = $"{rune.DisplayName} isn't in the Shrine today.";
+                return false;
+            }
+
+            message = CannotBuyRune(rune);
+            if (message != null) return false;
+
+            var price = RunePrice(rune);
+            Profile.wallet.TrySpend(Progression.Gold, price);
+            Profile.wallet.TrySpend(Progression.Karma, RuneKarmaPrice(rune));
+            Profile.runes.Add(new OwnedRune { id = rune.Id, rank = 1, goldSpent = price });
+            for (var i = 0; i < Profile.shrineOffers.Count; i++)
+                if (Profile.shrineOffers[i] == rune.Id) Profile.shrineOffers[i] = string.Empty;
+
+            var slot = Profile.runeSlots.IndexOf(string.Empty);
+            if (slot >= 0 && CannotSetRune(slot, rune) == null)
+            {
+                Profile.runeSlots[slot] = rune.Id;
+                message = $"You bought {rune.DisplayName} and set it on the altar.";
+            }
+            else
+            {
+                message = $"You bought {rune.DisplayName}.";
+            }
+
+            Save();
+            return true;
+        }
+
+        /// <summary>Why this rune can't rank up right now, or null if it can.</summary>
+        public string CannotRankUpRune(RuneDefinition rune)
+        {
+            var owned = FindRune(rune);
+            if (owned == null) return rune != null ? $"You don't have {rune.DisplayName}." : "There's no rune there.";
+            if (owned.rank >= RuneMaxRank(rune)) return $"{rune.DisplayName} is at its top rank.";
+            var needed = Progression.RuneRankClanLevel(owned.rank + 1);
+            if (ClanLevel < needed) return $"Rank {RomanRank(owned.rank + 1)} needs clan level {needed}.";
+            var cost = RuneRankCost(rune);
+            if (!Profile.wallet.CanAfford(Progression.Gold, cost))
+                return $"Rank {RomanRank(owned.rank + 1)} costs {cost} {Name(Progression.Gold)}. You have {Balance(Progression.Gold)}.";
+            return null;
+        }
+
+        public bool TryRankUpRune(RuneDefinition rune, out string message)
+        {
+            message = CannotRankUpRune(rune);
+            if (message != null) return false;
+
+            var owned = FindRune(rune);
+            var cost = RuneRankCost(rune);
+            Profile.wallet.TrySpend(Progression.Gold, cost);
+            owned.rank++;
+            owned.goldSpent += cost;
+            message = $"{rune.DisplayName} rose to rank {RomanRank(owned.rank)}.";
+            Save();
+            return true;
+        }
+
+        /// <summary>Gold selling this rune returns.</summary>
+        public int RuneSellValue(RuneDefinition rune)
+        {
+            var owned = FindRune(rune);
+            return owned == null ? 0 : (int)((long)owned.goldSpent * Progression.RuneSellRefund / ProgressionDefinition.BasisPoints);
+        }
+
+        /// <summary>Gives a rune back to the Shrine for part of the Gold spent on it. It leaves the altar.</summary>
+        public bool TrySellRune(RuneDefinition rune, out string message)
+        {
+            var owned = FindRune(rune);
+            if (owned == null)
+            {
+                message = rune != null ? $"You don't have {rune.DisplayName}." : "There's no rune there.";
+                return false;
+            }
+
+            var refund = RuneSellValue(rune);
+            Profile.runes.Remove(owned);
+            for (var i = 0; i < Profile.runeSlots.Count; i++)
+                if (Profile.runeSlots[i] == rune.Id) Profile.runeSlots[i] = string.Empty;
+            Profile.wallet.Add(Progression.Gold, refund);
+            message = $"You gave {rune.DisplayName} back to the Shrine for {refund} {Name(Progression.Gold)}.";
+            Save();
+            return true;
+        }
+
+        // The altar's slots.
+
+        /// <summary>Slots lit so far. Runes can only be set in lit slots.</summary>
+        public int RuneSlotsLit => Profile.runeSlots.Count;
+
+        /// <summary>Slots the clan level has opened, lit or not.</summary>
+        public int RuneSlotsOpen => Math.Min(Progression.RuneSlots.Count, Progression.RuneSlotsOpen(ClanLevel));
+
+        /// <summary>Every slot the altar has.</summary>
+        public int RuneSlotCount => Progression.RuneSlots.Count;
+
+        /// <summary>The next slot to light, or null when every slot is lit.</summary>
+        public ProgressionDefinition.RuneSlotStep NextRuneSlot =>
+            RuneSlotsLit < Progression.RuneSlots.Count ? Progression.RuneSlots[RuneSlotsLit] : null;
+
+        /// <summary>Why the next slot can't be lit right now, or null if it can.</summary>
+        public string CannotLightRuneSlot()
+        {
+            var next = NextRuneSlot;
+            if (next == null) return "Every altar slot is lit.";
+            if (ClanLevel < next.clanLevel) return $"The next slot opens at clan level {next.clanLevel}.";
+            if (!Profile.wallet.CanAfford(Progression.Karma, next.karma))
+                return $"Lighting the slot costs {next.karma} {Name(Progression.Karma)}. You have {Balance(Progression.Karma)}.";
+            return null;
+        }
+
+        public bool TryLightRuneSlot(out string message)
+        {
+            message = CannotLightRuneSlot();
+            if (message != null) return false;
+
+            Profile.wallet.TrySpend(Progression.Karma, NextRuneSlot.karma);
+            Profile.runeSlots.Add(string.Empty);
+            message = $"Altar slot {RuneSlotsLit} is lit.";
+            Save();
+            return true;
+        }
+
+        /// <summary>The rune in a lit slot, or null.</summary>
+        public RuneDefinition RuneInSlot(int slot) =>
+            slot >= 0 && slot < Profile.runeSlots.Count && Content.TryGet<RuneDefinition>(Profile.runeSlots[slot], out var rune) ? rune : null;
+
+        /// <summary>
+        /// Why this rune can't go in this slot, or null if it can. A rune already in another slot
+        /// moves. Two set runes covering the same ninjas may not raise the same stat, and only so
+        /// many Legendaries fit.
+        /// </summary>
+        public string CannotSetRune(int slot, RuneDefinition rune)
+        {
+            if (slot < 0 || slot >= RuneSlotsLit) return "That altar slot isn't lit yet.";
+            if (rune == null) return "There's no rune there.";
+            if (!OwnsRune(rune)) return $"You don't have {rune.DisplayName}.";
+
+            var stats = rune.RaisedStats();
+            var legendaries = rune.Rarity == Rarity.Legendary ? 1 : 0;
+            for (var i = 0; i < Profile.runeSlots.Count; i++)
+            {
+                if (i == slot) continue;
+                var other = RuneInSlot(i);
+                if (other == null || other == rune) continue;
+                if (other.Rarity == Rarity.Legendary) legendaries++;
+
+                // A Seal only covers its element's ninjas, so it may raise the same stat as a rune for everyone.
+                if (other.Element != rune.Element) continue;
+                foreach (var stat in other.RaisedStats())
+                    if (stats.Contains(stat))
+                        return $"{other.DisplayName} already raises that stat. Two runes can't raise the same one.";
+            }
+
+            if (rune.Rarity == Rarity.Legendary && legendaries > Progression.MaxLegendaryRunes)
+                return Progression.MaxLegendaryRunes == 1 ? "Only one Legendary rune fits on the altar." : $"Only {Progression.MaxLegendaryRunes} Legendary runes fit on the altar.";
+            return null;
+        }
+
+        /// <summary>Sets a rune in a lit slot, replacing what was there. A rune already set elsewhere moves.</summary>
+        public bool TrySetRune(int slot, RuneDefinition rune, out string message)
+        {
+            message = CannotSetRune(slot, rune);
+            if (message != null) return false;
+
+            for (var i = 0; i < Profile.runeSlots.Count; i++)
+                if (Profile.runeSlots[i] == rune.Id) Profile.runeSlots[i] = string.Empty;
+            Profile.runeSlots[slot] = rune.Id;
+            message = $"{rune.DisplayName} is set on the altar.";
+            Save();
+            return true;
+        }
+
+        /// <summary>Takes the rune out of a slot. It stays yours.</summary>
+        public bool ClearRuneSlot(int slot)
+        {
+            if (slot < 0 || slot >= Profile.runeSlots.Count || string.IsNullOrEmpty(Profile.runeSlots[slot])) return false;
+            Profile.runeSlots[slot] = string.Empty;
+            Save();
+            return true;
+        }
+
+        /// <summary>The slot a rune is set in, or -1.</summary>
+        public int SlotOfRune(RuneDefinition rune) => rune != null ? Profile.runeSlots.IndexOf(rune.Id) : -1;
+
+        /// <summary>The runes set on the altar with their ranks, in slot order.</summary>
+        public List<SetRune> SetRunes()
+        {
+            var set = new List<SetRune>();
+            for (var i = 0; i < Profile.runeSlots.Count; i++)
+            {
+                var rune = RuneInSlot(i);
+                var owned = FindRune(rune);
+                if (rune != null && owned != null) set.Add(new SetRune(rune, Math.Min(owned.rank, rune.MaxRank)));
+            }
+
+            return set;
+        }
+
+        /// <summary>
+        /// The passives the set runes give one of the player's ninjas, in slot order. Pass it to
+        /// <see cref="Fights.CombatSetupBuilder.AddLineup"/> for the player's team.
+        /// </summary>
+        public List<PassiveEffect> RunePassives(NinjaDefinition ninja)
+        {
+            var effects = new List<PassiveEffect>();
+            foreach (var set in SetRunes())
+            {
+                if (!set.Rune.Covers(ninja)) continue;
+                foreach (var effect in set.Rune.Rank(set.Rank).effects)
+                    if (effect != null) effects.Add(effect);
+            }
+
+            return effects;
+        }
+
+        /// <summary>Extra Gold from fights the set runes give, in basis points.</summary>
+        public int RuneFightGoldBonus => RuneBonus(rank => rank.fightGold);
+
+        /// <summary>Extra clan XP from fights the set runes give, in basis points.</summary>
+        public int RuneClanXpBonus => RuneBonus(rank => rank.clanXp);
+
+        /// <summary>Extra Mint and Steel Mine output the set runes give, in basis points.</summary>
+        public int RuneIncomeBonus => RuneBonus(rank => rank.income);
+
+        int RuneBonus(Func<RuneRank, int> of)
+        {
+            var total = 0;
+            foreach (var set in SetRunes()) total += Math.Max(0, of(set.Rune.Rank(set.Rank)));
+            return total;
+        }
+
+        static int WithBonus(int amount, int bonusBasisPoints) =>
+            bonusBasisPoints <= 0 ? amount : (int)((long)amount * (ProgressionDefinition.BasisPoints + bonusBasisPoints) / ProgressionDefinition.BasisPoints);
+
+        // The daily offer.
+
+        /// <summary>The Shrine's offers. Null entries were bought already.</summary>
+        public List<RuneDefinition> ShrineOffers()
+        {
+            var offers = new List<RuneDefinition>();
+            foreach (var id in Profile.shrineOffers)
+                offers.Add(!string.IsNullOrEmpty(id) && Content.TryGet<RuneDefinition>(id, out var rune) ? rune : null);
+            return offers;
+        }
+
+        /// <summary>Rolls new Shrine offers for free when the day has changed since the last roll.</summary>
+        public bool RefreshShrineIfNewDay(DateTime today)
+        {
+            var date = today.ToString(DateFormat, CultureInfo.InvariantCulture);
+            if (Profile.shrineDate == date && Profile.shrineOffers.Count == Progression.ShrineOfferCount) return false;
+            RollShrine();
+            Profile.shrineDate = date;
+            Save();
+            return true;
+        }
+
+        public bool TryRefreshShrine(out string message)
+        {
+            var cost = Progression.ShrineRefreshCost;
+            if (!Profile.wallet.TrySpend(Progression.Gold, cost))
+            {
+                message = $"New runes cost {cost} {Name(Progression.Gold)}.";
+                return false;
+            }
+
+            RollShrine();
+            message = "The Shrine has new runes.";
+            Save();
+            return true;
+        }
+
+        /// <summary>Picks the offers: a rarity by weight, then a rune of that rarity the player doesn't own. Each rune at most once a roll.</summary>
+        void RollShrine()
+        {
+            var byRarity = new Dictionary<Rarity, List<RuneDefinition>>();
+            foreach (var rune in AllRunes())
+            {
+                if (OwnsRune(rune) || RunePrice(rune) < 0) continue;
+                if (!byRarity.TryGetValue(rune.Rarity, out var list)) byRarity[rune.Rarity] = list = new List<RuneDefinition>();
+                list.Add(rune);
+            }
+
+            var random = NextRandom();
+            Profile.shrineOffers.Clear();
+            for (var i = 0; i < Progression.ShrineOfferCount; i++)
+            {
+                var choices = new List<ProgressionDefinition.RuneOffer>();
+                var totalWeight = 0;
+                foreach (var offer in Progression.RuneOffers)
+                {
+                    if (offer == null || offer.weight <= 0 || !byRarity.TryGetValue(offer.rarity, out var left) || left.Count == 0) continue;
+                    choices.Add(offer);
+                    totalWeight += offer.weight;
+                }
+
+                if (totalWeight <= 0)
+                {
+                    Profile.shrineOffers.Add(string.Empty);
+                    continue;
+                }
+
+                var roll = random.Range(0, totalWeight);
+                var chosen = choices[choices.Count - 1];
+                foreach (var choice in choices)
+                {
+                    if (roll < choice.weight)
+                    {
+                        chosen = choice;
+                        break;
+                    }
+
+                    roll -= choice.weight;
+                }
+
+                var pool = byRarity[chosen.rarity];
+                var pick = random.Range(0, pool.Count);
+                Profile.shrineOffers.Add(pool[pick].Id);
+                pool.RemoveAt(pick);
+            }
+        }
+
+        /// <summary>A rank as a Roman numeral, I to X.</summary>
+        public static string RomanRank(int rank)
+        {
+            string[] numerals = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X" };
+            return rank >= 1 && rank <= numerals.Length ? numerals[rank - 1] : rank.ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>Drops unknown or duplicate runes, keeps ranks in range, keeps the altar to its slots and its rules, and lights the free slots.</summary>
+        void CleanRunes()
+        {
+            var profile = Profile;
+            profile.runes ??= new List<OwnedRune>();
+            var seen = new HashSet<string>();
+            profile.runes.RemoveAll(r => r == null || !Content.TryGet<RuneDefinition>(r.id, out _) || !seen.Add(r.id));
+            foreach (var owned in profile.runes)
+            {
+                var rune = Content.Get<RuneDefinition>(owned.id);
+                owned.rank = Math.Max(1, Math.Min(Math.Max(1, RuneMaxRank(rune)), owned.rank));
+                owned.goldSpent = Math.Max(0, owned.goldSpent);
+            }
+
+            profile.runeSlots ??= new List<string>();
+            if (profile.runeSlots.Count > Progression.RuneSlots.Count)
+                profile.runeSlots.RemoveRange(Progression.RuneSlots.Count, profile.runeSlots.Count - Progression.RuneSlots.Count);
+
+            // Light every open slot that costs nothing, so a new or older save starts with one.
+            while (profile.runeSlots.Count < Progression.RuneSlots.Count)
+            {
+                var next = Progression.RuneSlots[profile.runeSlots.Count];
+                if (next == null || next.karma > 0 || profile.clanLevel < next.clanLevel) break;
+                profile.runeSlots.Add(string.Empty);
+            }
+
+            // Keep only runes that are owned, set once, and allowed beside the ones before them.
+            var placed = new List<string>(profile.runeSlots);
+            for (var i = 0; i < profile.runeSlots.Count; i++) profile.runeSlots[i] = string.Empty;
+            for (var i = 0; i < placed.Count; i++)
+            {
+                if (string.IsNullOrEmpty(placed[i]) || !Content.TryGet<RuneDefinition>(placed[i], out var rune)) continue;
+                if (profile.runeSlots.Contains(rune.Id) || CannotSetRune(i, rune) != null) continue;
+                profile.runeSlots[i] = rune.Id;
+            }
+
+            profile.shrineOffers ??= new List<string>();
+            for (var i = 0; i < profile.shrineOffers.Count; i++)
+                if (!Content.TryGet<RuneDefinition>(profile.shrineOffers[i], out _)) profile.shrineOffers[i] = string.Empty;
+            profile.shrineDate ??= string.Empty;
+        }
+
         // ---------------------------------------------------------------- clan
 
         public int ClanLevel => Profile.clanLevel;
@@ -627,6 +1107,8 @@ namespace NinjaRealm.Core.Progression
             var tier = stage != null ? stage.RewardTier : 1;
             var rewards = new FightRewards { Won = won, Stars = stars, TeamSizeBefore = TeamSize };
             Progression.FightPay(tier, won, out rewards.Gold, out rewards.Steel, out rewards.ClanXp);
+            rewards.Gold = WithBonus(rewards.Gold, RuneFightGoldBonus);
+            rewards.ClanXp = WithBonus(rewards.ClanXp, RuneClanXpBonus);
 
             var random = new DeterministicRandom(unchecked((ulong)(uint)seed * 0x2545F4914F6CDD1DUL + 0x5EED));
             if (won)
@@ -792,14 +1274,14 @@ namespace NinjaRealm.Core.Progression
             var income = Progression.Income(id);
             var timer = Timer(id);
             if (income == null || timer == null) return 0;
-            return income.Made(UnixSeconds(now) - timer.collectedAt, ClanLevel);
+            return income.Made(UnixSeconds(now) - timer.collectedAt, ClanLevel, RuneIncomeBonus);
         }
 
         /// <summary>What an income source makes per hour at the player's clan level.</summary>
-        public int IncomePerHour(string id) => Progression.Income(id)?.PerHour(ClanLevel) ?? 0;
+        public int IncomePerHour(string id) => Progression.Income(id)?.PerHour(ClanLevel, RuneIncomeBonus) ?? 0;
 
         /// <summary>The most an income source holds at the player's clan level.</summary>
-        public int IncomeCapacity(string id) => Progression.Income(id)?.Capacity(ClanLevel) ?? 0;
+        public int IncomeCapacity(string id) => Progression.Income(id)?.Capacity(ClanLevel, RuneIncomeBonus) ?? 0;
 
         /// <summary>How long until an income source is full. Zero when it is full or doesn't exist.</summary>
         public TimeSpan IncomeTimeToFull(string id, DateTime now)
@@ -825,7 +1307,7 @@ namespace NinjaRealm.Core.Progression
             var timer = Timer(id);
             var seconds = UnixSeconds(now);
             var worked = Math.Max(0L, seconds - timer.collectedAt);
-            var amount = income.Made(worked, ClanLevel);
+            var amount = income.Made(worked, ClanLevel, RuneIncomeBonus);
             if (amount <= 0)
             {
                 message = $"No {Name(income.resource)} to collect yet.";
@@ -833,7 +1315,7 @@ namespace NinjaRealm.Core.Progression
             }
 
             // Below a full store, keep the seconds that haven't made a whole unit yet.
-            var perHour = income.PerHour(ClanLevel);
+            var perHour = income.PerHour(ClanLevel, RuneIncomeBonus);
             var leftover = 0L;
             if (worked < income.StorageSeconds && perHour > 0)
                 leftover = Math.Max(0L, worked - ((long)amount * IncomeSource.SecondsPerHour + perHour - 1) / perHour);
@@ -964,6 +1446,8 @@ namespace NinjaRealm.Core.Progression
             profile.incomes ??= new List<IncomeTimer>();
             var seenIncomes = new HashSet<string>();
             profile.incomes.RemoveAll(timer => timer == null || Progression.Income(timer.id) == null || !seenIncomes.Add(timer.id));
+
+            CleanRunes();
         }
 
         static bool HasChest(ChapterDefinition chapter, int stars)

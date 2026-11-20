@@ -43,6 +43,44 @@ namespace NinjaRealm.Core.Progression
         }
 
         [Serializable]
+        public sealed class RuneOffer
+        {
+            public Rarity rarity;
+
+            [Tooltip("Relative chance of this rarity in the Shrine's daily offer.")]
+            public int weight;
+
+            [Tooltip("Gold to buy a rune of this rarity at rank I.")]
+            public int price;
+
+            [Tooltip("Karma to buy a rune of this rarity, on top of the Gold.")]
+            public int karma;
+
+            [Tooltip("Always for sale in the Shrine's list, not only in the daily offer.")]
+            public bool alwaysForSale;
+        }
+
+        [Serializable]
+        public sealed class RuneSlotStep
+        {
+            [Tooltip("The clan level that opens this altar slot.")]
+            public int clanLevel = 1;
+
+            [Tooltip("Karma to light the slot once it is open. 0 lights it for free.")]
+            public int karma;
+        }
+
+        [Serializable]
+        public sealed class RuneRankStep
+        {
+            [Tooltip("Share of the rune's Gold price to reach this rank from the one before, in basis points.")]
+            public int costBasisPoints = BasisPoints;
+
+            [Tooltip("The clan level this rank needs.")]
+            public int clanLevel = 1;
+        }
+
+        [Serializable]
         public sealed class TeamSizeStep
         {
             public int clanLevel = 1;
@@ -111,6 +149,26 @@ namespace NinjaRealm.Core.Progression
         [SerializeField, Tooltip("Buildings that make a resource over time, such as the Mint.")]
         internal List<IncomeSource> incomes = new List<IncomeSource>();
 
+        [Header("Runes (the Shrine)")]
+        [SerializeField, Tooltip("The altar's slots in order: the clan level that opens each and the Karma to light it.")]
+        internal List<RuneSlotStep> runeSlots = new List<RuneSlotStep>();
+
+        [SerializeField, Tooltip("Ranks II and up: what each costs and the clan level it needs. Rank I is the purchase.")]
+        internal List<RuneRankStep> runeRanks = new List<RuneRankStep>();
+
+        [SerializeField] internal List<RuneOffer> runeOffers = new List<RuneOffer>();
+        [SerializeField] internal int shrineOfferCount = 4;
+        [SerializeField] internal int shrineRefreshCost = 50;
+
+        [SerializeField, Tooltip("Share of the Gold spent on a rune that selling it returns, in basis points.")]
+        internal int runeSellRefund = 5000;
+
+        [SerializeField, Tooltip("What the home village's Seal costs, as a share of the price, in basis points (7500 = 25% off).")]
+        internal int homeSealPrice = 7500;
+
+        [SerializeField, Tooltip("Most Legendary runes set at once.")]
+        internal int maxLegendaryRunes = 1;
+
         [Header("Home villages")]
         [SerializeField, Tooltip("The villages a new clan can pick on the new game screen. Empty skips the pick.")]
         internal List<HomeVillage> villages = new List<HomeVillage>();
@@ -146,6 +204,45 @@ namespace NinjaRealm.Core.Progression
         public IReadOnlyList<IncomeSource> Incomes => incomes;
 
         public IReadOnlyList<HomeVillage> Villages => villages;
+
+        public IReadOnlyList<RuneSlotStep> RuneSlots => runeSlots;
+
+        public int ShrineOfferCount => shrineOfferCount;
+
+        public int ShrineRefreshCost => shrineRefreshCost;
+
+        public int RuneSellRefund => runeSellRefund;
+
+        public int HomeSealPrice => homeSealPrice;
+
+        public int MaxLegendaryRunes => maxLegendaryRunes;
+
+        public IReadOnlyList<RuneOffer> RuneOffers => runeOffers;
+
+        public RuneOffer RuneOfferFor(Rarity rarity)
+        {
+            foreach (var offer in runeOffers)
+                if (offer != null && offer.rarity == rarity) return offer;
+            return null;
+        }
+
+        /// <summary>The highest rune rank the price list has: rank I plus one per rank step.</summary>
+        public int MaxRuneRank => runeRanks.Count + 1;
+
+        /// <summary>The clan level a rune rank needs. Rank I needs nothing.</summary>
+        public int RuneRankClanLevel(int rank) => rank >= 2 && rank - 2 < runeRanks.Count ? runeRanks[rank - 2].clanLevel : 1;
+
+        /// <summary>The share of a rune's price that reaching this rank costs, in basis points, or -1 past the list.</summary>
+        public int RuneRankCostBasisPoints(int rank) => rank >= 2 && rank - 2 < runeRanks.Count ? runeRanks[rank - 2].costBasisPoints : -1;
+
+        /// <summary>How many altar slots are open at this clan level (lit or not).</summary>
+        public int RuneSlotsOpen(int clanLevel)
+        {
+            var open = 0;
+            foreach (var step in runeSlots)
+                if (step != null && clanLevel >= step.clanLevel) open++;
+            return open;
+        }
 
         /// <summary>The home village with this ID, or null.</summary>
         public HomeVillage Village(string id)
@@ -295,6 +392,32 @@ namespace NinjaRealm.Core.Progression
                     yield return $"home village '{village.id}' needs a name and an element.";
                 else if (village.dojoAffinity <= 0)
                     yield return $"home village '{village.id}' needs a Dojo affinity above zero.";
+            }
+
+            for (var i = 1; i < runeSlots.Count; i++)
+                if (runeSlots[i] == null || runeSlots[i - 1] == null || runeSlots[i].clanLevel < runeSlots[i - 1].clanLevel)
+                    yield return "lists rune slots out of clan level order.";
+            foreach (var step in runeSlots)
+                if (step == null || step.karma < 0)
+                {
+                    yield return "has a rune slot with a negative Karma cost.";
+                    break;
+                }
+
+            foreach (var step in runeRanks)
+                if (step == null || step.costBasisPoints <= 0)
+                {
+                    yield return "has a rune rank that costs nothing.";
+                    break;
+                }
+
+            var runeRarities = new HashSet<Rarity>();
+            foreach (var offer in runeOffers)
+            {
+                if (offer == null || offer.weight < 0 || offer.price <= 0 || offer.karma < 0)
+                    yield return "has a rune offer with a negative weight or no price.";
+                else if (!runeRarities.Add(offer.rarity))
+                    yield return $"lists {offer.rarity} runes more than once.";
             }
 
             if (teamSizes.Count == 0)

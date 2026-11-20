@@ -12,7 +12,7 @@ namespace NinjaRealm.Core.Progression
     /// </summary>
     public static class SaveFile
     {
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
 
         /// <summary>Migrations[i] turns a version i profile into version i + 1.</summary>
         static readonly Action<PlayerProfile>[] Migrations =
@@ -22,6 +22,9 @@ namespace NinjaRealm.Core.Progression
 
             // 1 to 2: the campaign. Beaten lineups become cleared stages, which needs the content
             // to know which stage uses which lineup, so ProfileService does it when it loads.
+            profile => { },
+
+            // 2 to 3: the Shrine's runes. Older saves own none; ProfileService lights the free altar slots on load.
             profile => { },
         };
 

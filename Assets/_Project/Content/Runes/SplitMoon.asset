@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52938f1e4f8e4fc4b1f235593714c9dc, type: 3}
+  m_Name: SplitMoon
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.RuneDefinition
+  id: rune.split_moon
+  displayName: Split Moon
+  rarity: 1
+  family: 0
+  element: {fileID: 0}
+  description: A crescent cut clean in two.
+  color: {r: 0.95, g: 0.36, b: 0.3, a: 1}
+  icon: {fileID: 0}
+  ranks:
+  - effects:
+    - rid: 9055203298767798307
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798308
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798309
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798310
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798311
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203298767798307
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: a18d64b36db8240ab93451cd7d9279b0, type: 2}
+        operation: 0
+        value: 8
+    - rid: 9055203298767798308
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: a18d64b36db8240ab93451cd7d9279b0, type: 2}
+        operation: 0
+        value: 11
+    - rid: 9055203298767798309
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: a18d64b36db8240ab93451cd7d9279b0, type: 2}
+        operation: 0
+        value: 14
+    - rid: 9055203298767798310
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: a18d64b36db8240ab93451cd7d9279b0, type: 2}
+        operation: 0
+        value: 17
+    - rid: 9055203298767798311
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: a18d64b36db8240ab93451cd7d9279b0, type: 2}
+        operation: 0
+        value: 20

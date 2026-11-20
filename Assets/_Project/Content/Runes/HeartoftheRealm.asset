@@ -1,0 +1,131 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52938f1e4f8e4fc4b1f235593714c9dc, type: 3}
+  m_Name: HeartoftheRealm
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.RuneDefinition
+  id: rune.heart_of_the_realm
+  displayName: Heart of the Realm
+  rarity: 3
+  family: 1
+  element: {fileID: 0}
+  description: The realm's own strength, shared by the clan.
+  color: {r: 1, g: 0.93, b: 0.7, a: 1}
+  icon: {fileID: 0}
+  ranks:
+  - effects:
+    - rid: 9055203298767798367
+    - rid: 9055203298767798368
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798369
+    - rid: 9055203298767798370
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798371
+    - rid: 9055203298767798372
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798373
+    - rid: 9055203298767798374
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798375
+    - rid: 9055203298767798376
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203298767798367
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: d8592416d77ff4076b568b187068961f, type: 2}
+        operation: 1
+        value: 6
+    - rid: 9055203298767798368
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 6
+    - rid: 9055203298767798369
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: d8592416d77ff4076b568b187068961f, type: 2}
+        operation: 1
+        value: 7.5
+    - rid: 9055203298767798370
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 7.5
+    - rid: 9055203298767798371
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: d8592416d77ff4076b568b187068961f, type: 2}
+        operation: 1
+        value: 9
+    - rid: 9055203298767798372
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 9
+    - rid: 9055203298767798373
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: d8592416d77ff4076b568b187068961f, type: 2}
+        operation: 1
+        value: 10.5
+    - rid: 9055203298767798374
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 10.5
+    - rid: 9055203298767798375
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: d8592416d77ff4076b568b187068961f, type: 2}
+        operation: 1
+        value: 12
+    - rid: 9055203298767798376
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 12

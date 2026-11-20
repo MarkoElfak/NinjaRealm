@@ -77,6 +77,29 @@ namespace NinjaRealm.Core.Progression
 
         /// <summary>When each income source (the Mint, the Steel Mine) was last emptied.</summary>
         public List<IncomeTimer> incomes = new List<IncomeTimer>();
+
+        /// <summary>The runes bought at the Shrine, each once, with its rank.</summary>
+        public List<OwnedRune> runes = new List<OwnedRune>();
+
+        /// <summary>The altar's lit slots in order, by rune ID. An empty entry is a lit slot with no rune.</summary>
+        public List<string> runeSlots = new List<string>();
+
+        /// <summary>The Shrine's current offers by rune ID. An empty entry was already bought.</summary>
+        public List<string> shrineOffers = new List<string>();
+
+        /// <summary>The day the Shrine offers were rolled, as yyyy-MM-dd.</summary>
+        public string shrineDate = string.Empty;
+    }
+
+    /// <summary>A rune the player owns and its rank, 1 or more.</summary>
+    [Serializable]
+    public sealed class OwnedRune
+    {
+        public string id;
+        public int rank = 1;
+
+        /// <summary>Gold spent on the rune so far, for the sell refund.</summary>
+        public int goldSpent;
     }
 
     [Serializable]

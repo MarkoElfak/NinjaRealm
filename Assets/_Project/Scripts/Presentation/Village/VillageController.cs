@@ -60,6 +60,9 @@ namespace NinjaRealm.Presentation.Village
         /// <summary>The stage that shows one ninja's model in a panel.</summary>
         public NinjaPreview Preview { get; private set; }
 
+        /// <summary>The rune stones in front of the Shrine. Null when the village has no Shrine.</summary>
+        public ShrineAltar Altar { get; private set; }
+
         /// <summary>The building under the mouse, if any.</summary>
         public VillageBuilding Hovered { get; private set; }
 
@@ -141,10 +144,34 @@ namespace NinjaRealm.Presentation.Village
                 Preview.transform.SetParent(transform, false);
             }
 
+            var shrine = Find(VillageBuildingKind.Shrine);
+            if (Altar == null && shrine != null)
+            {
+                Altar = new GameObject("Shrine Altar").AddComponent<ShrineAltar>();
+                Altar.transform.SetParent(transform, false);
+                Altar.Place(shrine, plazaCentre);
+            }
+
+            if (Profile != null) Profile.Changed += RefreshAltar;
+
             initialized = true;
             RefreshNinjas();
+            RefreshAltar();
             ApplyHomeVillage();
             return true;
+        }
+
+        /// <summary>Shows the save's runes on the Shrine's altar. Call after the runes change; the save's Changed event does.</summary>
+        public void RefreshAltar()
+        {
+            if (Altar == null) return;
+            var progression = Profile != null ? Profile.Progression : ProfileService.FindProgression(Content);
+            Altar.Show(Profile, progression != null ? progression.RuneSlots.Count : 0);
+        }
+
+        void OnDestroy()
+        {
+            if (Profile != null) Profile.Changed -= RefreshAltar;
         }
 
         /// <summary>
@@ -179,6 +206,7 @@ namespace NinjaRealm.Presentation.Village
             Opened = building;
             OpenedNinja = null;
             if (building != null && building.Kind == VillageBuildingKind.Dojo) Profile?.RefreshDojoIfNewDay(DateTime.Now);
+            if (building != null && building.Kind == VillageBuildingKind.Shrine) Profile?.RefreshShrineIfNewDay(DateTime.Now);
 
             // Closing: a recruit from the Dojo joins the others on the plaza, and the stage empties.
             if (building == null)

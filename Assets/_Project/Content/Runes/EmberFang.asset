@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52938f1e4f8e4fc4b1f235593714c9dc, type: 3}
+  m_Name: EmberFang
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.RuneDefinition
+  id: rune.ember_fang
+  displayName: Ember Fang
+  rarity: 0
+  family: 0
+  element: {fileID: 0}
+  description: A fang of red slate, warm to the touch.
+  color: {r: 0.95, g: 0.36, b: 0.3, a: 1}
+  icon: {fileID: 0}
+  ranks:
+  - effects:
+    - rid: 9055203298767798272
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798273
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798274
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798275
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798276
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203298767798272
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 3
+    - rid: 9055203298767798273
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 4.5
+    - rid: 9055203298767798274
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 5.5
+    - rid: 9055203298767798275
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 7
+    - rid: 9055203298767798276
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 8

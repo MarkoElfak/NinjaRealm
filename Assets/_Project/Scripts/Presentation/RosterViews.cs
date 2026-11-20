@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NinjaRealm.Combat;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
@@ -10,7 +11,7 @@ using UnityEngine.UIElements;
 namespace NinjaRealm.Presentation
 {
     /// <summary>
-    /// The roster's UI Toolkit views: your ninjas with their level ups (the Shrine), the Dojo's
+    /// The roster's UI Toolkit views: your ninjas with their level ups and the runes (the Shrine), the Dojo's
     /// recruits, the weapons and forge (the Blacksmith), and one ninja's details. Each call
     /// builds a fresh element; after a button does something the view reports the result and
     /// asks its screen to rebuild it. Styles: UI/Styles/Panels.uss.
@@ -97,6 +98,261 @@ namespace NinjaRealm.Presentation
             var button = GameUi.Button($"Level up  ({cost} Karma)", () => Did(Profile.TryLevelUp(ninja, out var result), result), classes);
             button.SetEnabled(Profile.Balance(progression.Karma) >= cost);
             return button;
+        }
+
+        // ---------------------------------------------------------------- the Shrine's runes
+
+        /// <summary>The altar slot picked for setting a rune, or -1 for the first empty one.</summary>
+        int runeSlot = -1;
+
+        /// <summary>The altar's slots, what the set runes give, today's runes and your runes.</summary>
+        public VisualElement Runes()
+        {
+            var save = Profile;
+            var root = GameUi.Element("roster");
+            if (runeSlot >= save.RuneSlotsLit) runeSlot = -1;
+            var target = runeSlot >= 0 ? runeSlot : save.Profile.runeSlots.IndexOf(string.Empty);
+
+            root.Add(Altar(save, target));
+            root.Add(GameUi.Label(RuneBonusText(save), "note", "wrap", "rune-bonus"));
+
+            var columns = GameUi.Element("columns", "rune-columns");
+            columns.Add(RuneShop(save));
+            columns.Add(OwnedRuneList(save, target));
+            root.Add(columns);
+            return root;
+        }
+
+        VisualElement Altar(ProfileService save, int target)
+        {
+            var altar = GameUi.Element("altar");
+            var next = save.NextRuneSlot;
+            for (var i = 0; i < save.RuneSlotCount; i++)
+            {
+                var index = i;
+                var step = save.Progression.RuneSlots[i];
+                VisualElement slot;
+                if (i < save.RuneSlotsLit)
+                {
+                    var rune = save.RuneInSlot(i);
+                    slot = GameUi.Element("rune-slot");
+                    slot.EnableInClassList("rune-slot--picked", i == target);
+                    if (rune != null)
+                    {
+                        slot.style.borderTopColor = slot.style.borderBottomColor = slot.style.borderLeftColor = slot.style.borderRightColor = RuneArt.RarityColor(rune.Rarity);
+                        slot.Add(Icon(rune, "rune-slot__icon"));
+                        slot.Add(GameUi.Label($"{rune.DisplayName}  {ProfileService.RomanRank(save.RuneRankOf(rune))}", "rune-slot__name"));
+                        var remove = GameUi.Button("Take out", () =>
+                        {
+                            runeSlot = index;
+                            if (save.ClearRuneSlot(index)) Did(true, $"{rune.DisplayName} is back with your runes.");
+                        }, "button--small", "rune-slot__action");
+                        slot.Add(remove);
+                    }
+                    else
+                    {
+                        slot.Add(GameUi.Label("+", "rune-slot__empty"));
+                        slot.Add(GameUi.Label(i == target ? "Pick a rune below" : "Empty", "rune-slot__name", "muted"));
+                    }
+
+                    slot.RegisterCallback<ClickEvent>(_ =>
+                    {
+                        if (runeSlot == index) return;
+                        runeSlot = index;
+                        changed?.Invoke();
+                    });
+                }
+                else
+                {
+                    slot = GameUi.Element("rune-slot", "rune-slot--locked");
+                    slot.Add(GameUi.Label("Unlit", "rune-slot__empty", "muted"));
+                    slot.Add(GameUi.Label($"Clan level {step.clanLevel}", "rune-slot__name", "muted"));
+                    if (step == next && save.ClanLevel >= step.clanLevel)
+                    {
+                        var light = GameUi.Button(step.karma > 0 ? $"Light  ({step.karma} Karma)" : "Light",
+                            () => Did(save.TryLightRuneSlot(out var result), result), "button--small", "rune-slot__action");
+                        light.SetEnabled(save.CannotLightRuneSlot() == null);
+                        slot.Add(light);
+                    }
+                }
+
+                slot.EnableInClassList("rune-slot--last", i == save.RuneSlotCount - 1);
+                altar.Add(slot);
+            }
+
+            return altar;
+        }
+
+        /// <summary>"Your runes give: +5.5% Attack Damage. Fire ninjas: +8% Attack Damage." or how to start.</summary>
+        static string RuneBonusText(ProfileService save)
+        {
+            var set = save.SetRunes();
+            if (set.Count == 0)
+                return "Runes on the altar give every ninja in your lineup a bonus in every fight. Buy one below, then set it in a lit slot.";
+            var parts = new List<string>();
+            foreach (var entry in set) parts.Add($"<b>{entry.Rune.DisplayName}</b> {entry.Rune.Describe(entry.Rank)}");
+            return "Your altar gives: " + string.Join(".  ", parts) + ".";
+        }
+
+        VisualElement RuneShop(ProfileService save)
+        {
+            var progression = save.Progression;
+            var gold = save.Balance(progression.Gold);
+            var column = GameUi.Element("column");
+
+            var title = GameUi.Element("section-row", "column__title");
+            title.Add(GameUi.Label("Today's runes", "section-title"));
+            title.Add(GameUi.Label("  new every day", "note"));
+            var refresh = GameUi.Button($"New runes  ({progression.ShrineRefreshCost} Gold)", () => Did(save.TryRefreshShrine(out var result), result), "button--small");
+            refresh.SetEnabled(gold >= progression.ShrineRefreshCost);
+            title.Add(refresh);
+            column.Add(title);
+
+            var list = new ScrollView(ScrollViewMode.Vertical);
+            list.AddToClassList("list");
+            var shown = new HashSet<RuneDefinition>();
+            foreach (var rune in save.ShrineOffers())
+            {
+                if (rune == null)
+                {
+                    list.Add(GameUi.Label("Bought", "card", "rune-row", "rune-row--taken", "muted"));
+                    continue;
+                }
+
+                shown.Add(rune);
+                list.Add(ShopRow(save, rune));
+            }
+
+            var always = GameUi.Element("section-row", "rune-subtitle");
+            always.Add(GameUi.Label("Always for sale", "section-title"));
+            list.Add(always);
+            foreach (var rune in save.RunesForSale())
+                if (!shown.Contains(rune))
+                    list.Add(ShopRow(save, rune));
+
+            column.Add(list);
+            return column;
+        }
+
+        VisualElement ShopRow(ProfileService save, RuneDefinition rune)
+        {
+            var row = RuneRow(rune);
+            var text = GameUi.Element("rune-row__text");
+            text.Add(RuneName(rune));
+            text.Add(GameUi.Label(rune.Describe(1), "small", "wrap"));
+            row.Add(text);
+
+            if (save.OwnsRune(rune))
+            {
+                row.Add(GameUi.Label("Owned", "rune-row__action", "muted"));
+                return row;
+            }
+
+            var price = save.RunePrice(rune);
+            var karma = save.RuneKarmaPrice(rune);
+            var label = karma > 0 ? $"Buy  ({price} Gold, {karma} Karma)" : $"Buy  ({price} Gold)";
+            if (save.IsHomeSeal(rune)) label += "  home";
+            var buy = GameUi.Button(label, () => Did(save.TryBuyRune(rune, out var result), result), "button--small", "rune-row__action");
+            buy.SetEnabled(save.CannotBuyRune(rune) == null);
+            row.Add(buy);
+            return row;
+        }
+
+        VisualElement OwnedRuneList(ProfileService save, int target)
+        {
+            var column = GameUi.Element("column", "column--last");
+            var title = GameUi.Element("section-row", "column__title");
+            title.Add(GameUi.Label("Your runes", "section-title"));
+            title.Add(GameUi.Label(target >= 0 ? $"  setting slot {target + 1}" : "  light a slot to set one", "note"));
+            column.Add(title);
+
+            var list = new ScrollView(ScrollViewMode.Vertical);
+            list.AddToClassList("list");
+            var owned = save.OwnedRunes();
+            if (owned.Count == 0) list.Add(GameUi.Label("None yet. Common runes are always for sale; rarer ones show up in today's runes.", "note", "wrap"));
+            foreach (var rune in owned)
+            {
+                var rank = save.RuneRankOf(rune);
+                var row = RuneRow(rune);
+                var text = GameUi.Element("rune-row__text");
+                var name = RuneName(rune);
+                name.Add(GameUi.Pips(rank, save.RuneMaxRank(rune)));
+                text.Add(name);
+                text.Add(GameUi.Label($"Rank {ProfileService.RomanRank(rank)}: {rune.Describe(rank)}", "small", "wrap"));
+                var cost = save.RuneRankCost(rune);
+                if (cost > 0) text.Add(GameUi.Label($"Rank {ProfileService.RomanRank(rank + 1)}: {rune.Describe(rank + 1)}", "small", "muted", "wrap"));
+                row.Add(text);
+
+                var actions = GameUi.Element("rune-row__buttons");
+                var slot = save.SlotOfRune(rune);
+                if (slot >= 0)
+                {
+                    actions.Add(GameUi.Label($"In slot {slot + 1}", "small", "rune-row__set"));
+                }
+                else
+                {
+                    var set = GameUi.Button("Set", () =>
+                    {
+                        var ok = save.TrySetRune(target, rune, out var result);
+                        if (ok) runeSlot = -1;
+                        Did(ok, result);
+                    }, "button--small");
+                    var problem = target >= 0 ? save.CannotSetRune(target, rune) : "Light an altar slot first.";
+                    set.SetEnabled(problem == null);
+                    set.tooltip = problem ?? string.Empty;
+                    actions.Add(set);
+                }
+
+                if (cost > 0)
+                {
+                    var rankUp = GameUi.Button($"Rank up  ({cost} Gold)", () => Did(save.TryRankUpRune(rune, out var result), result), "button--small");
+                    var problem = save.CannotRankUpRune(rune);
+                    rankUp.SetEnabled(problem == null);
+                    rankUp.tooltip = problem ?? string.Empty;
+                    actions.Add(rankUp);
+                }
+                else
+                {
+                    actions.Add(GameUi.Label("Top rank", "small", "muted"));
+                }
+
+                var sell = GameUi.Button($"Sell  ({save.RuneSellValue(rune)})", () => Did(save.TrySellRune(rune, out var result), result), "button--small");
+                actions.Add(sell);
+                row.Add(actions);
+                list.Add(row);
+            }
+
+            column.Add(list);
+            return column;
+        }
+
+        /// <summary>A card with the rune's icon and its rarity colour down the left edge.</summary>
+        static VisualElement RuneRow(RuneDefinition rune)
+        {
+            var row = GameUi.Element("card", "rune-row");
+            row.style.borderLeftColor = RuneArt.RarityColor(rune.Rarity);
+            row.Add(Icon(rune, "rune-row__icon"));
+            return row;
+        }
+
+        static VisualElement RuneName(RuneDefinition rune)
+        {
+            var line = GameUi.Element("name-line");
+            line.Add(GameUi.Label(rune.DisplayName, "strong"));
+            var rarity = GameUi.Label(rune.Rarity.ToString(), "rarity");
+            rarity.style.color = RuneArt.RarityColor(rune.Rarity);
+            line.Add(rarity);
+            line.tooltip = rune.Description;
+            return line;
+        }
+
+        static VisualElement Icon(RuneDefinition rune, string kind)
+        {
+            var icon = GameUi.Element("rune-icon", kind);
+            var texture = RuneArt.Icon(rune);
+            if (texture != null) icon.style.backgroundImage = new StyleBackground(texture);
+            else icon.style.backgroundColor = rune.Color;
+            return icon;
         }
 
         // ---------------------------------------------------------------- one ninja

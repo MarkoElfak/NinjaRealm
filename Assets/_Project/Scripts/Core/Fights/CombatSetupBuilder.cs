@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NinjaRealm.Combat;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
+using NinjaRealm.Core.Definitions.Effects;
 using NinjaRealm.Core.Lineups;
 using NinjaRealm.Core.Progression;
 
@@ -43,25 +44,36 @@ namespace NinjaRealm.Core.Fights
             Add(team, ninja, position, NinjaRank.Base, weapons);
 
         /// <summary>Adds a ninja at a level and star rank, which scale its health and attack damage.</summary>
-        public CombatSetupBuilder Add(int team, NinjaDefinition ninja, HexCoord position, NinjaRank rank, params WeaponDefinition[] weapons)
+        public CombatSetupBuilder Add(int team, NinjaDefinition ninja, HexCoord position, NinjaRank rank, params WeaponDefinition[] weapons) =>
+            Add(team, ninja, position, rank, null, weapons);
+
+        /// <summary>
+        /// Adds a ninja with extra passives it carries on top of its weapons, such as the
+        /// Shrine's runes (<see cref="ProfileService.RunePassives"/>).
+        /// </summary>
+        public CombatSetupBuilder Add(int team, NinjaDefinition ninja, HexCoord position, NinjaRank rank,
+            IEnumerable<PassiveEffect> bonuses, params WeaponDefinition[] weapons)
         {
             if (ninja == null) throw new ArgumentNullException(nameof(ninja));
             if (team != 0 && team != 1) throw new ArgumentOutOfRangeException(nameof(team), "Team must be 0 or 1.");
-            entries.Add(new Entry(team, ninja, position, rank, weapons ?? Array.Empty<WeaponDefinition>()));
+            var bonusList = bonuses != null ? new List<PassiveEffect>(bonuses) : new List<PassiveEffect>();
+            entries.Add(new Entry(team, ninja, position, rank, weapons ?? Array.Empty<WeaponDefinition>(), bonusList));
             return this;
         }
 
         /// <summary>
         /// Adds every ninja in a lineup to a team, at its place on that team's half.
         /// <paramref name="rankOf"/> gives each ninja's level and stars; without it they fight at the base rank.
+        /// <paramref name="bonusesOf"/> gives each ninja extra passives, such as the player's runes.
         /// </summary>
-        public CombatSetupBuilder AddLineup(int team, IEnumerable<LineupSlot> slots, Func<NinjaDefinition, NinjaRank> rankOf = null)
+        public CombatSetupBuilder AddLineup(int team, IEnumerable<LineupSlot> slots, Func<NinjaDefinition, NinjaRank> rankOf = null,
+            Func<NinjaDefinition, IEnumerable<PassiveEffect>> bonusesOf = null)
         {
             foreach (var slot in slots)
             {
                 if (slot?.ninja == null) continue;
                 var rank = rankOf != null ? rankOf(slot.ninja) : NinjaRank.Base;
-                Add(team, slot.ninja, TeamPosition(team, slot.column, slot.rowFromBack), rank, slot.weapons.ToArray());
+                Add(team, slot.ninja, TeamPosition(team, slot.column, slot.rowFromBack), rank, bonusesOf?.Invoke(slot.ninja), slot.weapons.ToArray());
             }
 
             return this;
@@ -135,6 +147,10 @@ namespace NinjaRealm.Core.Fights
                     if (effect != null) unit.Passives.Add(effect.ToSpec());
             }
 
+            // Bonuses such as runes, in the order given, after the weapons.
+            foreach (var effect in entry.Bonuses)
+                if (effect != null) unit.Passives.Add(effect.ToSpec());
+
             return unit;
         }
 
@@ -170,14 +186,16 @@ namespace NinjaRealm.Core.Fights
             public readonly HexCoord Position;
             public readonly NinjaRank Rank;
             public readonly WeaponDefinition[] Weapons;
+            public readonly List<PassiveEffect> Bonuses;
 
-            public Entry(int team, NinjaDefinition ninja, HexCoord position, NinjaRank rank, WeaponDefinition[] weapons)
+            public Entry(int team, NinjaDefinition ninja, HexCoord position, NinjaRank rank, WeaponDefinition[] weapons, List<PassiveEffect> bonuses)
             {
                 Team = team;
                 Ninja = ninja;
                 Position = position;
                 Rank = rank;
                 Weapons = weapons;
+                Bonuses = bonuses;
             }
         }
     }

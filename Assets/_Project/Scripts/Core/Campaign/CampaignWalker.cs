@@ -171,7 +171,7 @@ namespace NinjaRealm.Core.Campaign
         CombatResult Fight(ProfileService service, List<LineupSlot> lineup, StageDefinition stage, int seed)
         {
             var builder = CombatSetupBuilder.FromDatabase(content);
-            builder.AddLineup(0, lineup, service.RankOf);
+            builder.AddLineup(0, lineup, service.RankOf, service.RunePassives);
             builder.AddLineup(1, stage.Lineup.Slots, stage.RankOf);
             return new CombatSimulation(builder.Build(), (ulong)(uint)seed).Run();
         }
