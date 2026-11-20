@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52938f1e4f8e4fc4b1f235593714c9dc, type: 3}
+  m_Name: DawnCoal
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.RuneDefinition
+  id: rune.dawn_coal
+  displayName: Dawn Coal
+  rarity: 0
+  family: 2
+  element: {fileID: 0}
+  description: A coal that glows before the fight begins.
+  color: {r: 0.74, g: 0.52, b: 1, a: 1}
+  icon: {fileID: 0}
+  ranks:
+  - effects:
+    - rid: 9055203298767798297
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798298
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798299
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798300
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  - effects:
+    - rid: 9055203298767798301
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203298767798297
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 0ddf73056149a4b4899e3a5cd03c6189, type: 2}
+        operation: 0
+        value: 4
+    - rid: 9055203298767798298
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 0ddf73056149a4b4899e3a5cd03c6189, type: 2}
+        operation: 0
+        value: 6
+    - rid: 9055203298767798299
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 0ddf73056149a4b4899e3a5cd03c6189, type: 2}
+        operation: 0
+        value: 8
+    - rid: 9055203298767798300
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 0ddf73056149a4b4899e3a5cd03c6189, type: 2}
+        operation: 0
+        value: 10
+    - rid: 9055203298767798301
+      type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        stat: {fileID: 11400000, guid: 0ddf73056149a4b4899e3a5cd03c6189, type: 2}
+        operation: 0
+        value: 12

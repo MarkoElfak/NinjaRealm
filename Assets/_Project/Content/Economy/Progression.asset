@@ -109,19 +109,70 @@ MonoBehaviour:
     perHour: 4
     perHourPerClanLevel: 1
     storageHours: 8
+  runeSlots:
+  - clanLevel: 1
+    karma: 0
+  - clanLevel: 2
+    karma: 40
+  - clanLevel: 4
+    karma: 80
+  - clanLevel: 7
+    karma: 150
+  - clanLevel: 10
+    karma: 250
+  - clanLevel: 14
+    karma: 400
+  runeRanks:
+  - costBasisPoints: 5000
+    clanLevel: 3
+  - costBasisPoints: 10000
+    clanLevel: 6
+  - costBasisPoints: 15000
+    clanLevel: 9
+  - costBasisPoints: 20000
+    clanLevel: 12
+  runeOffers:
+  - rarity: 0
+    weight: 55
+    price: 300
+    karma: 0
+    alwaysForSale: 1
+  - rarity: 1
+    weight: 32
+    price: 800
+    karma: 0
+    alwaysForSale: 0
+  - rarity: 2
+    weight: 11
+    price: 2000
+    karma: 0
+    alwaysForSale: 0
+  - rarity: 3
+    weight: 2
+    price: 5000
+    karma: 200
+    alwaysForSale: 0
+  shrineOfferCount: 4
+  shrineRefreshCost: 50
+  runeSellRefund: 5000
+  homeSealPrice: 7500
+  maxLegendaryRunes: 1
   villages:
   - id: emberfall
     displayName: Emberfall
     element: {fileID: 11400000, guid: fe46e266156c74316a3a65387c0fb69b, type: 2}
-    description: A forge town on a smouldering ridge. Its ninjas strike hard and leave their enemies burning.
+    description: A forge town on a smouldering ridge. Its ninjas strike hard and
+      leave their enemies burning.
     dojoAffinity: 20000
   - id: mistwater
     displayName: Mistwater
     element: {fileID: 11400000, guid: df63a4a185d7d4cd38d0589986b1e3c6, type: 2}
-    description: A lake village wrapped in fog. Its ninjas heal one another and outlast their enemies.
+    description: A lake village wrapped in fog. Its ninjas heal one another and outlast
+      their enemies.
     dojoAffinity: 20000
   - id: stonehollow
     displayName: Stonehollow
     element: {fileID: 11400000, guid: aab1940b4919c4d3f8350ecef607354b, type: 2}
-    description: A fortress cut into the mountain. Its ninjas wear stone and hold the line.
+    description: A fortress cut into the mountain. Its ninjas wear stone and hold
+      the line.
     dojoAffinity: 20000

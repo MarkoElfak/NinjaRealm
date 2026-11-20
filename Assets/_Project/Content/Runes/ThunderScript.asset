@@ -1,0 +1,166 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52938f1e4f8e4fc4b1f235593714c9dc, type: 3}
+  m_Name: ThunderScript
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.RuneDefinition
+  id: rune.thunder_script
+  displayName: Thunder Script
+  rarity: 3
+  family: 0
+  element: {fileID: 0}
+  description: Words of lightning carved in black stone.
+  color: {r: 0.45, g: 0.9, b: 1, a: 1}
+  icon: {fileID: 0}
+  ranks:
+  - effects:
+    - rid: 9055203298767798377
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 'Every 3rd attack: +40 magic damage'
+  - effects:
+    - rid: 9055203298767798378
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 'Every 3rd attack: +55 magic damage'
+  - effects:
+    - rid: 9055203298767798379
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 'Every 3rd attack: +70 magic damage'
+  - effects:
+    - rid: 9055203298767798380
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 'Every 3rd attack: +85 magic damage'
+  - effects:
+    - rid: 9055203298767798381
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 'Every 3rd attack: +100 magic damage'
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203298767798377
+      type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        trigger: 1
+        intervalSeconds: 4
+        healthThresholdPercent: 40
+        everyNth: 3
+        oncePerFight: 0
+        actions:
+        - rid: 9055203298767798382
+    - rid: 9055203298767798378
+      type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        trigger: 1
+        intervalSeconds: 4
+        healthThresholdPercent: 40
+        everyNth: 3
+        oncePerFight: 0
+        actions:
+        - rid: 9055203298767798383
+    - rid: 9055203298767798379
+      type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        trigger: 1
+        intervalSeconds: 4
+        healthThresholdPercent: 40
+        everyNth: 3
+        oncePerFight: 0
+        actions:
+        - rid: 9055203298767798384
+    - rid: 9055203298767798380
+      type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        trigger: 1
+        intervalSeconds: 4
+        healthThresholdPercent: 40
+        everyNth: 3
+        oncePerFight: 0
+        actions:
+        - rid: 9055203298767798385
+    - rid: 9055203298767798381
+      type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        trigger: 1
+        intervalSeconds: 4
+        healthThresholdPercent: 40
+        everyNth: 3
+        oncePerFight: 0
+        actions:
+        - rid: 9055203298767798386
+    - rid: 9055203298767798382
+      type: {class: DamageAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 1
+          count: 1
+          radius: 1
+        damageType: 1
+        baseDamage: 40
+        attackDamagePercent: 0
+        scalesWithAbilityPower: 0
+    - rid: 9055203298767798383
+      type: {class: DamageAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 1
+          count: 1
+          radius: 1
+        damageType: 1
+        baseDamage: 55
+        attackDamagePercent: 0
+        scalesWithAbilityPower: 0
+    - rid: 9055203298767798384
+      type: {class: DamageAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 1
+          count: 1
+          radius: 1
+        damageType: 1
+        baseDamage: 70
+        attackDamagePercent: 0
+        scalesWithAbilityPower: 0
+    - rid: 9055203298767798385
+      type: {class: DamageAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 1
+          count: 1
+          radius: 1
+        damageType: 1
+        baseDamage: 85
+        attackDamagePercent: 0
+        scalesWithAbilityPower: 0
+    - rid: 9055203298767798386
+      type: {class: DamageAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 1
+          count: 1
+          radius: 1
+        damageType: 1
+        baseDamage: 100
+        attackDamagePercent: 0
+        scalesWithAbilityPower: 0

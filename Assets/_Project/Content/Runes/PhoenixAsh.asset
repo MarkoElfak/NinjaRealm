@@ -1,0 +1,152 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52938f1e4f8e4fc4b1f235593714c9dc, type: 3}
+  m_Name: PhoenixAsh
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.RuneDefinition
+  id: rune.phoenix_ash
+  displayName: Phoenix Ash
+  rarity: 3
+  family: 2
+  element: {fileID: 0}
+  description: Ash that remembers the flame. Once a fight, a falling ninja rises
+    again.
+  color: {r: 1, g: 0.55, b: 0.2, a: 1}
+  icon: {fileID: 0}
+  ranks:
+  - effects:
+    - rid: 9055203298767798357
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 'Once a fight, below 30% health: heal 20% of max health'
+  - effects:
+    - rid: 9055203298767798358
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 'Once a fight, below 30% health: heal 25% of max health'
+  - effects:
+    - rid: 9055203298767798359
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 'Once a fight, below 30% health: heal 30% of max health'
+  - effects:
+    - rid: 9055203298767798360
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 'Once a fight, below 30% health: heal 35% of max health'
+  - effects:
+    - rid: 9055203298767798361
+    fightGold: 0
+    clanXp: 0
+    income: 0
+    text: 'Once a fight, below 30% health: heal 40% of max health'
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203298767798357
+      type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        trigger: 4
+        intervalSeconds: 4
+        healthThresholdPercent: 30
+        everyNth: 1
+        oncePerFight: 1
+        actions:
+        - rid: 9055203298767798362
+    - rid: 9055203298767798358
+      type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        trigger: 4
+        intervalSeconds: 4
+        healthThresholdPercent: 30
+        everyNth: 1
+        oncePerFight: 1
+        actions:
+        - rid: 9055203298767798363
+    - rid: 9055203298767798359
+      type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        trigger: 4
+        intervalSeconds: 4
+        healthThresholdPercent: 30
+        everyNth: 1
+        oncePerFight: 1
+        actions:
+        - rid: 9055203298767798364
+    - rid: 9055203298767798360
+      type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        trigger: 4
+        intervalSeconds: 4
+        healthThresholdPercent: 30
+        everyNth: 1
+        oncePerFight: 1
+        actions:
+        - rid: 9055203298767798365
+    - rid: 9055203298767798361
+      type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        holders: 0
+        trigger: 4
+        intervalSeconds: 4
+        healthThresholdPercent: 30
+        everyNth: 1
+        oncePerFight: 1
+        actions:
+        - rid: 9055203298767798366
+    - rid: 9055203298767798362
+      type: {class: HealAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 0
+          count: 1
+          radius: 1
+        percentOfMaxHealth: 20
+    - rid: 9055203298767798363
+      type: {class: HealAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 0
+          count: 1
+          radius: 1
+        percentOfMaxHealth: 25
+    - rid: 9055203298767798364
+      type: {class: HealAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 0
+          count: 1
+          radius: 1
+        percentOfMaxHealth: 30
+    - rid: 9055203298767798365
+      type: {class: HealAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 0
+          count: 1
+          radius: 1
+        percentOfMaxHealth: 35
+    - rid: 9055203298767798366
+      type: {class: HealAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 0
+          count: 1
+          radius: 1
+        percentOfMaxHealth: 40

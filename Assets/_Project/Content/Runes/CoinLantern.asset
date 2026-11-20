@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52938f1e4f8e4fc4b1f235593714c9dc, type: 3}
+  m_Name: CoinLantern
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.RuneDefinition
+  id: rune.coin_lantern
+  displayName: Coin Lantern
+  rarity: 0
+  family: 4
+  element: {fileID: 0}
+  description: Lights the way to a fuller purse.
+  color: {r: 1, g: 0.82, b: 0.35, a: 1}
+  icon: {fileID: 0}
+  ranks:
+  - effects: []
+    fightGold: 400
+    clanXp: 0
+    income: 0
+    text: 
+  - effects: []
+    fightGold: 600
+    clanXp: 0
+    income: 0
+    text: 
+  - effects: []
+    fightGold: 800
+    clanXp: 0
+    income: 0
+    text: 
+  - effects: []
+    fightGold: 1000
+    clanXp: 0
+    income: 0
+    text: 
+  - effects: []
+    fightGold: 1200
+    clanXp: 0
+    income: 0
+    text: 
+  references:
+    version: 2
+    RefIds: []
