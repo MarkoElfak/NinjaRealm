@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NinjaRealm.Core.Content;
 using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Progression;
+using NinjaRealm.Presentation.Audio;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -80,16 +81,25 @@ namespace NinjaRealm.Presentation.Village
         /// <summary>Raised when a panel opens or closes, with the building (null for a ninja's details or a close).</summary>
         public event Action<VillageBuilding> OpenedChanged;
 
+        /// <summary>Raised when a ninja says a line: the ninja, the line, and how long to show it in seconds.</summary>
+        public event Action<NinjaDefinition, string, float> Spoke;
+
+        /// <summary>The ninjas' voice lines.</summary>
+        public NinjaVoices Voices { get; private set; }
+
         void Awake()
         {
             if (GetComponent<VillageScreen>() == null) gameObject.AddComponent<VillageScreen>();
             if (GetComponent<NewGameScreen>() == null) gameObject.AddComponent<NewGameScreen>();
+            Voices = GetComponent<NinjaVoices>();
+            if (Voices == null) Voices = gameObject.AddComponent<NinjaVoices>();
         }
 
         void Start()
         {
             Initialize();
             ApplyCamera();
+            MusicPlayer.Play(MusicPlayer.Village);
         }
 
         /// <summary>Loads the content, the save and the buildings. Safe to call more than once.</summary>
@@ -133,6 +143,7 @@ namespace NinjaRealm.Presentation.Village
 
             initialized = true;
             RefreshNinjas();
+            ApplyHomeVillage();
             return true;
         }
 
@@ -188,6 +199,7 @@ namespace NinjaRealm.Presentation.Village
                 return;
             }
 
+            Speak(ninja);
             if (ninja == OpenedNinja) return;
             Opened = null;
             OpenedNinja = ninja;
@@ -196,12 +208,56 @@ namespace NinjaRealm.Presentation.Village
 
         public void Close() => Open(null);
 
+        /// <summary>Has a ninja say one of its voice lines (Audio/Resources/Voices/VoiceLines.txt).</summary>
+        public void Speak(NinjaDefinition ninja)
+        {
+            if (Voices == null || ninja == null) return;
+            var line = Voices.Speak(ninja, out var seconds);
+            if (line != null) Spoke?.Invoke(ninja, line, seconds);
+        }
+
         /// <summary>Leaves the village for the battle scene, where the lineup is set up.</summary>
         public void GoToBattle()
         {
             if (!GameScenes.Load(GameScenes.Battle))
                 Debug.LogError($"[Village] {GameScenes.PathOf(GameScenes.Battle)} is not in the build settings. Run Ninja Realm > Scenes > Create Village Scene.");
         }
+
+        /// <summary>Where each home village's banner texture lives, in a Resources folder: Banner_&lt;village id&gt;.</summary>
+        public const string BannerFolder = "VillageBanners";
+
+        /// <summary>
+        /// Hangs the home village's banners: every object named Banner... shows
+        /// Resources/VillageBanners/Banner_&lt;village id&gt; instead of its own texture, or its
+        /// own again when the clan has no home village yet. Call after the clan is founded.
+        /// </summary>
+        public void ApplyHomeVillage()
+        {
+            var village = Profile?.HomeVillage;
+            var texture = village != null ? Resources.Load<Texture2D>($"{BannerFolder}/Banner_{village.id}") : null;
+            var block = new MaterialPropertyBlock();
+            foreach (var root in gameObject.scene.GetRootGameObjects())
+            foreach (var part in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (!part.name.StartsWith("Banner", StringComparison.Ordinal)) continue;
+                foreach (var renderer in part.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (texture == null)
+                    {
+                        renderer.SetPropertyBlock(null);
+                        continue;
+                    }
+
+                    block.Clear();
+                    block.SetTexture(BaseMap, texture);
+                    block.SetTexture(MainTex, texture);
+                    renderer.SetPropertyBlock(block);
+                }
+            }
+        }
+
+        static readonly int BaseMap = Shader.PropertyToID("_BaseMap");
+        static readonly int MainTex = Shader.PropertyToID("_MainTex");
 
         // ---------------------------------------------------------------- input
 

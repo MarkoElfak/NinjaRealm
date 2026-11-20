@@ -276,6 +276,7 @@ namespace NinjaRealm.Presentation.Village
             Debug.Log($"[Village] {text}");
             forced = false;
             profile.RefreshDojoIfNewDay(DateTime.Now);
+            controller.ApplyHomeVillage();
         }
     }
 }

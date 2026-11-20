@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7edf43c63b554d91a94ecbfee41a4fad, type: 3}
+  m_Name: PhoenixRite
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.SkillDefinition
+  id: skill.phoenix_rite
+  displayName: Phoenix Rite
+  description: Heals the 3 most injured allies for 18% max health and gives them
+    20% attack damage for 4s.
+  castTimeSeconds: 0.5
+  actions:
+  - rid: 9055203296589381752
+  - rid: 9055203296589381753
+  references:
+    version: 2
+    RefIds:
+    - rid: 9055203296589381752
+      type: {class: HealAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 6
+          count: 3
+          radius: 1
+        percentOfMaxHealth: 18
+    - rid: 9055203296589381753
+      type: {class: StatBuffAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
+      data:
+        target:
+          kind: 6
+          count: 3
+          radius: 1
+        stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+        operation: 1
+        value: 20
+        durationSeconds: 4

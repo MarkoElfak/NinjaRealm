@@ -36,6 +36,7 @@ namespace NinjaRealm.Editor
             village.Profile.Profile.clanName = string.Empty;
             village.Profile.Profile.village = string.Empty;
             village.Profile.Save();
+            village.ApplyHomeVillage();
         }
 
         [MenuItem(Menu + "Open Command Hall")]
@@ -84,6 +85,15 @@ namespace NinjaRealm.Editor
             if (village == null) return;
             var owned = village.Profile != null ? village.Profile.OwnedNinjas() : village.AllNinjas();
             if (owned.Count > 0) village.OpenNinja(owned[0]);
+        }
+
+        [MenuItem(Menu + "Make a Random Ninja Speak")]
+        public static void RandomNinjaSpeaks()
+        {
+            var village = Village();
+            if (village == null) return;
+            var all = village.AllNinjas();
+            if (all.Count > 0) village.Speak(all[Random.Range(0, all.Count)]);
         }
 
         [MenuItem(Menu + "Go to Battle")]
