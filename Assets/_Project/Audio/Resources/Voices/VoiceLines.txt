@@ -1,0 +1,120 @@
+# Ninja Realm voice lines: what each ninja says when you click it on the plaza or in the Dojo.
+#
+# Each ninja has a block that starts with its ID in square brackets, like [kaito].
+# Three optional lines under it set how it sounds:
+#   voice = a macOS voice that records the lines. Run `say -v ?` in Terminal to list yours.
+#   rate  = how fast it speaks, in words a minute. 175 is normal.
+#   pitch = the playback pitch in the game. 1 is as recorded, 0.85 is deeper, 1.1 is higher.
+# Every other line in the block is one thing the ninja can say. Add, change or remove lines freely.
+# Lines that start with # are notes like this one.
+#
+# After you change this file, run Ninja Realm > Audio > Record the Voice Lines in Unity (on a Mac).
+# It records only the lines that changed. A line with no recording yet still shows as text.
+
+[kaito]
+voice = Daniel
+rate = 185
+pitch = 1
+My blade is ready.
+Steel burns brighter than fear.
+Point me at the enemy.
+One cut. That is all it takes.
+
+[hana]
+voice = Samantha
+rate = 170
+pitch = 1.08
+Stay close. I will keep you standing.
+The tide heals every wound.
+Breathe. You are not done yet.
+Calm water, steady hands.
+
+[daichi]
+voice = Daniel
+rate = 155
+pitch = 0.82
+Behind me. All of you.
+I am the wall.
+Let them come. I will not move.
+The mountain does not bow.
+
+[goro]
+voice = Ralph
+rate = 175
+pitch = 0.95
+Ha! Who needs a sword?
+One swing, and the ground shakes.
+Let's go break something.
+I eat stones for breakfast.
+
+[mei]
+voice = Karen
+rate = 175
+pitch = 1.05
+Shall I light the way?
+Pretty flames, aren't they?
+The lotus blooms in fire.
+Don't stand too close.
+
+[takeshi]
+voice = Rishi
+rate = 170
+pitch = 0.92
+Shields up. Hold the line.
+The current pulls them to me.
+Nothing gets past the tide.
+On my signal.
+
+[saya]
+voice = Moira
+rate = 165
+pitch = 1
+Roots run deep. So do I.
+Stand firm. I will turn your skin to stone.
+Patience. The earth provides.
+Rest a moment, then fight.
+
+[jiro]
+voice = Daniel
+rate = 170
+pitch = 0.9
+My armour is still warm.
+Strike me. I dare you.
+Embers never truly go out.
+For the clan!
+
+[nami]
+voice = Tessa
+rate = 165
+pitch = 1.04
+Round and round they go.
+The sea has no mercy.
+Do you hear the waves?
+Let the whirlpool take them.
+
+[iwao]
+voice = Fred
+rate = 150
+pitch = 0.85
+The mountain speaks through me.
+Old stones remember everything.
+Step aside. The hill is coming down.
+Patience, young one.
+
+[akane]
+voice = Samantha
+rate = 180
+pitch = 0.96
+From the ashes, we rise.
+No one falls while I burn.
+The phoenix answers my call.
+Up! The fight is not over.
+
+[ryuu]
+voice = Rishi
+rate = 185
+pitch = 1
+The dragon of the tide is here.
+Flow like water. Cut like steel.
+They will never see the wave coming.
+Finally, a worthy fight.

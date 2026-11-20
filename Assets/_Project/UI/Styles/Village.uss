@@ -161,3 +161,33 @@
     font-size: 11px;
     color: var(--muted);
 }
+
+.speech {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 24px;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.speech__box {
+    flex-direction: row;
+    align-items: center;
+    max-width: 70%;
+    padding: 8px 18px;
+    border-color: var(--line-strong);
+}
+
+.speech__name {
+    margin-right: 10px;
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+
+.speech__text {
+    flex-shrink: 1;
+    font-size: 16px;
+    -unity-font-style: italic;
+    white-space: normal;
+}

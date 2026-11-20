@@ -150,7 +150,7 @@ In the game, `GameProfile` (Presentation) loads the save from `Application.persi
 
 ## Prototype content
 
-`NinjaRealm.Core.Prototype.PrototypeContent` is the source of truth for the prototype's numbers: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas, 6 components, 4 combined weapons, 24 enemy lineups, the campaign's 3 chapters of 8 stages, 3 resources and the progression settings. It writes them into an `IContentSink`:
+`NinjaRealm.Core.Prototype.PrototypeContent` is the source of truth for the prototype's numbers: 17 stats, 3 elements, 4 classes, 12 skills, 12 ninjas, 6 components, 4 combined weapons, 24 enemy lineups, the campaign's 3 chapters of 8 stages, 3 resources and the progression settings. It writes them into an `IContentSink`:
 
 * **Ninja Realm > Content > Create Prototype Content** saves them as assets under `Assets/_Project/Content/`. It skips assets that already exist, so it never overwrites edits.
 * **Ninja Realm > Content > Reset Prototype Content to Defaults** overwrites the assets with the values in code.
