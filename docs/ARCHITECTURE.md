@@ -22,6 +22,7 @@ Assets/
       EditMode/      NinjaRealm.Tests.EditMode: NUnit tests run by the Unity Test Runner
     Content/         ContentDatabase.asset and content assets, created as they are added
     UI/              UI Toolkit: Styles/ (USS) and Resources/UI/ (UXML layouts and the theme)
+    Audio/           Resources/Music/ (the two music loops) and Resources/Voices/ (the voice lines)
   Scenes/            Unity scenes
   Settings/          URP pipeline, renderer and volume assets
 ```
@@ -150,7 +151,7 @@ In the game, `GameProfile` (Presentation) loads the save from `Application.persi
 
 ## Prototype content
 
-`NinjaRealm.Core.Prototype.PrototypeContent` is the source of truth for the prototype's numbers: 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas, 6 components, 4 combined weapons, 24 enemy lineups, the campaign's 3 chapters of 8 stages, 3 resources and the progression settings. It writes them into an `IContentSink`:
+`NinjaRealm.Core.Prototype.PrototypeContent` is the source of truth for the prototype's numbers: 17 stats, 3 elements, 4 classes, 12 skills, 12 ninjas, 6 components, 4 combined weapons, 24 enemy lineups, the campaign's 3 chapters of 8 stages, 3 resources and the progression settings. It writes them into an `IContentSink`:
 
 * **Ninja Realm > Content > Create Prototype Content** saves them as assets under `Assets/_Project/Content/`. It skips assets that already exist, so it never overwrites edits.
 * **Ninja Realm > Content > Reset Prototype Content to Defaults** overwrites the assets with the values in code.
@@ -175,6 +176,7 @@ Both menu items rebuild the database. To change a number, change it in `Prototyp
 * The Command Hall's panel is the campaign map: a tab per chapter with its stars, a card per stage (level, best stars, locked or not), the chapter's three star chests with an Open button, and the picked stage's enemy, pay and first clear rewards with the **To battle** button.
 * The Dojo has two tabs: **Recruits**, and **All ninjas**, a hall with a card for every ninja in the content (owned or not), the picked ninja's model, its stats and skill, and how to get it.
 * Clicking a ninja on the plaza opens its details with its model and a level up button (`RosterViews.Details`).
+* The banners in the village take the home village's colour: `VillageController.ApplyHomeVillage` gives every object named Banner... the texture `Art/Village/Resources/VillageBanners/Banner_<village id>` (red for Emberfall, blue for Mistwater, ochre for Stonehollow), and the top bar's stripe is the village's element colour.
 * `NinjaPreview` is what puts a model in a panel: a small stage 600 m from the village with its own camera, filmed into a render texture that the panel shows as its background image. The ninja turns slowly, and dragging across the picture turns it by hand.
 
 ### Income
@@ -221,6 +223,12 @@ The game's screens are UI Toolkit. Layouts are UXML in `UI/Resources/UI`, loaded
 * `WorldLabels` keeps labels over points of the 3D world (names over ninjas and buildings, damage numbers), reusing them from frame to frame.
 * `UiMessage` shows the result of the last action under a panel for a few seconds.
 * Village layouts: `VillageHud`, `BuildingPanel` (the frame every building panel and the battle roster use) and `CommandHall`. Battle layouts: `Lineup`, `BattleHud` and `Result`.
+
+## Audio
+
+* `MusicPlayer.Play(track)` fades to a looping track and keeps playing across scene loads: `Village` from `VillageController`, `Battle` from `BattleController`. The tracks are `Audio/Resources/Music/Village.ogg` (a calm koto and shakuhachi loop in the Yo scale) and `Battle.ogg` (taiko, shamisen and flute in the In scale). `MusicPlayer.Volume` is kept in PlayerPrefs.
+* Voice lines: `Audio/Resources/Voices/VoiceLines.txt` holds what each ninja says, one block per ninja (`[kaito]`, then optional `voice =`, `rate =` and `pitch =` lines, then one line per thing it says). `VoiceBook` reads it and `NinjaVoices` plays a random line, never the same one twice in a row. A ninja speaks when it is clicked on the plaza, when its card or model is clicked in the Dojo's hall, and the line shows along the bottom of the screen.
+* To change the lines, edit the text file and run **Ninja Realm > Audio > Record the Voice Lines** (Unity on a Mac). It records each changed line with the macOS `say` voice into `Voices/<ninja>/<ninja>_NN.wav`, remembers in the clip's import data what it was made from, and deletes clips of removed lines. A line without a recording still shows as text.
 
 ## Determinism
 

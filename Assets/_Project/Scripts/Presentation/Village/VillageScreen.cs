@@ -28,6 +28,7 @@ namespace NinjaRealm.Presentation.Village
 
         const int HallColumns = 3;
         const float PreviewDegreesPerPixel = 0.6f;
+        const float PreviewClickSlop = 6f;
         const float NameMarginX = 90f;
         const float NameTop = 106f;
         const float NameBottomMargin = 40f;
@@ -37,12 +38,17 @@ namespace NinjaRealm.Presentation.Village
         VisualElement root;
         Label hint;
         Label villageTitle;
+        VisualElement topBar;
         Label clanLevel;
         Label clanXp;
         VisualElement clanXpFill;
         VisualElement resources;
         VisualElement panelLayer;
         VisualElement worldNames;
+        VisualElement speech;
+        Label speechName;
+        Label speechText;
+        IVisualElementScheduledItem speechHide;
         readonly List<(ResourceDefinition resource, Label amount)> amounts = new List<(ResourceDefinition, Label)>();
         string shownWallet;
 
@@ -82,12 +88,16 @@ namespace NinjaRealm.Presentation.Village
             root = document.rootVisualElement;
             hint = root.Q<Label>("hint");
             villageTitle = root.Q<Label>("villageTitle");
+            topBar = root.Q("topBar");
             clanLevel = root.Q<Label>("clanLevel");
             clanXp = root.Q<Label>("clanXp");
             clanXpFill = root.Q("clanXpFill");
             resources = root.Q("resources");
             panelLayer = root.Q("panelLayer");
             worldNames = root.Q("worldNames");
+            speech = root.Q("speech");
+            speechName = root.Q<Label>("speechName");
+            speechText = root.Q<Label>("speechText");
             Ready = hint != null && villageTitle != null && clanLevel != null && resources != null && panelLayer != null && worldNames != null;
             if (!Ready)
             {
@@ -105,12 +115,20 @@ namespace NinjaRealm.Presentation.Village
             panel = null;
             commandHall = new CommandHallView(controller, panelLayer);
             controller.OpenedChanged += OnOpenedChanged;
+            controller.Spoke += OnSpoke;
             OnOpenedChanged(controller.Opened);
+            if (speech != null) GameUi.Show(speech, false);
         }
 
         void OnDisable()
         {
-            if (controller != null) controller.OpenedChanged -= OnOpenedChanged;
+            if (controller != null)
+            {
+                controller.OpenedChanged -= OnOpenedChanged;
+                controller.Spoke -= OnSpoke;
+            }
+
+            speechHide?.Pause();
             tick?.Pause();
             Ready = false;
         }
@@ -131,6 +149,20 @@ namespace NinjaRealm.Presentation.Village
             if (!show) return;
             PlaceBuildingNames();
             PlacePlazaNames();
+        }
+
+        // ---------------------------------------------------------------- what a ninja says
+
+        /// <summary>Shows a ninja's line along the bottom of the screen for a few seconds.</summary>
+        void OnSpoke(NinjaDefinition ninja, string line, float seconds)
+        {
+            if (speech == null || speechName == null || speechText == null) return;
+            speechName.text = ninja.DisplayName;
+            speechName.style.color = RosterViews.ElementColor(ninja);
+            speechText.text = $"\u201C{line}\u201D";
+            GameUi.Show(speech, true);
+            speechHide?.Pause();
+            speechHide = speech.schedule.Execute(() => GameUi.Show(speech, false)).StartingIn((long)(seconds * 1000f));
         }
 
         // ---------------------------------------------------------------- top bar
@@ -161,6 +193,12 @@ namespace NinjaRealm.Presentation.Village
             shownWallet = wallet;
 
             villageTitle.text = VillageTitle(profile);
+            if (topBar != null)
+            {
+                // The top bar's stripe flies the home village's colour.
+                if (village?.element != null) topBar.style.borderTopColor = village.element.Color;
+                else topBar.style.borderTopColor = StyleKeyword.Null;
+            }
             clanLevel.text = $"Clan {profile.ClanLevel}";
             clanXp.text = $"{profile.ClanXp} / {profile.ClanXpToNext} XP";
             var fraction = profile.ClanXpToNext > 0 ? Mathf.Clamp01(profile.ClanXp / (float)profile.ClanXpToNext) : 1f;
@@ -496,7 +534,7 @@ namespace NinjaRealm.Presentation.Village
                 left.Add(GameUi.Label(owned ? "<color=#99ff99>In your clan</color>" : "Not recruited yet", "preview-caption", owned ? "strong" : "muted"));
             }
 
-            left.Add(GameUi.Label("Drag the ninja to turn it.", "preview-caption", "small"));
+            left.Add(GameUi.Label("Drag the ninja to turn it, click it to hear it.", "preview-caption", "small"));
             layout.Add(left);
 
             var right = GameUi.Element("hall-right");
@@ -526,6 +564,7 @@ namespace NinjaRealm.Presentation.Village
             var profile = controller.Profile;
             var card = new Button(() =>
             {
+                controller.Speak(ninja);
                 if (ninja == hallSelected) return;
                 hallSelected = ninja;
                 Rebuild();
@@ -544,7 +583,10 @@ namespace NinjaRealm.Presentation.Village
             return card;
         }
 
-        /// <summary>The ninja's model, filmed on the preview stage. Dragging across it turns the ninja.</summary>
+        /// <summary>
+        /// The ninja's model, filmed on the preview stage. Dragging across it turns the ninja, and
+        /// a click makes it say something.
+        /// </summary>
         VisualElement Preview(NinjaDefinition ninja)
         {
             var view = GameUi.Element("preview");
@@ -554,14 +596,23 @@ namespace NinjaRealm.Presentation.Village
             stage.Show(ninja);
             if (stage.Texture is RenderTexture texture) view.style.backgroundImage = new StyleBackground(Background.FromRenderTexture(texture));
 
-            view.RegisterCallback<PointerDownEvent>(e => view.CapturePointer(e.pointerId));
+            var dragged = 0f;
+            view.RegisterCallback<PointerDownEvent>(e =>
+            {
+                dragged = 0f;
+                view.CapturePointer(e.pointerId);
+            });
             view.RegisterCallback<PointerMoveEvent>(e =>
             {
-                if (view.HasPointerCapture(e.pointerId)) stage.Turn(-e.deltaPosition.x * PreviewDegreesPerPixel);
+                if (!view.HasPointerCapture(e.pointerId)) return;
+                dragged += Mathf.Abs(e.deltaPosition.x) + Mathf.Abs(e.deltaPosition.y);
+                stage.Turn(-e.deltaPosition.x * PreviewDegreesPerPixel);
             });
             view.RegisterCallback<PointerUpEvent>(e =>
             {
-                if (view.HasPointerCapture(e.pointerId)) view.ReleasePointer(e.pointerId);
+                if (!view.HasPointerCapture(e.pointerId)) return;
+                view.ReleasePointer(e.pointerId);
+                if (dragged < PreviewClickSlop) controller.Speak(ninja);
             });
 
             // The stage camera draws into the texture every frame; keep the panel showing the new picture.
@@ -576,7 +627,7 @@ namespace NinjaRealm.Presentation.Village
             var layout = GameUi.Element("hall-layout");
             var left = GameUi.Element("preview-column");
             left.Add(Preview(ninja));
-            left.Add(GameUi.Label("Drag the ninja to turn it.", "preview-caption", "small"));
+            left.Add(GameUi.Label("Drag the ninja to turn it, click it to hear it.", "preview-caption", "small"));
             layout.Add(left);
 
             var right = GameUi.Element("hall-right");

@@ -188,6 +188,16 @@ namespace NinjaRealm.Core.Prototype
                 new DamageAction(Target(TargetKind.EnemiesInRadiusOfTarget, radius: 1), DamageType.Magic, 110f, 0f, true),
                 Status(Target(TargetKind.EnemiesInRadiusOfTarget, radius: 1), StatusKind.Stun, 0f, 1.5f));
 
+            var landslide = Skill("landslide", "Landslide", "Deals 100 magic damage to enemies within 2 hexes of the target and slows them by 40% for 3s.",
+                new DamageAction(Target(TargetKind.EnemiesInRadiusOfTarget, radius: 2), DamageType.Magic, 100f, 0f, true),
+                Status(Target(TargetKind.EnemiesInRadiusOfTarget, radius: 2), StatusKind.Slow, 40f, 3f));
+            var phoenixRite = Skill("phoenix_rite", "Phoenix Rite", "Heals the 3 most injured allies for 18% max health and gives them 20% attack damage for 4s.",
+                new HealAction(Target(TargetKind.LowestHealthAllies, count: 3), 18f),
+                new StatBuffAction(Target(TargetKind.LowestHealthAllies, count: 3), attackDamage, ModifierOperation.AddPercent, 20f, 4f));
+            var tidalCleave = Skill("tidal_cleave", "Tidal Cleave", "Hits the target and enemies next to it for 220% attack damage and slows them by 30% for 2s.",
+                new DamageAction(Target(TargetKind.CurrentTargetAndAdjacent), DamageType.Physical, 0f, 220f, false),
+                Status(Target(TargetKind.CurrentTargetAndAdjacent), StatusKind.Slow, 30f, 2f));
+
             // Ninjas: base stats come from the class, scaled by rarity.
             StatValue[] ClassStats(TraitDefinition cls, Rarity rarity)
             {
@@ -224,6 +234,9 @@ namespace NinjaRealm.Core.Prototype
             var saya = Ninja("saya", "Saya", Rarity.Rare, earth, medic, stoneskin);
             var jiro = Ninja("jiro", "Jiro", Rarity.Epic, fire, vanguard, emberArmor);
             var nami = Ninja("nami", "Nami", Rarity.Epic, water, mystic, whirlpool);
+            var iwao = Ninja("iwao", "Iwao", Rarity.Epic, earth, mystic, landslide);
+            var akane = Ninja("akane", "Akane", Rarity.Legendary, fire, medic, phoenixRite);
+            var ryuu = Ninja("ryuu", "Ryuu", Rarity.Legendary, water, blademaster, tidalCleave);
 
             // Weapon components
             var kunai = Component("kunai", "Kunai", "+10% attack damage.", Mod(attackDamage, ModifierOperation.AddPercent, 10f));

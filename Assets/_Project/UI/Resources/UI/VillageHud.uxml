@@ -19,5 +19,11 @@
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="panelLayer" class="panel-layer" picking-mode="Ignore" />
+        <ui:VisualElement name="speech" class="speech hidden" picking-mode="Ignore">
+            <ui:VisualElement class="panel speech__box" picking-mode="Ignore">
+                <ui:Label name="speechName" class="speech__name" picking-mode="Ignore" />
+                <ui:Label name="speechText" class="speech__text" picking-mode="Ignore" />
+            </ui:VisualElement>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

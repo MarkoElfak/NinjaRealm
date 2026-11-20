@@ -7,6 +7,7 @@ using NinjaRealm.Core.Definitions;
 using NinjaRealm.Core.Fights;
 using NinjaRealm.Core.Lineups;
 using NinjaRealm.Core.Progression;
+using NinjaRealm.Presentation.Audio;
 using UnityEngine;
 
 namespace NinjaRealm.Presentation.Battle
@@ -99,6 +100,7 @@ namespace NinjaRealm.Presentation.Battle
 
         void Start()
         {
+            MusicPlayer.Play(MusicPlayer.Battle);
             if (!Initialize()) return;
             LoadSaved();
             EnterSetup();
