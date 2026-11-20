@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 058be7ae37da4ade96be079f91bcaa48, type: 3}
+  m_Name: Iwao
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.NinjaDefinition
+  id: ninja.iwao
+  displayName: Iwao
+  rarity: 2
+  element: {fileID: 11400000, guid: aab1940b4919c4d3f8350ecef607354b, type: 2}
+  ninjaClass: {fileID: 11400000, guid: 41f877e69d7324e73ad617b362f07686, type: 2}
+  skill: {fileID: 11400000, guid: 90601c64753a24b168a6eb3e00b29eda, type: 2}
+  baseStats:
+  - stat: {fileID: 11400000, guid: d8592416d77ff4076b568b187068961f, type: 2}
+    value: 600
+  - stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+    value: 48
+  - stat: {fileID: 11400000, guid: 042efc9b76e8544529a2a3b66d29458e, type: 2}
+    value: 0.65
+  - stat: {fileID: 11400000, guid: fb3218ad4ece549f489755bb3551f415, type: 2}
+    value: 4
+  - stat: {fileID: 11400000, guid: 5b14552f08bab4bf7949b9a1e163e33e, type: 2}
+    value: 20
+  - stat: {fileID: 11400000, guid: 5f926ad93d96c4977b8c2e8ffc1cfc83, type: 2}
+    value: 20
+  - stat: {fileID: 11400000, guid: 2997b6728e63d4b77a55255e8dde3a5d, type: 2}
+    value: 70
+  - stat: {fileID: 11400000, guid: 0ddf73056149a4b4899e3a5cd03c6189, type: 2}
+    value: 10
+  portrait: {fileID: 0}
+  modelPrefab: {fileID: 8727893260639347930, guid: ae7f107d43988432e85f78120a9f60ce, type: 3}

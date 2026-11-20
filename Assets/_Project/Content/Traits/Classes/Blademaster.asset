@@ -21,30 +21,30 @@ MonoBehaviour:
   - requiredCount: 2
     description: Blademasters gain 12% attack damage.
     effects:
-    - rid: 9055203165768253456
+    - rid: 9055203296589381805
   - requiredCount: 3
     description: 25% attack damage, and they heal for 10% of damage dealt.
     effects:
-    - rid: 9055203165768253457
-    - rid: 9055203165768253458
+    - rid: 9055203296589381806
+    - rid: 9055203296589381807
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253456
+    - rid: 9055203296589381805
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1
         stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
         operation: 1
         value: 12
-    - rid: 9055203165768253457
+    - rid: 9055203296589381806
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1
         stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
         operation: 1
         value: 25
-    - rid: 9055203165768253458
+    - rid: 9055203296589381807
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1

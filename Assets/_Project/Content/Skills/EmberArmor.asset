@@ -17,12 +17,12 @@ MonoBehaviour:
   description: Gains 30 armor and burns adjacent enemies for 4s.
   castTimeSeconds: 0.5
   actions:
-  - rid: 9055203165768253475
-  - rid: 9055203165768253476
+  - rid: 9055203296589381795
+  - rid: 9055203296589381796
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253475
+    - rid: 9055203296589381795
       type: {class: StatBuffAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:
@@ -33,7 +33,7 @@ MonoBehaviour:
         operation: 0
         value: 30
         durationSeconds: 4
-    - rid: 9055203165768253476
+    - rid: 9055203296589381796
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:

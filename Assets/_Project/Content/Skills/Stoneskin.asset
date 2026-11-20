@@ -17,11 +17,11 @@ MonoBehaviour:
   description: Shields the most injured ally for 30% of their max health.
   castTimeSeconds: 0.5
   actions:
-  - rid: 9055203165768253474
+  - rid: 9055203296589381759
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253474
+    - rid: 9055203296589381759
       type: {class: ShieldAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:

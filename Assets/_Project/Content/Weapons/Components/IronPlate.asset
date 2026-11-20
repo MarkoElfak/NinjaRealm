@@ -19,13 +19,13 @@ MonoBehaviour:
   componentB: {fileID: 0}
   description: +20 armor.
   effects:
-  - rid: 9055203165768253481
+  - rid: 9055203296589381758
   icon: {fileID: 0}
   modelPrefab: {fileID: 0}
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253481
+    - rid: 9055203296589381758
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 0

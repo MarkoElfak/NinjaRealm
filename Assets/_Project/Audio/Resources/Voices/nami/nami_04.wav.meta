@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: efd2f93bfecdc4063b0d9e3ff01c4de2
+AudioImporter:
+  externalObjects: {}
+  serializedVersion: 8
+  defaultSettings:
+    serializedVersion: 2
+    loadType: 0
+    sampleRateSetting: 0
+    sampleRateOverride: 44100
+    compressionFormat: 1
+    quality: 0.6
+    conversionMode: 0
+    preloadAudioData: 0
+  platformSettingOverrides: {}
+  forceToMono: 1
+  normalize: 1
+  loadInBackground: 1
+  ambisonic: 0
+  3D: 1
+  userData: Tessa|165|Let the whirlpool take them.
+  assetBundleName: 
+  assetBundleVariant: 

@@ -17,11 +17,11 @@ MonoBehaviour:
   description: Hits the target and enemies next to it for 180% attack damage.
   castTimeSeconds: 0.5
   actions:
-  - rid: 9055203165768253464
+  - rid: 9055203296589381783
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253464
+    - rid: 9055203296589381783
       type: {class: DamageAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:

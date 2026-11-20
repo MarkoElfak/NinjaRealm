@@ -21,15 +21,15 @@ MonoBehaviour:
   - requiredCount: 2
     description: Vanguards start with a shield of 15% max health for 6s.
     effects:
-    - rid: 9055203165768253452
+    - rid: 9055203296589381775
   - requiredCount: 3
     description: The shield is 30% instead.
     effects:
-    - rid: 9055203165768253453
+    - rid: 9055203296589381776
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253452
+    - rid: 9055203296589381775
       type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1
@@ -39,8 +39,8 @@ MonoBehaviour:
         everyNth: 1
         oncePerFight: 1
         actions:
-        - rid: 9055203165768253454
-    - rid: 9055203165768253453
+        - rid: 9055203296589381777
+    - rid: 9055203296589381776
       type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1
@@ -50,8 +50,8 @@ MonoBehaviour:
         everyNth: 1
         oncePerFight: 1
         actions:
-        - rid: 9055203165768253455
-    - rid: 9055203165768253454
+        - rid: 9055203296589381778
+    - rid: 9055203296589381777
       type: {class: ShieldAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:
@@ -60,7 +60,7 @@ MonoBehaviour:
           radius: 1
         percentOfMaxHealth: 15
         durationSeconds: 6
-    - rid: 9055203165768253455
+    - rid: 9055203296589381778
       type: {class: ShieldAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:

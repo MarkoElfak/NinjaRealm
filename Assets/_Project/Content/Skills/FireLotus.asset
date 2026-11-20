@@ -17,12 +17,12 @@ MonoBehaviour:
   description: Deals 130 magic damage around the target and sets enemies burning.
   castTimeSeconds: 0.5
   actions:
-  - rid: 9055203165768253470
-  - rid: 9055203165768253471
+  - rid: 9055203296589381797
+  - rid: 9055203296589381798
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253470
+    - rid: 9055203296589381797
       type: {class: DamageAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:
@@ -33,7 +33,7 @@ MonoBehaviour:
         baseDamage: 130
         attackDamagePercent: 0
         scalesWithAbilityPower: 1
-    - rid: 9055203165768253471
+    - rid: 9055203296589381798
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:

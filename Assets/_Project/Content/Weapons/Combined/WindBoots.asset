@@ -19,13 +19,13 @@ MonoBehaviour:
   componentB: {fileID: 11400000, guid: 5d60e996db498467cb24ff32b39cb72c, type: 2}
   description: +10% dodge.
   effects:
-  - rid: 9055203165768253488
+  - rid: 9055203296589381789
   icon: {fileID: 0}
   modelPrefab: {fileID: 0}
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253488
+    - rid: 9055203296589381789
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 0

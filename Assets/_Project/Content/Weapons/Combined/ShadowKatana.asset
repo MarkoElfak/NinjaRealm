@@ -19,13 +19,13 @@ MonoBehaviour:
   componentB: {fileID: 11400000, guid: 0932c9c722112441085e0f804bbb046e, type: 2}
   description: Crits deal +30% damage.
   effects:
-  - rid: 9055203165768253485
+  - rid: 9055203296589381786
   icon: {fileID: 0}
   modelPrefab: {fileID: 0}
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253485
+    - rid: 9055203296589381786
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 0

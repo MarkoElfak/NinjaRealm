@@ -17,12 +17,12 @@ MonoBehaviour:
   description: Shields self for 25% max health and slows adjacent enemies.
   castTimeSeconds: 0.5
   actions:
-  - rid: 9055203165768253472
-  - rid: 9055203165768253473
+  - rid: 9055203296589381760
+  - rid: 9055203296589381761
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253472
+    - rid: 9055203296589381760
       type: {class: ShieldAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:
@@ -31,7 +31,7 @@ MonoBehaviour:
           radius: 1
         percentOfMaxHealth: 25
         durationSeconds: 4
-    - rid: 9055203165768253473
+    - rid: 9055203296589381761
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:

@@ -42,6 +42,7 @@ namespace NinjaRealm.Tests
             Assert.AreEqual(VoiceBook.DefaultRate, hana.Rate);
             Assert.AreEqual(1f, hana.Pitch);
             CollectionAssert.AreEqual(new[] { "Stay close." }, hana.Lines);
+            Assert.AreSame(kaito, book.Find("ninja.kaito"));
             Assert.IsNull(book.Find("goro"));
         }
 
@@ -81,7 +82,7 @@ namespace NinjaRealm.Tests
                 var missing = ninjas.Where(n => book.Find(n.Id) == null || book.Find(n.Id).Lines.Count == 0).Select(n => n.Id).ToList();
                 Assert.IsEmpty(missing, "These ninjas have no voice lines: " + string.Join(", ", missing));
 
-                var unknown = book.Voices.Where(v => ninjas.All(n => n.Id != v.NinjaId)).Select(v => v.NinjaId).ToList();
+                var unknown = book.Voices.Where(v => ninjas.All(n => VoiceBook.ShortId(n.Id) != v.NinjaId)).Select(v => v.NinjaId).ToList();
                 Assert.IsEmpty(unknown, "These voice blocks name no ninja: " + string.Join(", ", unknown));
             }
             finally

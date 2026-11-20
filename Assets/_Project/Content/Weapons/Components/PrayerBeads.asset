@@ -19,13 +19,13 @@ MonoBehaviour:
   componentB: {fileID: 0}
   description: +15 ability power.
   effects:
-  - rid: 9055203165768253480
+  - rid: 9055203296589381794
   icon: {fileID: 0}
   modelPrefab: {fileID: 0}
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253480
+    - rid: 9055203296589381794
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 0

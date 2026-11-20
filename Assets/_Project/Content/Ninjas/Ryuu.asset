@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 058be7ae37da4ade96be079f91bcaa48, type: 3}
+  m_Name: Ryuu
+  m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Definitions.NinjaDefinition
+  id: ninja.ryuu
+  displayName: Ryuu
+  rarity: 3
+  element: {fileID: 11400000, guid: df63a4a185d7d4cd38d0589986b1e3c6, type: 2}
+  ninjaClass: {fileID: 11400000, guid: 4f3e18ba4850740db990bc643c2ed577, type: 2}
+  skill: {fileID: 11400000, guid: 26db3cbe38d4f4e3dbaece4f52e249c3, type: 2}
+  baseStats:
+  - stat: {fileID: 11400000, guid: d8592416d77ff4076b568b187068961f, type: 2}
+    value: 845
+  - stat: {fileID: 11400000, guid: 03c6bfeec1d874d918e033513da824be, type: 2}
+    value: 84
+  - stat: {fileID: 11400000, guid: 042efc9b76e8544529a2a3b66d29458e, type: 2}
+    value: 0.75
+  - stat: {fileID: 11400000, guid: fb3218ad4ece549f489755bb3551f415, type: 2}
+    value: 1
+  - stat: {fileID: 11400000, guid: 5b14552f08bab4bf7949b9a1e163e33e, type: 2}
+    value: 30
+  - stat: {fileID: 11400000, guid: 5f926ad93d96c4977b8c2e8ffc1cfc83, type: 2}
+    value: 30
+  - stat: {fileID: 11400000, guid: 2997b6728e63d4b77a55255e8dde3a5d, type: 2}
+    value: 60
+  - stat: {fileID: 11400000, guid: 0ddf73056149a4b4899e3a5cd03c6189, type: 2}
+    value: 0
+  portrait: {fileID: 0}
+  modelPrefab: {fileID: 916258408938226695, guid: 4507334e97a37428b9ffba48f73795a0, type: 3}

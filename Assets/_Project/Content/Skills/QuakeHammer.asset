@@ -17,12 +17,12 @@ MonoBehaviour:
   description: Deals 200% attack damage and stuns the target for 1s.
   castTimeSeconds: 0.5
   actions:
-  - rid: 9055203165768253468
-  - rid: 9055203165768253469
+  - rid: 9055203296589381767
+  - rid: 9055203296589381768
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253468
+    - rid: 9055203296589381767
       type: {class: DamageAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:
@@ -33,7 +33,7 @@ MonoBehaviour:
         baseDamage: 0
         attackDamagePercent: 200
         scalesWithAbilityPower: 0
-    - rid: 9055203165768253469
+    - rid: 9055203296589381768
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:

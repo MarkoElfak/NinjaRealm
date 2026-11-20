@@ -21,15 +21,15 @@ MonoBehaviour:
   - requiredCount: 2
     description: Fire ninjas' attacks burn for 4% max health over 2s.
     effects:
-    - rid: 9055203165768253440
+    - rid: 9055203296589381762
   - requiredCount: 3
     description: Burn for 8%, and burning enemies receive 40% less healing.
     effects:
-    - rid: 9055203165768253441
+    - rid: 9055203296589381763
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253440
+    - rid: 9055203296589381762
       type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1
@@ -39,8 +39,8 @@ MonoBehaviour:
         everyNth: 1
         oncePerFight: 0
         actions:
-        - rid: 9055203165768253442
-    - rid: 9055203165768253441
+        - rid: 9055203296589381764
+    - rid: 9055203296589381763
       type: {class: TriggeredEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1
@@ -50,9 +50,9 @@ MonoBehaviour:
         everyNth: 1
         oncePerFight: 0
         actions:
-        - rid: 9055203165768253443
-        - rid: 9055203165768253444
-    - rid: 9055203165768253442
+        - rid: 9055203296589381765
+        - rid: 9055203296589381766
+    - rid: 9055203296589381764
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:
@@ -62,7 +62,7 @@ MonoBehaviour:
         status: 2
         value: 4
         durationSeconds: 2
-    - rid: 9055203165768253443
+    - rid: 9055203296589381765
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:
@@ -72,7 +72,7 @@ MonoBehaviour:
         status: 2
         value: 8
         durationSeconds: 2
-    - rid: 9055203165768253444
+    - rid: 9055203296589381766
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:

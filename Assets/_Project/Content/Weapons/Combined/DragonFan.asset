@@ -19,13 +19,13 @@ MonoBehaviour:
   componentB: {fileID: 11400000, guid: c15884f15ba1d4dfb89f9a10b05b0114, type: 2}
   description: Skills deal +20% damage.
   effects:
-  - rid: 9055203165768253487
+  - rid: 9055203296589381779
   icon: {fileID: 0}
   modelPrefab: {fileID: 0}
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253487
+    - rid: 9055203296589381779
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 0

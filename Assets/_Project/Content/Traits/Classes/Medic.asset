@@ -21,22 +21,22 @@ MonoBehaviour:
   - requiredCount: 2
     description: Medics' heals and shields are 25% stronger.
     effects:
-    - rid: 9055203165768253459
+    - rid: 9055203296589381802
   - requiredCount: 3
     description: 50% stronger instead.
     effects:
-    - rid: 9055203165768253460
+    - rid: 9055203296589381803
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253459
+    - rid: 9055203296589381802
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1
         stat: {fileID: 11400000, guid: 7715c11003ae84bb5a8cc37a67519ae4, type: 2}
         operation: 0
         value: 25
-    - rid: 9055203165768253460
+    - rid: 9055203296589381803
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1

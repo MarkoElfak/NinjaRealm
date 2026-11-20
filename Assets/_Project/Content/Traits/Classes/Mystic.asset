@@ -21,30 +21,30 @@ MonoBehaviour:
   - requiredCount: 2
     description: Mystics gain 20 ability power.
     effects:
-    - rid: 9055203165768253461
+    - rid: 9055203296589381799
   - requiredCount: 3
     description: 40 ability power, and skills cost 10% less mana.
     effects:
-    - rid: 9055203165768253462
-    - rid: 9055203165768253463
+    - rid: 9055203296589381800
+    - rid: 9055203296589381801
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253461
+    - rid: 9055203296589381799
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1
         stat: {fileID: 11400000, guid: faf830a8529504b34b4b28a0adadbe41, type: 2}
         operation: 0
         value: 20
-    - rid: 9055203165768253462
+    - rid: 9055203296589381800
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1
         stat: {fileID: 11400000, guid: faf830a8529504b34b4b28a0adadbe41, type: 2}
         operation: 0
         value: 40
-    - rid: 9055203165768253463
+    - rid: 9055203296589381801
       type: {class: StatModifierEffect, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         holders: 1

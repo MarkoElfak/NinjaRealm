@@ -7,7 +7,7 @@ namespace NinjaRealm.Presentation.Audio
     /// <summary>
     /// The ninjas' voice lines, read from a plain text file (Audio/Resources/Voices/VoiceLines.txt)
     /// so they are easy to change. Each ninja has a block that starts with its ID in square
-    /// brackets; "voice =", "rate =" and "pitch =" lines set how it sounds, and every other line
+    /// brackets (without "ninja."); "voice =", "rate =" and "pitch =" lines set how it sounds, and every other line
     /// is one thing it can say. Lines starting with # are notes. The recordings are made from it
     /// by Ninja Realm &gt; Audio &gt; Record the Voice Lines, one clip a line, named by
     /// <see cref="ClipName"/>.
@@ -47,13 +47,22 @@ namespace NinjaRealm.Presentation.Audio
         /// <summary>What was wrong with the file, one line each. Lines that can't be read are skipped.</summary>
         public readonly List<string> Problems = new List<string>();
 
-        /// <summary>The voice of a ninja, or null.</summary>
+        /// <summary>The voice of a ninja, by its content ID ("ninja.kaito") or its short one ("kaito"), or null.</summary>
         public Voice Find(string ninjaId)
         {
             if (string.IsNullOrEmpty(ninjaId)) return null;
+            var id = ShortId(ninjaId);
             foreach (var voice in voices)
-                if (string.Equals(voice.NinjaId, ninjaId, StringComparison.Ordinal)) return voice;
+                if (string.Equals(voice.NinjaId, id, StringComparison.Ordinal)) return voice;
             return null;
+        }
+
+        /// <summary>A content ID without its kind: "ninja.kaito" is "kaito". The file uses these.</summary>
+        public static string ShortId(string ninjaId)
+        {
+            if (string.IsNullOrEmpty(ninjaId)) return ninjaId;
+            var dot = ninjaId.LastIndexOf('.');
+            return dot >= 0 ? ninjaId.Substring(dot + 1) : ninjaId;
         }
 
         /// <summary>The recording of a line: &lt;ninja id&gt;_&lt;line number from 01&gt;.</summary>
@@ -85,6 +94,7 @@ namespace NinjaRealm.Presentation.Audio
                         continue;
                     }
 
+                    id = ShortId(id);
                     if (book.Find(id) != null)
                     {
                         book.Problems.Add($"{where}: [{id}] has a block already; its lines go in one block.");

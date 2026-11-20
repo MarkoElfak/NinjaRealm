@@ -18,12 +18,12 @@ MonoBehaviour:
     4s.
   castTimeSeconds: 0.5
   actions:
-  - rid: 9055203165768253466
-  - rid: 9055203165768253467
+  - rid: 9055203296589381784
+  - rid: 9055203296589381785
   references:
     version: 2
     RefIds:
-    - rid: 9055203165768253466
+    - rid: 9055203296589381784
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:
@@ -33,7 +33,7 @@ MonoBehaviour:
         status: 1
         value: 0
         durationSeconds: 2
-    - rid: 9055203165768253467
+    - rid: 9055203296589381785
       type: {class: ApplyStatusAction, ns: NinjaRealm.Core.Definitions.Effects, asm: NinjaRealm.Core}
       data:
         target:

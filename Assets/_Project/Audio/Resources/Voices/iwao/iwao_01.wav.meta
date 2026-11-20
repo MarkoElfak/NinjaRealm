@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: fb4bc135964684914b46b5d67e397c6f
+AudioImporter:
+  externalObjects: {}
+  serializedVersion: 8
+  defaultSettings:
+    serializedVersion: 2
+    loadType: 0
+    sampleRateSetting: 0
+    sampleRateOverride: 44100
+    compressionFormat: 1
+    quality: 0.6
+    conversionMode: 0
+    preloadAudioData: 0
+  platformSettingOverrides: {}
+  forceToMono: 1
+  normalize: 1
+  loadInBackground: 1
+  ambisonic: 0
+  3D: 1
+  userData: Fred|150|The mountain speaks through me.
+  assetBundleName: 
+  assetBundleVariant: 
