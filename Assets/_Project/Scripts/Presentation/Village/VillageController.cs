@@ -84,6 +84,12 @@ namespace NinjaRealm.Presentation.Village
         /// <summary>Raised when a panel opens or closes, with the building (null for a ninja's details or a close).</summary>
         public event Action<VillageBuilding> OpenedChanged;
 
+        /// <summary>
+        /// True when the screen point (pixels from the bottom left) is over village UI that takes
+        /// clicks, such as the rune rail, so the village doesn't also react under it. Set by <see cref="VillageScreen"/>.
+        /// </summary>
+        public Func<Vector2, bool> OverUi { get; set; }
+
         /// <summary>Raised when a ninja says a line: the ninja, the line, and how long to show it in seconds.</summary>
         public event Action<NinjaDefinition, string, float> Spoke;
 
@@ -309,6 +315,13 @@ namespace NinjaRealm.Presentation.Village
             if (mouse == null || cam == null) return;
 
             var position = mouse.position.ReadValue();
+            if (OverUi != null && OverUi(position) && !pressing)
+            {
+                Hovered = null;
+                HoveredNinja = null;
+                return;
+            }
+
             var under = ColliderAt(cam, position);
             Hovered = under != null ? under.GetComponentInParent<VillageBuilding>() : null;
             HoveredNinja = Hovered == null && Ninjas != null ? Ninjas.NinjaOf(under) : null;

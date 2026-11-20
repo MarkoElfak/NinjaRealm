@@ -57,6 +57,8 @@ namespace NinjaRealm.Presentation.Village
         IVisualElementScheduledItem speechHide;
         readonly List<(ResourceDefinition resource, Label amount)> amounts = new List<(ResourceDefinition, Label)>();
         string shownWallet;
+        VisualElement runeRail;
+        string shownRunes;
 
         // Names over the village.
         readonly List<BuildingName> buildingNames = new List<BuildingName>();
@@ -103,6 +105,7 @@ namespace NinjaRealm.Presentation.Village
             panelLayer = root.Q("panelLayer");
             worldNames = root.Q("worldNames");
             speech = root.Q("speech");
+            runeRail = root.Q("runeRail");
             speechName = root.Q<Label>("speechName");
             speechText = root.Q<Label>("speechText");
             Ready = hint != null && villageTitle != null && clanLevel != null && resources != null && panelLayer != null && worldNames != null;
@@ -115,20 +118,36 @@ namespace NinjaRealm.Presentation.Village
             amounts.Clear();
             resources.Clear();
             shownWallet = null;
+            shownRunes = null;
             panelLayer.Clear();
             worldNames.Clear();
             buildingNames.Clear();
             plazaNames.Clear();
             panel = null;
             commandHall = new CommandHallView(controller, panelLayer);
+            runeRail?.RegisterCallback<ClickEvent>(OnRuneRailClicked);
+            controller.OverUi = OverRuneRail;
             controller.OpenedChanged += OnOpenedChanged;
             controller.Spoke += OnSpoke;
             OnOpenedChanged(controller.Opened);
             if (speech != null) GameUi.Show(speech, false);
         }
 
+        void OnRuneRailClicked(ClickEvent _) => OpenShrineRunes();
+
+        /// <summary>True when the mouse is over the rune rail, so a click on it doesn't also open the building behind it.</summary>
+        bool OverRuneRail(Vector2 screen)
+        {
+            if (runeRail == null || runeRail.ClassListContains("hidden")) return false;
+            for (var e = GameUi.Under(document, screen); e != null; e = e.parent)
+                if (e == runeRail) return true;
+            return false;
+        }
+
         void OnDisable()
         {
+            runeRail?.UnregisterCallback<ClickEvent>(OnRuneRailClicked);
+            if (controller != null) controller.OverUi = null;
             if (controller != null)
             {
                 controller.OpenedChanged -= OnOpenedChanged;
@@ -145,6 +164,7 @@ namespace NinjaRealm.Presentation.Village
             if (!Ready) return;
             hint.text = controller.PanelOpen ? "Esc closes the panel." : "Click a building or a ninja. Drag to look around, scroll to zoom.";
             RefreshWallet();
+            RefreshRuneRail();
         }
 
         // The camera moves in the controller's Update, so the names follow it here.
@@ -235,6 +255,95 @@ namespace NinjaRealm.Presentation.Village
             chip.Add(amount);
             resources.Add(chip);
             return amount;
+        }
+
+        // ---------------------------------------------------------------- the rune rail
+
+        /// <summary>
+        /// The altar's runes down the left side of the village: each slot's rune with its rank and
+        /// what it gives, the empty and unlit slots, and a click opens the Shrine on its runes.
+        /// Hidden while a panel is open, during the new game screen, or without a save.
+        /// </summary>
+        void RefreshRuneRail()
+        {
+            if (runeRail == null) return;
+            var profile = controller.Profile;
+            var show = profile != null && profile.RuneSlotCount > 0 && !controller.PanelOpen && !controller.Founding;
+            GameUi.Show(runeRail, show);
+            if (!show) return;
+
+            // Only rebuild when the altar, the ranks or the clan level changed.
+            var state = $"{profile.ClanLevel}/{profile.RuneSlotsLit}";
+            for (var i = 0; i < profile.RuneSlotsLit; i++)
+            {
+                var rune = profile.RuneInSlot(i);
+                state += rune != null ? $"/{rune.Id}:{profile.RuneRankOf(rune)}" : "/-";
+            }
+
+            if (state == shownRunes) return;
+            shownRunes = state;
+            BuildRuneRail(profile);
+        }
+
+        void BuildRuneRail(ProfileService profile)
+        {
+            runeRail.Clear();
+            var set = profile.SetRunes().Count;
+            var header = GameUi.Element("rune-rail__header");
+            header.Add(GameUi.Label("Runes", "rune-rail__title"));
+            header.Add(GameUi.Label($"{set} / {profile.RuneSlotsLit}", "rune-rail__count"));
+            runeRail.Add(header);
+
+            for (var i = 0; i < profile.RuneSlotCount; i++)
+            {
+                var row = GameUi.Element("rune-rail__slot");
+                var icon = GameUi.Element("rune-icon", "rune-rail__icon");
+                var text = GameUi.Element("rune-rail__text");
+                if (i < profile.RuneSlotsLit)
+                {
+                    var rune = profile.RuneInSlot(i);
+                    if (rune != null)
+                    {
+                        var rank = profile.RuneRankOf(rune);
+                        var texture = RuneArt.Icon(rune);
+                        if (texture != null) icon.style.backgroundImage = new StyleBackground(texture);
+                        row.style.borderLeftColor = RuneArt.RarityColor(rune.Rarity);
+                        text.Add(GameUi.Label($"{rune.DisplayName} <color=#{PrototypeGui.Hex(RuneArt.RarityColor(rune.Rarity))}>{ProfileService.RomanRank(rank)}</color>", "rune-rail__name"));
+                        text.Add(GameUi.Label(rune.Describe(rank), "rune-rail__effect"));
+                    }
+                    else
+                    {
+                        icon.AddToClassList("rune-rail__icon--empty");
+                        icon.Add(GameUi.Label("+", "rune-rail__plus"));
+                        text.Add(GameUi.Label("Empty slot", "rune-rail__name", "muted"));
+                        text.Add(GameUi.Label("Set a rune at the Shrine", "rune-rail__effect"));
+                    }
+                }
+                else
+                {
+                    var step = profile.Progression.RuneSlots[i];
+                    row.AddToClassList("rune-rail__slot--locked");
+                    icon.AddToClassList("rune-rail__icon--empty");
+                    var ready = step == profile.NextRuneSlot && profile.ClanLevel >= step.clanLevel;
+                    text.Add(GameUi.Label(ready ? "Ready to light" : "Unlit", "rune-rail__name", ready ? "gold-text" : "muted"));
+                    text.Add(GameUi.Label(ready ? $"{step.karma} Karma at the Shrine" : $"Opens at clan {step.clanLevel}", "rune-rail__effect"));
+                }
+
+                row.Add(icon);
+                row.Add(text);
+                runeRail.Add(row);
+            }
+
+            runeRail.Add(GameUi.Label("Click to open the Shrine", "rune-rail__hint"));
+        }
+
+        /// <summary>Opens the Shrine's panel on its runes, from the rune rail.</summary>
+        void OpenShrineRunes()
+        {
+            var shrine = controller.Find(VillageBuildingKind.Shrine);
+            if (shrine == null) return;
+            shrineTab = ShrineTab.Runes;
+            controller.Open(shrine);
         }
 
         // ---------------------------------------------------------------- names over the village
