@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: NinjaRealm.Core::NinjaRealm.Core.Progression.ResourceDefinition
   id: resource.karma
   displayName: Karma
-  description: Earned from clan levels. Levels up ninjas.
+  description: Made by runes on the Shrine's altar and won from bosses. Levels up
+    ninjas.
   color: {r: 0.7, g: 0.55, b: 1, a: 1}
   icon: {fileID: 0}

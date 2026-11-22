@@ -29,15 +29,12 @@ MonoBehaviour:
   - stars: 8
     gold: 900
     steel: 60
-    karma: 0
     weapon: {fileID: 0}
   - stars: 16
-    gold: 0
-    steel: 0
-    karma: 300
+    gold: 1500
+    steel: 90
     weapon: {fileID: 0}
   - stars: 24
     gold: 0
     steel: 0
-    karma: 0
     weapon: {fileID: 11400000, guid: bb4264379e5bf4a0681a2d2224e3fc80, type: 2}

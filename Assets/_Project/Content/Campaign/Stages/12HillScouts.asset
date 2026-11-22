@@ -20,6 +20,6 @@ MonoBehaviour:
   rewardTier: 1
   boss: {fileID: 0}
   bossStars: 1
-  firstClearKarma: 20
+  firstClearKarma: 0
   firstClearSteel: 0
   firstClearNinja: {fileID: 0}
