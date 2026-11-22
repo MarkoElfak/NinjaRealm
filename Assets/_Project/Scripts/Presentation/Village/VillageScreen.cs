@@ -59,6 +59,10 @@ namespace NinjaRealm.Presentation.Village
         string shownWallet;
         VisualElement runeRail;
         string shownRunes;
+        Label railKarma;
+        Button railCollect;
+        string shownRailKarma;
+        float nextRailKarma;
 
         // Names over the village.
         readonly List<BuildingName> buildingNames = new List<BuildingName>();
@@ -133,7 +137,13 @@ namespace NinjaRealm.Presentation.Village
             if (speech != null) GameUi.Show(speech, false);
         }
 
-        void OnRuneRailClicked(ClickEvent _) => OpenShrineRunes();
+        void OnRuneRailClicked(ClickEvent e)
+        {
+            // The Collect button does its own thing; the rest of the rail opens the Shrine.
+            for (var target = e.target as VisualElement; target != null && target != runeRail; target = target.parent)
+                if (target is Button) return;
+            OpenShrineRunes();
+        }
 
         /// <summary>True when the mouse is over the rune rail, so a click on it doesn't also open the building behind it.</summary>
         bool OverRuneRail(Vector2 screen)
@@ -280,9 +290,39 @@ namespace NinjaRealm.Presentation.Village
                 state += rune != null ? $"/{rune.Id}:{profile.RuneRankOf(rune)}" : "/-";
             }
 
-            if (state == shownRunes) return;
-            shownRunes = state;
-            BuildRuneRail(profile);
+            if (state != shownRunes)
+            {
+                shownRunes = state;
+                BuildRuneRail(profile);
+            }
+
+            RefreshRailKarma(profile);
+        }
+
+        /// <summary>The altar's Karma at the foot of the rail: what is ready and how fast it fills. Updated twice a second.</summary>
+        void RefreshRailKarma(ProfileService profile)
+        {
+            if (railKarma == null || railCollect == null) return;
+            if (shownRailKarma != null && Time.unscaledTime < nextRailKarma) return;
+            nextRailKarma = Time.unscaledTime + 0.5f;
+
+            var perHour = profile.AltarKarmaPerHour;
+            var ready = profile.PendingAltarKarma(DateTime.UtcNow);
+            var text = perHour > 0 ? $"Karma  +{perHour} an hour" : "Set a rune to make Karma";
+            var button = ready > 0 ? $"Collect {ready}" : "Filling";
+            if (shownRailKarma == text + button) return;
+            shownRailKarma = text + button;
+            railKarma.text = text;
+            railCollect.text = button;
+            railCollect.SetEnabled(ready > 0);
+        }
+
+        void CollectAltarKarma()
+        {
+            var profile = controller.Profile;
+            if (profile == null) return;
+            profile.TryCollectAltarKarma(DateTime.UtcNow, out _);
+            shownRailKarma = null;
         }
 
         void BuildRuneRail(ProfileService profile)
@@ -334,6 +374,15 @@ namespace NinjaRealm.Presentation.Village
                 runeRail.Add(row);
             }
 
+            var karma = GameUi.Element("rune-rail__karma");
+            railKarma = GameUi.Label("", "rune-rail__karma-text");
+            if (profile.Progression.Karma != null) railKarma.style.color = profile.Progression.Karma.Color;
+            karma.Add(railKarma);
+            railCollect = GameUi.Button("", CollectAltarKarma, "button--small", "rune-rail__collect");
+            karma.Add(railCollect);
+            runeRail.Add(karma);
+            shownRailKarma = null;
+
             runeRail.Add(GameUi.Label("Click to open the Shrine", "rune-rail__hint"));
         }
 
@@ -384,16 +433,23 @@ namespace NinjaRealm.Presentation.Village
                 name.Root.EnableInClassList("world-name--hovered", hovered);
                 GameUi.Show(name.Tip, hovered);
 
-                // What the Mint or the Steel Mine has ready, so the player sees it without opening it.
+                // What the Mint, the Steel Mine or the Shrine's altar has ready, so the player sees it without opening it.
                 var incomeDefinition = profile != null && building.IncomeId != null ? profile.Progression.Income(building.IncomeId) : null;
-                var ready = incomeDefinition != null && incomeDefinition.resource != null ? profile.PendingIncome(building.IncomeId, now) : 0;
+                var resource = incomeDefinition?.resource;
+                var ready = resource != null ? profile.PendingIncome(building.IncomeId, now) : 0;
+                if (profile != null && building.Kind == VillageBuildingKind.Shrine && profile.Progression.Karma != null)
+                {
+                    resource = profile.Progression.Karma;
+                    ready = profile.PendingAltarKarma(now);
+                }
+
                 GameUi.Show(name.Chip, ready > 0);
                 if (ready <= 0) continue;
-                var chip = $"+{ready} {incomeDefinition.resource.DisplayName}";
+                var chip = $"+{ready} {resource.DisplayName}";
                 if (chip == name.ChipText) continue;
                 name.ChipText = chip;
                 name.Chip.text = chip;
-                name.Chip.style.color = incomeDefinition.resource.Color;
+                name.Chip.style.color = resource.Color;
             }
         }
 

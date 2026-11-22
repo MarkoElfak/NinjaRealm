@@ -318,7 +318,7 @@ namespace NinjaRealm.Core.Prototype
                 Slot(takeshi, 1, 3, jadeCharm), Slot(nami, 3, 0, dragonFan, chakraScroll), Slot(mei, 5, 1, dragonFan, windBoots));
 
             // The campaign. Every fourth stage is an elite and every eighth a boss. What a fight
-            // pays goes up a tier every five stages; the first clear pays 20 Karma per chapter number.
+            // pays goes up a tier every five stages. Only a boss's first clear pays Karma: 250 per chapter number.
             var stageCount = 0;
             StageDefinition Stage(int chapter, int place, LineupDefinition lineup, int level,
                 NinjaDefinition boss = null, int bossStars = 1, NinjaDefinition reward = null)
@@ -330,15 +330,15 @@ namespace NinjaRealm.Core.Prototype
                 {
                     stage.Configure(lineup, level, kind, tier);
                     stage.SetBoss(boss, bossStars);
-                    stage.SetFirstClear(20 * chapter, kind == StageKind.Elite ? 20 * chapter : 0, reward);
+                    stage.SetFirstClear(kind == StageKind.Boss ? 250 * chapter : 0, kind == StageKind.Elite ? 20 * chapter : 0, reward);
                 });
             }
 
-            // Star chests at 8, 16 and 24 stars: Gold and Steel, then Karma, then a combined weapon.
+            // Star chests at 8, 16 and 24 stars: Gold and Steel, more of both, then a combined weapon.
             StarChest[] Chests(int chapter, WeaponDefinition weapon) => new[]
             {
                 new StarChest { stars = 8, gold = 300 * chapter, steel = 20 * chapter },
-                new StarChest { stars = 16, karma = 100 * chapter },
+                new StarChest { stars = 16, gold = 500 * chapter, steel = 30 * chapter },
                 new StarChest { stars = 24, weapon = weapon },
             };
 
@@ -364,7 +364,7 @@ namespace NinjaRealm.Core.Prototype
 
             // Resources
             var gold = Resource("gold", "Gold", new Color(1f, 0.82f, 0.35f), "Earned in every fight. Recruits ninjas.");
-            var karma = Resource("karma", "Karma", new Color(0.7f, 0.55f, 1f), "Earned from clan levels. Levels up ninjas.");
+            var karma = Resource("karma", "Karma", new Color(0.7f, 0.55f, 1f), "Made by runes on the Shrine's altar and won from bosses. Levels up ninjas.");
             var steel = Resource("steel", "Steel", new Color(0.72f, 0.78f, 0.84f), "Earned from wins. Forges weapons.");
 
             // Runes: carved stones the Shrine sells. Each covers every ninja in the lineup (a Seal only its element's).
@@ -479,8 +479,6 @@ namespace NinjaRealm.Core.Prototype
                 p.dropChance = 3000;
                 p.dropChancePerDifficulty = 1000;
                 p.clanXpPerLevel = 100;
-                p.clanLevelKarma = 50;
-                p.clanLevelKarmaPerLevel = 10;
                 p.teamSizes = new List<ProgressionDefinition.TeamSizeStep>
                 {
                     new ProgressionDefinition.TeamSizeStep { clanLevel = 1, teamSize = 3 },
@@ -497,6 +495,8 @@ namespace NinjaRealm.Core.Prototype
                 };
 
                 // Runes (the Shrine): six altar slots opened by clan level and lit with Karma, ranks II to V for Gold.
+                // Every set rune makes Karma: 2, 4, 6 or 10 an hour by rarity at rank I, up to three times that at
+                // rank V, and the altar holds 12 hours of it. This is the main way to earn Karma.
                 p.runeSlots = new List<ProgressionDefinition.RuneSlotStep>
                 {
                     new ProgressionDefinition.RuneSlotStep { clanLevel = 1, karma = 0 },
@@ -508,23 +508,32 @@ namespace NinjaRealm.Core.Prototype
                 };
                 p.runeRanks = new List<ProgressionDefinition.RuneRankStep>
                 {
-                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 5000, clanLevel = 3 },
-                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 10000, clanLevel = 6 },
-                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 15000, clanLevel = 9 },
-                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 20000, clanLevel = 12 },
+                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 5000, clanLevel = 3, karmaBasisPoints = 15000 },
+                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 10000, clanLevel = 6, karmaBasisPoints = 20000 },
+                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 15000, clanLevel = 9, karmaBasisPoints = 25000 },
+                    new ProgressionDefinition.RuneRankStep { costBasisPoints = 20000, clanLevel = 12, karmaBasisPoints = 30000 },
                 };
                 p.runeOffers = new List<ProgressionDefinition.RuneOffer>
                 {
-                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Common, weight = 55, price = 300, alwaysForSale = true },
-                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Rare, weight = 32, price = 800 },
-                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Epic, weight = 11, price = 2000 },
-                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Legendary, weight = 2, price = 5000, karma = 200 },
+                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Common, weight = 55, price = 300, alwaysForSale = true, karmaPerHour = 2 },
+                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Rare, weight = 32, price = 800, karmaPerHour = 4 },
+                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Epic, weight = 11, price = 2000, karmaPerHour = 6 },
+                    new ProgressionDefinition.RuneOffer { rarity = Rarity.Legendary, weight = 2, price = 5000, karma = 200, karmaPerHour = 10 },
                 };
                 p.shrineOfferCount = 4;
                 p.shrineRefreshCost = 50;
                 p.runeSellRefund = 5000;
                 p.homeSealPrice = 7500;
                 p.maxLegendaryRunes = 1;
+                p.runeKarmaStorageHours = 12;
+
+                // Karma packs for the store. Nothing sells them yet; ProfileService.TryGrantKarmaPack pays one out.
+                p.karmaPacks = new List<ProgressionDefinition.KarmaPack>
+                {
+                    new ProgressionDefinition.KarmaPack { id = "karma_small", displayName = "Pouch of Karma", karma = 500 },
+                    new ProgressionDefinition.KarmaPack { id = "karma_medium", displayName = "Chest of Karma", karma = 1200 },
+                    new ProgressionDefinition.KarmaPack { id = "karma_large", displayName = "Vault of Karma", karma = 3000 },
+                };
 
                 // Home villages: one per element. Its ninjas are twice as likely in the Dojo.
                 p.villages = new List<HomeVillage>

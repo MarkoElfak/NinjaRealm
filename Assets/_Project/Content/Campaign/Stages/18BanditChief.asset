@@ -20,6 +20,6 @@ MonoBehaviour:
   rewardTier: 2
   boss: {fileID: 11400000, guid: 772a516b0b8d74a88a95196f41487d77, type: 2}
   bossStars: 2
-  firstClearKarma: 20
+  firstClearKarma: 250
   firstClearSteel: 0
   firstClearNinja: {fileID: 11400000, guid: 89e4d2494d7f8401b9de91061a693bc5, type: 2}

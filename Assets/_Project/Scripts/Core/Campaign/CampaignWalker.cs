@@ -55,8 +55,9 @@ namespace NinjaRealm.Core.Campaign
     /// <summary>
     /// Plays the campaign headlessly with a simple, sensible player, to see how long each
     /// chapter takes. The player always fights the next stage with its strongest ninjas,
-    /// opens star chests, spends Karma on its lowest level, buys what the Dojo offers when it
-    /// helps, forges what it can and hands out its weapons. After two losses in a row it fights the stage before
+    /// opens star chests, lights altar slots and fills them with the cheapest runes, spends Karma
+    /// on its lowest level, buys what the Dojo offers when it helps, forges what it can and hands
+    /// out its weapons. After two losses in a row it fights the stage before
     /// for Gold and clan XP, then tries again. Every run with the same seed goes the same way.
     /// </summary>
     public sealed class CampaignWalker
@@ -76,7 +77,7 @@ namespace NinjaRealm.Core.Campaign
         /// <summary>The walker gives up after this many fights.</summary>
         public int MaxFights { get; set; } = 600;
 
-        /// <summary>A day passes after this many fights: the Dojo has new offers and the Mint and Steel Mine are emptied.</summary>
+        /// <summary>A day passes after this many fights: the Dojo has new offers and the Mint, the Steel Mine and the altar's Karma are collected.</summary>
         public int FightsPerDay { get; set; } = 10;
 
         public int Seed { get; set; } = 1;
@@ -89,6 +90,7 @@ namespace NinjaRealm.Core.Campaign
             var service = new ProfileService(ProfileService.NewProfile(progression, Seed), content, progression);
             var campaign = service.Campaign;
             var day = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+            service.Clock = () => day;
             service.StartIncome(day);
 
             StageWalk current = null;
@@ -115,6 +117,7 @@ namespace NinjaRealm.Core.Campaign
                     service.RefreshDojoIfNewDay(day);
                     foreach (var income in progression.Incomes)
                         if (income != null) service.TryCollectIncome(income.id, day, out _);
+                    service.TryCollectAltarKarma(day, out _);
                 }
 
                 Spend(service);
@@ -203,6 +206,16 @@ namespace NinjaRealm.Core.Campaign
             if (service.OwnedNinjas().Count < service.TeamSize)
                 foreach (var ninja in service.DirectBuyNinjas())
                     if (!service.Owns(ninja) && service.TryBuyDirect(ninja, out _)) break;
+
+            // Runes make Karma: light the next altar slot when it opens, then fill empty slots with
+            // the cheapest rune for sale that fits.
+            while (service.TryLightRuneSlot(out _))
+            {
+            }
+
+            foreach (var rune in service.RunesForSale())
+                if (!service.OwnsRune(rune) && service.FitsOnAltar(rune) && service.CannotBuyRune(rune) == null)
+                    service.TryBuyRune(rune, out _);
 
             // Karma: always the lowest level in the team.
             team = TopNinjas(service);

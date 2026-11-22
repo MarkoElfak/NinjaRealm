@@ -87,8 +87,6 @@ MonoBehaviour:
   dropChance: 3000
   dropChancePerDifficulty: 1000
   clanXpPerLevel: 100
-  clanLevelKarma: 50
-  clanLevelKarmaPerLevel: 10
   teamSizes:
   - clanLevel: 1
     teamSize: 3
@@ -125,38 +123,57 @@ MonoBehaviour:
   runeRanks:
   - costBasisPoints: 5000
     clanLevel: 3
+    karmaBasisPoints: 15000
   - costBasisPoints: 10000
     clanLevel: 6
+    karmaBasisPoints: 20000
   - costBasisPoints: 15000
     clanLevel: 9
+    karmaBasisPoints: 25000
   - costBasisPoints: 20000
     clanLevel: 12
+    karmaBasisPoints: 30000
   runeOffers:
   - rarity: 0
     weight: 55
     price: 300
     karma: 0
     alwaysForSale: 1
+    karmaPerHour: 2
   - rarity: 1
     weight: 32
     price: 800
     karma: 0
     alwaysForSale: 0
+    karmaPerHour: 4
   - rarity: 2
     weight: 11
     price: 2000
     karma: 0
     alwaysForSale: 0
+    karmaPerHour: 6
   - rarity: 3
     weight: 2
     price: 5000
     karma: 200
     alwaysForSale: 0
+    karmaPerHour: 10
   shrineOfferCount: 4
   shrineRefreshCost: 50
   runeSellRefund: 5000
   homeSealPrice: 7500
   maxLegendaryRunes: 1
+  runeKarmaStorageHours: 12
+  karmaPacks:
+  - id: karma_small
+    displayName: Pouch of Karma
+    karma: 500
+  - id: karma_medium
+    displayName: Chest of Karma
+    karma: 1200
+  - id: karma_large
+    displayName: Vault of Karma
+    karma: 3000
   villages:
   - id: emberfall
     displayName: Emberfall

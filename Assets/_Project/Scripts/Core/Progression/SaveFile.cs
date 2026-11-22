@@ -12,7 +12,7 @@ namespace NinjaRealm.Core.Progression
     /// </summary>
     public static class SaveFile
     {
-        public const int CurrentVersion = 3;
+        public const int CurrentVersion = 4;
 
         /// <summary>Migrations[i] turns a version i profile into version i + 1.</summary>
         static readonly Action<PlayerProfile>[] Migrations =
@@ -25,6 +25,9 @@ namespace NinjaRealm.Core.Progression
             profile => { },
 
             // 2 to 3: the Shrine's runes. Older saves own none; ProfileService lights the free altar slots on load.
+            profile => { },
+
+            // 3 to 4: runes make Karma and Karma can be bought. The altar starts filling when the village opens.
             profile => { },
         };
 

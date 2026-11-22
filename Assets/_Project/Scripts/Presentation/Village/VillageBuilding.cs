@@ -148,7 +148,7 @@ namespace NinjaRealm.Presentation.Village
         {
             VillageBuildingKind.CommandHall => "Fight the campaign: pick a stage, set up your lineup and win its stars.",
             VillageBuildingKind.Dojo => "Recruit new ninjas, four new every day, and see every ninja there is.",
-            VillageBuildingKind.Shrine => "Level up your ninjas with Karma, and set runes on the altar for passive bonuses.",
+            VillageBuildingKind.Shrine => "Level up your ninjas with Karma, and set runes on the altar: they give passive bonuses and make Karma over time.",
             VillageBuildingKind.Blacksmith => "Forge combined weapons from two components and Steel.",
             VillageBuildingKind.Mint => "Mints Gold while you are away. Come back to collect it.",
             VillageBuildingKind.SteelMine => "Digs Steel while you are away. Come back to collect it.",

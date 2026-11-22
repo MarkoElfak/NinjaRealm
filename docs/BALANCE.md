@@ -99,6 +99,28 @@ The Mint and the Steel Mine pay for coming back, not for waiting. The numbers ar
 * A full Mint buys one Common recruit (200 Gold) with some left over. A full Steel Mine pays for one forge (20 Steel) and most of a second.
 * Fights should stay the main source of Gold. If players stop fighting between collections, lower the Mint before raising fight pay.
 
+## Karma
+
+Karma levels up ninjas, lights altar slots and pays the Karma part of a Legendary rune. It comes from three places only:
+
+1. **Runes on the altar (the main source).** Every set rune makes Karma by its rarity and rank, slowly, and the altar holds 12 hours of it before it stops filling. Collect it from the rune rail on the village screen or the Shrine's Runes tab.
+2. **Bosses.** A boss's first clear pays 250 Karma per chapter number (250, 500, 750). Other stages, clan levels and star chests pay none, and content validation flags a non-boss stage that pays Karma.
+3. **Purchases (later).** `ProgressionDefinition.karmaPacks` lists packs of 500, 1,200 and 3,000 Karma for the store. Nothing sells them yet; `ProfileService.TryGrantKarmaPack(packId, transactionId)` pays one out once the store confirms a payment, and never twice for the same transaction.
+
+A new save starts with 100 Karma.
+
+| Rarity | Rank I | II | III | IV | V |
+| --- | --- | --- | --- | --- | --- |
+| Common | 2 an hour | 3 | 4 | 5 | 6 |
+| Rare | 4 | 6 | 8 | 10 | 12 |
+| Epic | 6 | 9 | 12 | 15 | 18 |
+| Legendary | 10 | 15 | 20 | 25 | 30 |
+
+* One Common rune collected twice a day makes 48 Karma a day, about two early ninja levels. A mid-game altar (four runes, say a Rare II, an Epic III and two Commons) makes about 24 an hour, or up to 576 a day. A full altar at rank V with a Legendary makes up to 120 an hour.
+* The rates are `RuneOffer.karmaPerHour` (rank I, per rarity) times `RuneRankStep.karmaBasisPoints` (x1.5, x2, x2.5 and x3 for ranks II to V). The 12 hour store is `runeKarmaStorageHours`.
+* When a rune is set, taken out, ranked up or sold, the Karma made so far is kept at the old rate and the new rate counts from then on.
+* **Walk after the change** (seeds 1 to 3, walker collecting once a day): the whole campaign took 201, 198 and 193 fights against 204, 175 and 172 with clan level Karma, and the team ended at an average level of 12.3 to 12.8 instead of 14.0 to 14.8. Chapter 1 took 21 / 43 / 32 fights (was 21 / 37 / 14) and chapter 2 took 63 / 38 / 61 (was 61 / 26 / 23). Early chapters feel the slower Karma most, because the first runes make little. If chapter 1 drags, raise the Common rate or the starting Karma before giving clan levels Karma back.
+
 ## Runes
 
 The Shrine's runes are worth about 6 to 8 ninja levels at the end of the game. One level adds 4% health and attack damage; a mid-game altar (4 slots at rank III, around clan level 7) adds roughly 12 to 15% power, and a full one (6 slots at rank V with a Legendary) about 25 to 30%.
@@ -112,9 +134,9 @@ The Shrine's runes are worth about 6 to 8 ninja levels at the end of the game. O
 
 Ranks II to V need clan level 3, 6, 9 and 12. The home village's Seal costs 25% less. Selling returns half the Gold spent.
 
-Altar slots open at clan levels 1, 2, 4, 7, 10 and 14 and cost 0, 40, 80, 150, 250 and 400 Karma to light, about one or two clan levels' Karma each.
+Altar slots open at clan levels 1, 2, 4, 7, 10 and 14 and cost 0, 40, 80, 150, 250 and 400 Karma to light. A slot pays for itself in Karma within a few days once a rune is in it.
 
-Guard rails: two runes covering the same ninjas can't raise the same stat (a Seal may stack with a rune for everyone), one Legendary at a time, and Fortune runes only raise normal fight pay and building income, never chests or first win Gold. The campaign walk doesn't buy runes, so the campaign stays beatable without them.
+Guard rails: two runes covering the same ninjas can't raise the same stat (a Seal may stack with a rune for everyone), one Legendary at a time, and Fortune runes only raise normal fight pay and building income, never chests or first win Gold. The campaign walk lights slots and fills them with Common runes for their Karma, but never ranks them up or buys rarer ones.
 
 ## Campaign
 
@@ -127,10 +149,10 @@ Three chapters of eight stages. Every fourth stage is an elite and every eighth 
 | 3 Tide Coast | 5, then 6 from 3-5 | 25, 28, 31, 33, 35, 37, 39, 40 | combined | Goro, 2 stars, two combined weapons | Nami |
 
 * **Pay.** Every fight pays by the stage's reward tier, which goes up every five stages (tier 1 for 1-1 to 1-5, tier 5 from 3-5). Tier `t` pays `60 + 30t` Gold, `5t` Steel and `20 + 10t` clan XP for a win, and has a `30 + 10t` percent chance of a component.
-* **First clear.** `200t` Gold, a certain component and 20 Karma per chapter number. Elites add 20 Steel per chapter number, enough for a forge in chapter 1. Bosses add a ninja.
-* **Stars.** 1 for the win, 2 with at least half the team standing, 3 with nobody fallen. Each chapter has chests at 8, 16 and 24 stars: Gold and Steel (300 and 20 per chapter number), Karma (100 per chapter number), and a combined weapon (Wind Boots, Kusarigama, Dragon Fan). The last chest needs three stars on every stage.
+* **First clear.** `200t` Gold and a certain component. Elites add 20 Steel per chapter number, enough for a forge in chapter 1. Bosses add a ninja and 250 Karma per chapter number.
+* **Stars.** 1 for the win, 2 with at least half the team standing, 3 with nobody fallen. Each chapter has chests at 8, 16 and 24 stars: Gold and Steel (300 and 20 per chapter number), more Gold and Steel (500 and 30 per chapter number), and a combined weapon (Wind Boots, Kusarigama, Dragon Fan). The last chest needs three stars on every stage.
 * **Pace.** The targets are about 15 fights for chapter 1, 40 for chapter 2 and 80 for chapter 3. Clan XP is the clock behind that: the team grows to 4 at clan level 2, to 5 at level 5 and to 6 at level 9, which the walker reaches about when the enemy teams grow at 1-5, 2-5 and 3-5. With the earlier steps (3, 6 and 10) the fifth stage of each chapter was a wall of 8 to 20 fights that no level could soften, because a team one ninja short loses whatever the levels are.
-* **Checking it.** **Ninja Realm > Balance > Walk the Campaign** plays the campaign three times with `CampaignWalker` and writes the fights per stage and chapter to `Logs/campaign_walk.md`. The walker is a plain player: strongest ninjas, Karma into the lowest level, Dojo offers that help, chests opened at once, and a fight on the stage before after two losses in a row. A real player who places ninjas well needs fewer fights.
+* **Checking it.** **Ninja Realm > Balance > Walk the Campaign** plays the campaign three times with `CampaignWalker` and writes the fights per stage and chapter to `Logs/campaign_walk.md`. The walker is a plain player: strongest ninjas, altar slots lit and filled with Common runes, the altar's Karma collected once a day (every 10 fights), Karma into the lowest level, Dojo offers that help, chests opened at once, and a fight on the stage before after two losses in a row. A real player who places ninjas well needs fewer fights.
 
 ### Walks behind these levels
 
