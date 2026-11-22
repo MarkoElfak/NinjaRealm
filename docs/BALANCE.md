@@ -119,6 +119,7 @@ A new save starts with 100 Karma.
 * One Common rune collected twice a day makes 48 Karma a day, about two early ninja levels. A mid-game altar (four runes, say a Rare II, an Epic III and two Commons) makes about 24 an hour, or up to 576 a day. A full altar at rank V with a Legendary makes up to 120 an hour.
 * The rates are `RuneOffer.karmaPerHour` (rank I, per rarity) times `RuneRankStep.karmaBasisPoints` (x1.5, x2, x2.5 and x3 for ranks II to V). The 12 hour store is `runeKarmaStorageHours`.
 * When a rune is set, taken out, ranked up or sold, the Karma made so far is kept at the old rate and the new rate counts from then on.
+* **Walk after the change** (seeds 1 to 3, walker collecting once a day): the whole campaign took 201, 198 and 193 fights against 204, 175 and 172 with clan level Karma, and the team ended at an average level of 12.3 to 12.8 instead of 14.0 to 14.8. Chapter 1 took 21 / 43 / 32 fights (was 21 / 37 / 14) and chapter 2 took 63 / 38 / 61 (was 61 / 26 / 23). Early chapters feel the slower Karma most, because the first runes make little. If chapter 1 drags, raise the Common rate or the starting Karma before giving clan levels Karma back.
 
 ## Runes
 
