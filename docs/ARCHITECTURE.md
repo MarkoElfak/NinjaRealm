@@ -66,8 +66,9 @@ All live in `NinjaRealm.Core.Definitions` and are created from **Assets > Create
 | `SkillDefinition` | `skill.` | A ninja's active skill: a list of actions |
 | `NinjaDefinition` | `ninja.` | Rarity, element, class, skill and base stats |
 | `WeaponDefinition` | `weapon.` | A component, or a combined weapon naming its two components |
+| `TileDefinition` | `tile.` | A special board hex: colour, description, which rows it may lie on, and parts (traits it applies to, or everyone; bonus or drawback; passive effects) |
 | `LineupDefinition` | `lineup.` | An enemy lineup: description and slots (ninja, hex, weapons) |
-| `StageDefinition` | `stage.` | One campaign fight: a lineup, the level it fights at, its kind (normal, elite, boss), its reward tier, an optional boss with stars, and what the first clear pays (in `NinjaRealm.Core.Campaign`) |
+| `StageDefinition` | `stage.` | One campaign fight: a lineup, the level it fights at, its kind (normal, elite, boss), its reward tier, an optional boss with stars, what the first clear pays and its special tiles (in `NinjaRealm.Core.Campaign`) |
 | `ChapterDefinition` | `chapter.` | A chapter of the campaign: its number, its stages in order and its star chests (in `NinjaRealm.Core.Campaign`) |
 | `RuneDefinition` | `rune.` | A Shrine rune: rarity, family, the element a Seal covers, colour, and its ranks (passives plus Gold, clan XP and income bonuses per rank) |
 | `ResourceDefinition` | `resource.` | A currency: Gold, Karma, Steel (in `NinjaRealm.Core.Progression`) |
@@ -123,7 +124,22 @@ Known limits for now: a timed buff to health does not change max health, and uni
 * `LineupRules`: the limits (7 columns, 4 rows, 6 ninjas, 3 weapons each) and `Validate`, which lists every problem with a lineup.
 * `LineupSynergies.Count`: counts each trait once per different ninja, the same way the simulation does.
 * `PlayerLineup`: the lineup the player edits. `Place`, `Move` (swaps when the hex is taken), `Remove`, `Equip` and `Unequip` all keep the rules, and `Changed` fires after each edit. `ToJson` and `LoadJson` save it by content ID; unknown IDs are skipped so old saves keep loading.
+* `BoardTile`: a `TileDefinition` on one hex of one half (team 0 is the player's, team 1 the enemy's), placed like a slot. `BoardTile.Validate` reports tiles off the board, on a row their definition doesn't allow, or sharing a hex.
 * `LineupDefinition`: an enemy lineup as a content asset. It says who stands where and with which weapons; the stage that uses it says at what level.
+
+## Board tiles
+
+Stages put special tiles on the board so placement is a real choice. A tile's effect starts with the fight and stays with the ninja that started on it, even after it moves off; melee ninjas leave their hex in the first second, so an effect that only worked while standing there would only ever matter to backliners.
+
+* `TileDefinition` (`tile.` IDs) holds `TilePart`s. A part names traits (a ninja with any of them gets it) or none (everyone), says whether it is a drawback (`harmful`, shown in red), and lists passive effects held by `Self` (the same `StatModifierEffect` and `TriggeredEffect` blocks weapons use). `rows` limits where a stage may put it: anywhere, the back two rows or the front row.
+* Typed tiles help one kind of ninja and hurt another (Ember Brazier: Fire +20% attack damage, Earth -20 armor and magic resist). Trade-off tiles give whoever stands there a bonus and a drawback together (Blood Altar: +25% attack damage, -15% max health); `IsTradeOff` is true for those.
+* `StageDefinition.Tiles` lists `BoardTile`s on both halves. The enemy's tiles sit under the enemy ninjas they help.
+* Fights: `CombatSetupBuilder.AddTiles(tiles)` puts them on the board, and `Build` gives each ninja the passives of the tile under its start hex (`TileDefinition.PassivesFor`), after its weapons and runes. The combat simulation needs nothing new: tile effects are passives like any other.
+* `TileDefinition.Score(ninja)` is bonuses minus drawbacks for that ninja, and `DescribeFor(ninja)` / `DescribeAll()` give the rich text the lineup screen shows.
+* The campaign walker moves ninjas off tiles that only hurt them and puts the ninja a tile helps most onto it (`CampaignWalker.UseTiles`); it leaves trade-off tiles alone.
+* In the battle scene, `HexBoardView.ShowTiles` tints a tile's stone with its colour and sets a coloured inlay in it. On the lineup screen, hovering a tile shows what it does, dragging a ninja over one shows what it would do to that ninja, the stage panel lists the stage's tiles, and a selected ninja's details say which tile it stands on.
+
+To add a tile: add it in `PrototypeContent` with `Tile(...)`, put it on stages with `Mine(...)` and `Theirs(...)`, then **Reset Prototype Content to Defaults** and **Rebuild Database**.
 
 ## Campaign
 
@@ -166,7 +182,7 @@ In the game, `GameProfile` (Presentation) loads the save from `Application.persi
 
 ## Prototype content
 
-`NinjaRealm.Core.Prototype.PrototypeContent` is the source of truth for the prototype's numbers: 17 stats, 3 elements, 4 classes, 12 skills, 12 ninjas, 6 components, 4 combined weapons, 24 enemy lineups, the campaign's 3 chapters of 8 stages, 3 resources and the progression settings. It writes them into an `IContentSink`:
+`NinjaRealm.Core.Prototype.PrototypeContent` is the source of truth for the prototype's numbers: 17 stats, 3 elements, 4 classes, 12 skills, 12 ninjas, 9 board tiles, 6 components, 4 combined weapons, 24 enemy lineups, the campaign's 3 chapters of 8 stages, 3 resources and the progression settings. It writes them into an `IContentSink`:
 
 * **Ninja Realm > Content > Create Prototype Content** saves them as assets under `Assets/_Project/Content/`. It skips assets that already exist, so it never overwrites edits.
 * **Ninja Realm > Content > Reset Prototype Content to Defaults** overwrites the assets with the values in code.

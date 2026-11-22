@@ -49,6 +49,10 @@ namespace NinjaRealm.Core.Campaign
         [SerializeField, Tooltip("Joins the clan on the first clear, or gives a shard when already owned.")]
         NinjaDefinition firstClearNinja;
 
+        [Header("Board")]
+        [SerializeField, Tooltip("Special tiles on the board. The ninja that starts the fight on one carries its effects for the whole fight.")]
+        List<BoardTile> tiles = new List<BoardTile>();
+
         public override string IdCategory => "stage";
 
         public LineupDefinition Lineup => lineup;
@@ -69,6 +73,9 @@ namespace NinjaRealm.Core.Campaign
 
         public NinjaDefinition FirstClearNinja => firstClearNinja;
 
+        /// <summary>The special tiles on both halves of the board.</summary>
+        public IReadOnlyList<BoardTile> Tiles => tiles;
+
         /// <summary>The level and stars an enemy ninja fights at here.</summary>
         public NinjaRank RankOf(NinjaDefinition ninja) =>
             new NinjaRank(level, ninja != null && ninja == boss ? bossStars : 1);
@@ -84,6 +91,9 @@ namespace NinjaRealm.Core.Campaign
             // Karma comes only from runes, bosses and purchases (see docs/BALANCE.md).
             if (firstClearKarma > 0 && kind != StageKind.Boss)
                 yield return $"It pays {firstClearKarma} Karma on the first clear but isn't a boss. Only bosses pay Karma.";
+
+            foreach (var message in BoardTile.Validate(tiles))
+                yield return "Its " + message;
 
             if (boss == null) yield break;
 
@@ -104,12 +114,18 @@ namespace NinjaRealm.Core.Campaign
             firstClearKarma = 0;
             firstClearSteel = 0;
             firstClearNinja = null;
+            tiles = new List<BoardTile>();
         }
 
         internal void SetBoss(NinjaDefinition boss, int stars)
         {
             this.boss = boss;
             bossStars = stars;
+        }
+
+        internal void SetTiles(IEnumerable<BoardTile> tiles)
+        {
+            this.tiles = tiles != null ? new List<BoardTile>(tiles) : new List<BoardTile>();
         }
 
         internal void SetFirstClear(int karma, int steel, NinjaDefinition ninja)

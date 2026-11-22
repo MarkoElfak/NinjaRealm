@@ -18,6 +18,7 @@ namespace NinjaRealm.Core.Fights
     {
         readonly List<StatDefinition> stats;
         readonly List<Entry> entries = new List<Entry>();
+        readonly List<BoardTile> tiles = new List<BoardTile>();
 
         /// <param name="stats">Every stat a unit should carry. Stats a ninja does not list use the stat's default.</param>
         public CombatSetupBuilder(IEnumerable<StatDefinition> stats)
@@ -77,6 +78,31 @@ namespace NinjaRealm.Core.Fights
             }
 
             return this;
+        }
+
+        /// <summary>
+        /// Puts special tiles on the board, such as a stage's.
+        /// A ninja that starts on one carries the tile's effects for that ninja, after its weapons and bonuses.
+        /// </summary>
+        public CombatSetupBuilder AddTiles(IEnumerable<BoardTile> boardTiles)
+        {
+            if (boardTiles == null) return this;
+            foreach (var entry in boardTiles)
+                if (entry?.tile != null) tiles.Add(entry);
+            return this;
+        }
+
+        /// <summary>The tile under a board position, or null.</summary>
+        public TileDefinition TileAt(HexCoord position)
+        {
+            foreach (var entry in tiles)
+            {
+                if (entry.team != 0 && entry.team != 1) continue;
+                if (entry.column < 0 || entry.column >= BoardColumns || entry.rowFromBack < 0 || entry.rowFromBack >= BoardRows / 2) continue;
+                if (TeamPosition(entry.team, entry.column, entry.rowFromBack) == position) return entry.tile;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -150,6 +176,12 @@ namespace NinjaRealm.Core.Fights
             // Bonuses such as runes, in the order given, after the weapons.
             foreach (var effect in entry.Bonuses)
                 if (effect != null) unit.Passives.Add(effect.ToSpec());
+
+            // The tile the ninja starts on, last.
+            var tile = TileAt(entry.Position);
+            if (tile != null)
+                foreach (var effect in tile.PassivesFor(ninja))
+                    unit.Passives.Add(effect.ToSpec());
 
             return unit;
         }

@@ -121,11 +121,11 @@ namespace NinjaRealm.Core.Campaign
                 }
 
                 Spend(service);
-                var lineup = BestLineup(service);
 
                 // Stuck: fight the stage before for its pay, then come back.
                 var farm = lossesInARow >= 2 ? campaign.Previous(target) : null;
                 var stage = farm ?? target;
+                var lineup = BestLineup(service, stage);
                 var fightSeed = unchecked(Seed * 7919 + walk.Fights);
                 var stars = StageStars.For(Fight(service, lineup, stage, fightSeed));
                 service.ApplyStageResult(stage, stars, fightSeed);
@@ -176,6 +176,7 @@ namespace NinjaRealm.Core.Campaign
             var builder = CombatSetupBuilder.FromDatabase(content);
             builder.AddLineup(0, lineup, service.RankOf, service.RunePassives);
             builder.AddLineup(1, stage.Lineup.Slots, stage.RankOf);
+            builder.AddTiles(stage.Tiles);
             return new CombatSimulation(builder.Build(), (ulong)(uint)seed).Run();
         }
 
@@ -259,7 +260,7 @@ namespace NinjaRealm.Core.Campaign
             return id.EndsWith("vanguard", StringComparison.Ordinal) || id.EndsWith("blademaster", StringComparison.Ordinal);
         }
 
-        List<LineupSlot> BestLineup(ProfileService service)
+        List<LineupSlot> BestLineup(ProfileService service, StageDefinition stage = null)
         {
             var team = TopNinjas(service);
 
@@ -283,6 +284,8 @@ namespace NinjaRealm.Core.Campaign
                 slots.Add(new LineupSlot(ninja, column, upClose ? LineupRules.RowsPerTeam - 1 : 0));
             }
 
+            UseTiles(slots, stage);
+
             // Weapons: combined ones first, dealt round the team.
             var weapons = service.OwnedWeapons();
             weapons.Sort((a, b) => a.Tier != b.Tier ? b.Tier.CompareTo(a.Tier) : string.CompareOrdinal(a.Id, b.Id));
@@ -302,6 +305,67 @@ namespace NinjaRealm.Core.Campaign
                 }
 
             return slots;
+        }
+
+        /// <summary>
+        /// Moves ninjas for the stage's tiles on the player's half: off a tile that only hurts them,
+        /// and the ninja a tile helps most onto it. Trade-off tiles (a bonus and a drawback together)
+        /// are left alone. Deterministic: tiles in stage order, ties to the earlier slot.
+        /// </summary>
+        internal static void UseTiles(List<LineupSlot> slots, StageDefinition stage)
+        {
+            if (stage == null || stage.Tiles.Count == 0) return;
+            var tiles = stage.Tiles;
+            int ScoreAt(LineupSlot slot) => BoardTile.At(tiles, 0, slot.column, slot.rowFromBack)?.Score(slot.ninja) ?? 0;
+
+            LineupSlot At(int column, int row)
+            {
+                foreach (var slot in slots)
+                    if (slot.column == column && slot.rowFromBack == row) return slot;
+                return null;
+            }
+
+            // Step off tiles that hurt, to a free plain hex in the same row.
+            foreach (var slot in slots)
+            {
+                if (ScoreAt(slot) >= 0) continue;
+                foreach (var column in ColumnOrder)
+                    if (At(column, slot.rowFromBack) == null && BoardTile.At(tiles, 0, column, slot.rowFromBack) == null)
+                    {
+                        slot.column = column;
+                        break;
+                    }
+            }
+
+            // The ninja a tile helps most takes it, unless it already stands on a tile that helps it.
+            foreach (var entry in tiles)
+            {
+                if (entry?.tile == null || entry.team != 0) continue;
+                var standing = At(entry.column, entry.rowFromBack);
+                if (standing != null && entry.tile.Score(standing.ninja) > 0) continue;
+
+                LineupSlot best = null;
+                var bestScore = 0;
+                foreach (var slot in slots)
+                {
+                    var score = entry.tile.Score(slot.ninja);
+                    if (score > bestScore && ScoreAt(slot) <= 0)
+                    {
+                        best = slot;
+                        bestScore = score;
+                    }
+                }
+
+                if (best == null) continue;
+                if (standing != null)
+                {
+                    standing.column = best.column;
+                    standing.rowFromBack = best.rowFromBack;
+                }
+
+                best.column = entry.column;
+                best.rowFromBack = entry.rowFromBack;
+            }
         }
 
         static bool IsVanguard(NinjaDefinition ninja) =>

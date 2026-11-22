@@ -65,6 +65,15 @@ namespace NinjaRealm.Presentation.Battle
             if (material.HasProperty("_Color")) material.SetColor("_Color", color);
         }
 
+        /// <summary>The colour a material was made with (_BaseColor or _Color), white if it has neither.</summary>
+        public static Color ColorOf(Material material)
+        {
+            if (material == null) return Color.white;
+            if (material.HasProperty("_BaseColor")) return material.GetColor("_BaseColor");
+            if (material.HasProperty("_Color")) return material.GetColor("_Color");
+            return Color.white;
+        }
+
         /// <summary>A shared unlit material, for health bars that should not be shaded.</summary>
         public static Material Unlit(Color color)
         {

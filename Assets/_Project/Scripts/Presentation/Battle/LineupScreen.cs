@@ -481,8 +481,37 @@ namespace NinjaRealm.Presentation.Battle
             }
 
             stagePanel.Add(GameUi.Label("Stars: 1 for the win, 2 with half your team standing, 3 with nobody fallen.", "side-line", "muted"));
+            AddTiles(stage);
             stagePanel.Add(GameUi.Label("Their synergies", "side-title"));
             AddSynergies(stagePanel, LineupSynergies.Count(opponent.Slots));
+        }
+
+        /// <summary>The stage's special tiles, once each, and which half they are on.</summary>
+        void AddTiles(StageDefinition stage)
+        {
+            if (stage.Tiles.Count == 0) return;
+            stagePanel.Add(GameUi.Label("Tiles", "side-title"));
+            var seen = new List<TileDefinition>();
+            foreach (var entry in stage.Tiles)
+            {
+                if (entry?.tile == null || seen.Contains(entry.tile)) continue;
+                seen.Add(entry.tile);
+                int mine = 0, theirs = 0;
+                foreach (var other in stage.Tiles)
+                    if (other?.tile == entry.tile)
+                    {
+                        if (other.team == 0) mine++;
+                        else theirs++;
+                    }
+
+                var where = mine > 0 && theirs > 0 ? "both halves" : mine > 0 ? "your half" : "their half";
+                var count = mine + theirs > 1 ? $" x{mine + theirs}" : "";
+                stagePanel.Add(GameUi.Label(
+                    $"<b><color=#{PrototypeGui.Hex(entry.tile.Color)}>{entry.tile.DisplayName}</color></b>{count} <color=#9ca3b0>({where})</color>  {entry.tile.DescribeAll()}",
+                    "side-line"));
+            }
+
+            stagePanel.Add(GameUi.Label("A ninja that starts on a tile keeps its effect all fight.", "side-line", "muted"));
         }
 
         /// <summary>" Elite" or " Boss" in colour, or nothing for a normal stage.</summary>
@@ -570,6 +599,14 @@ namespace NinjaRealm.Presentation.Battle
             }
 
             infoPanel.Add(stats);
+
+            var tile = BoardTile.At(controller.Tiles, 0, slot.column, slot.rowFromBack);
+            if (tile != null)
+            {
+                var effect = tile.DescribeFor(ninja);
+                infoPanel.Add(GameUi.Label(
+                    $"<b>On <color=#{PrototypeGui.Hex(tile.Color)}>{tile.DisplayName}</color></b>: {effect ?? "no effect on this ninja."}", "side-line"));
+            }
 
             if (ninja.Skill != null)
             {
@@ -669,13 +706,22 @@ namespace NinjaRealm.Presentation.Battle
             }
 
             string tip = null;
+            var underPointer = GameUi.Under(document, mouseScreen);
             if (drag == DragKind.None)
             {
-                var under = GameUi.Under(document, mouseScreen);
-                var ninja = GameUi.DataOf<NinjaDefinition>(under);
-                var weapon = GameUi.DataOf<WeaponDefinition>(under);
+                var ninja = GameUi.DataOf<NinjaDefinition>(underPointer);
+                var weapon = GameUi.DataOf<WeaponDefinition>(underPointer);
                 if (ninja != null && ninja.Skill != null) tip = $"<b>{ninja.DisplayName}</b>: {ninja.Skill.DisplayName}. {ninja.Skill.Description}";
                 else if (weapon != null) tip = $"<b>{weapon.DisplayName}</b>: {weapon.Description}";
+            }
+
+            // A special tile under the pointer: what it does, or what it would do to the ninja being dragged.
+            if (tip == null && underPointer == null && controller.Phase == BattlePhase.Setup &&
+                controller.Board.TryGetHex(Camera.main, mouseScreen, out var hex))
+            {
+                var tile = controller.TileAt(hex, out var half);
+                var moving = !dragMoved ? null : drag == DragKind.NewNinja ? dragNinja : drag == DragKind.MoveSlot ? dragSlot?.ninja : null;
+                if (tile != null) tip = TileTip(tile, half, moving);
             }
 
             GameUi.Show(tooltip, tip != null);
@@ -683,6 +729,19 @@ namespace NinjaRealm.Presentation.Battle
             if (tooltip.text != tip) tooltip.text = tip;
             var width = screen.layout.width;
             tooltip.style.left = Mathf.Clamp(point.x - TooltipWidth / 2f, 10f, Mathf.Max(10f, width - TooltipWidth - 10f));
+        }
+
+        /// <summary>
+        /// A tile's tooltip: its name and every part, or while a ninja is dragged over it, what it
+        /// would do to that ninja.
+        /// </summary>
+        static string TileTip(TileDefinition tile, int half, NinjaDefinition ninja)
+        {
+            var name = $"<b><color=#{PrototypeGui.Hex(tile.Color)}>{tile.DisplayName}</color></b>";
+            if (half == 1) return $"{name} (enemy half): {tile.DescribeAll()}";
+            if (ninja == null) return $"{name}: {tile.DescribeAll()}. <color=#9ca3b0>{tile.Description}</color>";
+            var effect = tile.DescribeFor(ninja);
+            return effect != null ? $"<b>{ninja.DisplayName}</b> on {name}: {effect}" : $"<b>{ninja.DisplayName}</b> on {name}: no effect.";
         }
 
         /// <summary>A ninja's level and stars, such as "Lv 5  ★★".</summary>

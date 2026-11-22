@@ -33,8 +33,14 @@ namespace NinjaRealm.Presentation.Battle
             new System.Collections.Generic.Dictionary<HexCoord, MeshRenderer>();
         readonly System.Collections.Generic.Dictionary<HexCoord, Material> tileMaterials =
             new System.Collections.Generic.Dictionary<HexCoord, Material>();
+        readonly System.Collections.Generic.Dictionary<HexCoord, Material> baseMaterials =
+            new System.Collections.Generic.Dictionary<HexCoord, Material>();
+        readonly System.Collections.Generic.List<GameObject> tileMarks = new System.Collections.Generic.List<GameObject>();
         HexCoord? highlighted;
         Material groundMaterial;
+
+        /// <summary>How far a special tile's stone takes on the tile's colour.</summary>
+        [SerializeField, Range(0f, 1f)] float specialTint = 0.45f;
 
         public int Columns { get; private set; } = 7;
 
@@ -93,12 +99,52 @@ namespace NinjaRealm.Presentation.Battle
                 renderer.sharedMaterial = PrototypeVisuals.Lit(valid ? validColor : invalidColor, tileTexture);
         }
 
+        /// <summary>
+        /// Marks special tiles: the stone takes on the tile's colour and a coloured inlay sits in
+        /// its middle. Replaces the tiles shown before; pass nothing to clear them.
+        /// </summary>
+        public void ShowTiles(System.Collections.Generic.IEnumerable<(HexCoord hex, Color color)> special)
+        {
+            foreach (var mark in tileMarks)
+                if (mark != null) PrototypeVisuals.DestroySafe(mark);
+            tileMarks.Clear();
+            foreach (var entry in baseMaterials)
+            {
+                tileMaterials[entry.Key] = entry.Value;
+                if (tiles.TryGetValue(entry.Key, out var renderer)) renderer.sharedMaterial = entry.Value;
+            }
+
+            if (special == null) return;
+            var mesh = PrototypeVisuals.HexTile();
+            foreach (var (hex, color) in special)
+            {
+                if (!tiles.TryGetValue(hex, out var renderer) || !baseMaterials.TryGetValue(hex, out var baseMaterial)) continue;
+
+                var stone = Color.Lerp(PrototypeVisuals.ColorOf(baseMaterial), color, specialTint);
+                var material = PrototypeVisuals.Lit(stone, tileTexture);
+                tileMaterials[hex] = material;
+                if (highlighted != hex) renderer.sharedMaterial = material;
+
+                var inlay = new GameObject($"Tile mark {hex.Column},{hex.Row}");
+                inlay.transform.SetParent(renderer.transform, false);
+                inlay.transform.localPosition = new Vector3(0f, 0.015f, 0f);
+                inlay.transform.localScale = new Vector3(0.55f, 0.1f, 0.55f);
+                inlay.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var inlayRenderer = inlay.AddComponent<MeshRenderer>();
+                inlayRenderer.sharedMaterial = PrototypeVisuals.Unlit(Color.Lerp(color, Color.white, 0.15f));
+                inlayRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                tileMarks.Add(inlay);
+            }
+        }
+
         public void Build(int columns, int rows)
         {
             Columns = columns;
             Rows = rows;
             tiles.Clear();
             tileMaterials.Clear();
+            baseMaterials.Clear();
+            tileMarks.Clear();
             highlighted = null;
 
             for (var i = transform.childCount - 1; i >= 0; i--)
@@ -126,6 +172,7 @@ namespace NinjaRealm.Presentation.Battle
                     var hex = new HexCoord(column, row);
                     tiles[hex] = renderer;
                     tileMaterials[hex] = renderer.sharedMaterial;
+                    baseMaterials[hex] = renderer.sharedMaterial;
                 }
             }
 

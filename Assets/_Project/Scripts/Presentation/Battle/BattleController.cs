@@ -175,6 +175,7 @@ namespace NinjaRealm.Presentation.Battle
 
             Opponent = Stage != null ? Stage.Lineup : null;
             board.Build(LineupRules.Columns, LineupRules.RowsPerTeam * 2);
+            ShowTiles(Stage);
             SetPhase(BattlePhase.Setup);
             RebuildPreview();
         }
@@ -191,6 +192,7 @@ namespace NinjaRealm.Presentation.Battle
             Stage = stage;
             Opponent = stage.Lineup;
             Profile?.SelectStage(stage);
+            ShowTiles(stage);
             previewDirty = true;
             return true;
         }
@@ -209,6 +211,32 @@ namespace NinjaRealm.Presentation.Battle
         /// <summary>The Shrine runes a player's ninja fights with. None without a save.</summary>
         public IEnumerable<PassiveEffect> RunePassives(NinjaDefinition ninja) =>
             Profile != null ? Profile.RunePassives(ninja) : (IEnumerable<PassiveEffect>)Array.Empty<PassiveEffect>();
+
+        /// <summary>The special tiles of the picked stage, on both halves. Empty without a stage.</summary>
+        public IReadOnlyList<BoardTile> Tiles => Stage != null ? Stage.Tiles : (IReadOnlyList<BoardTile>)Array.Empty<BoardTile>();
+
+        /// <summary>The tile under a board hex in the picked stage, and the half it is on. Null when there is none.</summary>
+        public TileDefinition TileAt(HexCoord hex, out int team)
+        {
+            var half = LineupRules.RowsPerTeam;
+            team = hex.Row < half ? 0 : 1;
+            var rowFromBack = team == 0 ? hex.Row : half * 2 - 1 - hex.Row;
+            return BoardTile.At(Tiles, team, hex.Column, rowFromBack);
+        }
+
+        void ShowTiles(StageDefinition stage)
+        {
+            var marks = new List<(HexCoord, Color)>();
+            if (stage != null)
+            {
+                var builder = new CombatSetupBuilder(Array.Empty<StatDefinition>());
+                foreach (var entry in stage.Tiles)
+                    if (entry?.tile != null && (entry.team == 0 || entry.team == 1) && LineupRules.IsOnBoard(entry.column, entry.rowFromBack))
+                        marks.Add((builder.TeamPosition(entry.team, entry.column, entry.rowFromBack), entry.tile.Color));
+            }
+
+            board.ShowTiles(marks);
+        }
 
         /// <summary>The player's ninja view for a slot, while in setup.</summary>
         public UnitView ViewFor(LineupSlot slot) => slot != null && playerViews.TryGetValue(slot, out var view) ? view : null;
@@ -304,8 +332,10 @@ namespace NinjaRealm.Presentation.Battle
             var builder = CombatSetupBuilder.FromDatabase(database);
             builder.AddLineup(0, playerSlots, RankOf, RunePassives);
             if (opponent != null) builder.AddLineup(1, opponent.Slots, enemyRank);
+            if (stage != null) builder.AddTiles(stage.Tiles);
             var setup = builder.Build();
             board.Build(setup.BoardColumns, setup.BoardRows);
+            ShowTiles(stage);
 
             var simulation = new CombatSimulation(setup, (ulong)(uint)fightSeed);
             var views = new List<UnitView>();

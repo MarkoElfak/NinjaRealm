@@ -56,7 +56,7 @@ namespace NinjaRealm.Core.Prototype
     }
 
     /// <summary>
-    /// The prototype's content: 22 Shrine runes, 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas,
+    /// The prototype's content: 22 Shrine runes, 17 stats, 3 elements, 4 classes, 9 skills, 9 ninjas, 9 board tiles,
     /// 6 components, 4 combined weapons, 24 enemy lineups, a campaign of 3 chapters with 8
     /// stages each, 3 resources and the progression settings. This is the source of truth for
     /// prototype numbers; the content assets are created from it.
@@ -104,7 +104,7 @@ namespace NinjaRealm.Core.Prototype
             var critChance = Stat("crit_chance", "Crit Chance", 25f, true, "Chance for a basic attack to crit.");
             var critDamage = Stat("crit_damage", "Crit Damage", 150f, true, "Damage of a crit, as a percentage of a normal hit.");
             var dodge = Stat("dodge", "Dodge", 0f, true, "Chance to avoid a basic attack.");
-            Stat("move_speed", "Move Speed", 2f, false, "Hexes moved per second.");
+            var moveSpeed = Stat("move_speed", "Move Speed", 2f, false, "Hexes moved per second.");
             var omnivamp = Stat("omnivamp", "Omnivamp", 0f, true, "Heals for this percentage of all damage dealt.");
             var healingPower = Stat("healing_power", "Healing Power", 0f, true, "Bonus to heals and shields given.");
             var abilityDamage = Stat("ability_damage", "Ability Damage", 0f, true, "Bonus damage for skills.");
@@ -238,6 +238,51 @@ namespace NinjaRealm.Core.Prototype
             var akane = Ninja("akane", "Akane", Rarity.Legendary, fire, medic, phoenixRite);
             var ryuu = Ninja("ryuu", "Ryuu", Rarity.Legendary, water, blademaster, tidalCleave);
 
+            // Board tiles: special hexes a stage puts on the board. The ninja that starts a fight on
+            // one carries its effects all fight. Five favour one kind of ninja and hurt another; four
+            // give whoever stands there a bonus and a drawback together. A good tile is worth about
+            // three to five levels to the right ninja (a level is +4% health and attack damage).
+            TraitDefinition[] Who(params TraitDefinition[] traits) => traits;
+            var melee = Who(vanguard, blademaster);
+            var ranged = Who(mystic, medic);
+            var emberBrazier = Tile("ember_brazier", "Ember Brazier", new Color(0.95f, 0.45f, 0.18f), TileRows.Any,
+                "Coals that never go out. Fire fights hotter here; the heat cracks Earth's guard.",
+                Good(Who(fire), null, Mod(attackDamage, ModifierOperation.AddPercent, 20f)),
+                Bad(Who(earth), null, Mod(armor, ModifierOperation.Add, -20f), Mod(magicResist, ModifierOperation.Add, -20f)));
+            var sacredSpring = Tile("sacred_spring", "Sacred Spring", new Color(0.3f, 0.65f, 1f), TileRows.Any,
+                "A clear spring that feeds Water's healing and douses Fire.",
+                Good(Who(water), null, Mod(healingPower, ModifierOperation.Add, 25f), Mod(startMana, ModifierOperation.Add, 20f)),
+                Bad(Who(fire), null, Mod(attackSpeed, ModifierOperation.AddPercent, -20f)));
+            var stoneRidge = Tile("stone_ridge", "Stone Ridge", new Color(0.66f, 0.52f, 0.36f), TileRows.Any,
+                "Bare rock. Earth ninjas root into it; Water ninjas slip and slow.",
+                Good(Who(earth), null, Mod(armor, ModifierOperation.Add, 30f), Mod(magicResist, ModifierOperation.Add, 30f)),
+                Bad(Who(water), null, Mod(attackSpeed, ModifierOperation.AddPercent, -15f)));
+            var highGround = Tile("high_ground", "High Ground", new Color(0.55f, 0.8f, 0.5f), TileRows.BackTwo,
+                "A rise at the back. Casters see further from it; fighters lose time climbing down.",
+                Good(ranged, null, Mod(range, ModifierOperation.Add, 1f)),
+                Bad(melee, null, Mod(moveSpeed, ModifierOperation.AddPercent, -30f)));
+            var barricade = Tile("barricade", "Barricade", new Color(0.75f, 0.75f, 0.8f), TileRows.Front,
+                "Stakes and shields at the front. A Vanguard holds it well; a caster here is exposed.",
+                Good(Who(vanguard), "Starts with a shield of 20% max health for 8s",
+                    new TriggeredEffect(EffectTrigger.FightStart, EffectScope.Self, new ShieldAction(Target(TargetKind.Self), 20f, 8f)) { oncePerFight = true }),
+                Bad(ranged, null, Mod(health, ModifierOperation.AddPercent, -15f)));
+            var bloodAltar = Tile("blood_altar", "Blood Altar", new Color(0.8f, 0.15f, 0.25f), TileRows.Any,
+                "An old altar that trades blood for strength.",
+                Good(null, null, Mod(attackDamage, ModifierOperation.AddPercent, 25f)),
+                Bad(null, null, Mod(health, ModifierOperation.AddPercent, -15f)));
+            var galePeak = Tile("gale_peak", "Gale Peak", new Color(0.7f, 0.95f, 0.95f), TileRows.Any,
+                "Wind at your back speeds every strike, and blows your guard open.",
+                Good(null, null, Mod(attackSpeed, ModifierOperation.AddPercent, 25f)),
+                Bad(null, null, Mod(armor, ModifierOperation.Add, -20f), Mod(magicResist, ModifierOperation.Add, -20f)));
+            var meditationStone = Tile("meditation_stone", "Meditation Stone", new Color(0.72f, 0.55f, 1f), TileRows.Any,
+                "A flat stone for stilling the mind. Skills come sooner; hands come slower.",
+                Good(null, null, Mod(startMana, ModifierOperation.Add, 30f)),
+                Bad(null, null, Mod(attackSpeed, ModifierOperation.AddPercent, -20f)));
+            var mudFlats = Tile("mud_flats", "Mud Flats", new Color(0.45f, 0.38f, 0.25f), TileRows.Any,
+                "Thick mud: hard to knock down, harder to walk out of.",
+                Good(null, null, Mod(armor, ModifierOperation.Add, 25f), Mod(magicResist, ModifierOperation.Add, 25f)),
+                Bad(null, null, Mod(moveSpeed, ModifierOperation.AddPercent, -40f)));
+
             // Weapon components
             var kunai = Component("kunai", "Kunai", "+10% attack damage.", Mod(attackDamage, ModifierOperation.AddPercent, 10f));
             var prayerBeads = Component("prayer_beads", "Prayer Beads", "+15 ability power.", Mod(abilityPower, ModifierOperation.Add, 15f));
@@ -321,7 +366,7 @@ namespace NinjaRealm.Core.Prototype
             // pays goes up a tier every five stages. Only a boss's first clear pays Karma: 250 per chapter number.
             var stageCount = 0;
             StageDefinition Stage(int chapter, int place, LineupDefinition lineup, int level,
-                NinjaDefinition boss = null, int bossStars = 1, NinjaDefinition reward = null)
+                NinjaDefinition boss = null, int bossStars = 1, NinjaDefinition reward = null, BoardTile[] tiles = null)
             {
                 var kind = place == 8 ? StageKind.Boss : place == 4 ? StageKind.Elite : StageKind.Normal;
                 var tier = Math.Min(5, stageCount / 5 + 1);
@@ -331,6 +376,7 @@ namespace NinjaRealm.Core.Prototype
                     stage.Configure(lineup, level, kind, tier);
                     stage.SetBoss(boss, bossStars);
                     stage.SetFirstClear(kind == StageKind.Boss ? 250 * chapter : 0, kind == StageKind.Elite ? 20 * chapter : 0, reward);
+                    stage.SetTiles(tiles);
                 });
             }
 
@@ -347,20 +393,55 @@ namespace NinjaRealm.Core.Prototype
 
             // The bosses fight with stars: Kaito, Jiro and Goro at two stars. Beating one wins a ninja.
             // The levels are tuned with the campaign walker; see docs/BALANCE.md.
+            // Tiles on a stage: Mine(...) is on the player's half, Theirs(...) on the enemy's, both seen
+            // from that half's own side (row 3 is the front). The enemy's tiles sit under the ninjas
+            // they help. Chapter 1 brings them in one at a time; Ember Valley leans on braziers and
+            // Tide Coast on springs.
             Chapter(1, "bandit_hills", "Bandit Hills", "Bandits hold the hill roads above the village. Clear them out and face their chief.", windBoots,
-                Stage(1, 1, banditPatrol, 1), Stage(1, 2, hillScouts, 2), Stage(1, 3, mountainLookout, 2), Stage(1, 4, banditAmbush, 3),
-                Stage(1, 5, smugglersCamp, 3), Stage(1, 6, stolenShrine, 3), Stage(1, 7, chiefsGuard, 4),
-                Stage(1, 8, banditChief, 4, kaito, 2, mei));
+                Stage(1, 1, banditPatrol, 1), Stage(1, 2, hillScouts, 2),
+                Stage(1, 3, mountainLookout, 2, tiles: Tiles(Mine(emberBrazier, 2, 3))),
+                Stage(1, 4, banditAmbush, 3, tiles: Tiles(Mine(stoneRidge, 3, 3))),
+                Stage(1, 5, smugglersCamp, 3, tiles: Tiles(Mine(sacredSpring, 3, 0), Mine(emberBrazier, 4, 3))),
+                Stage(1, 6, stolenShrine, 3, tiles: Tiles(Mine(bloodAltar, 3, 3), Mine(highGround, 3, 0), Theirs(barricade, 3, 3))),
+                Stage(1, 7, chiefsGuard, 4, tiles: Tiles(Mine(stoneRidge, 2, 3), Mine(meditationStone, 4, 0), Theirs(stoneRidge, 3, 3))),
+                Stage(1, 8, banditChief, 4, kaito, 2, mei,
+                    Tiles(Mine(emberBrazier, 3, 3), Mine(sacredSpring, 2, 0), Mine(galePeak, 4, 3), Theirs(bloodAltar, 3, 3))));
 
             Chapter(2, "ember_valley", "Ember Valley", "The Ember Clan burns everything it touches. Their lord Jiro waits at the end of the valley.", kusarigama,
-                Stage(2, 1, valleyGate, 7), Stage(2, 2, ashRoad, 8), Stage(2, 3, burningFields, 10), Stage(2, 4, flameWardens, 11),
-                Stage(2, 5, lavaBridge, 12), Stage(2, 6, emberClan, 13), Stage(2, 7, smokeTemple, 14),
-                Stage(2, 8, emberLord, 14, jiro, 2, jiro));
+                Stage(2, 1, valleyGate, 7, tiles: Tiles(Mine(emberBrazier, 2, 3), Mine(highGround, 4, 0), Theirs(highGround, 3, 0))),
+                Stage(2, 2, ashRoad, 8, tiles: Tiles(Mine(galePeak, 3, 3), Mine(sacredSpring, 3, 0), Theirs(emberBrazier, 3, 3))),
+                Stage(2, 3, burningFields, 10, tiles: Tiles(Mine(emberBrazier, 1, 3), Mine(emberBrazier, 5, 3), Mine(mudFlats, 3, 3),
+                    Theirs(galePeak, 4, 3))),
+                Stage(2, 4, flameWardens, 11, tiles: Tiles(Mine(sacredSpring, 2, 0), Mine(stoneRidge, 3, 3), Mine(bloodAltar, 5, 2),
+                    Theirs(emberBrazier, 3, 3), Theirs(meditationStone, 3, 0))),
+                Stage(2, 5, lavaBridge, 12, tiles: Tiles(Mine(barricade, 3, 3), Mine(highGround, 2, 0), Mine(meditationStone, 4, 0),
+                    Theirs(barricade, 3, 3), Theirs(emberBrazier, 4, 3))),
+                Stage(2, 6, emberClan, 13, tiles: Tiles(Mine(stoneRidge, 2, 3), Mine(sacredSpring, 4, 1), Mine(galePeak, 4, 3),
+                    Theirs(emberBrazier, 3, 3), Theirs(emberBrazier, 2, 3))),
+                Stage(2, 7, smokeTemple, 14, tiles: Tiles(Mine(mudFlats, 3, 3), Mine(bloodAltar, 2, 3), Mine(highGround, 3, 0),
+                    Theirs(barricade, 3, 3), Theirs(meditationStone, 2, 0))),
+                Stage(2, 8, emberLord, 14, jiro, 2, jiro,
+                    Tiles(Mine(sacredSpring, 3, 0), Mine(stoneRidge, 3, 3), Mine(galePeak, 5, 3), Mine(meditationStone, 1, 0),
+                        Theirs(emberBrazier, 3, 3), Theirs(bloodAltar, 4, 3))));
 
             Chapter(3, "tide_coast", "Tide Coast", "The Shogun's fleet has landed on the coast. Break through to his guard.", dragonFan,
-                Stage(3, 1, coastRoad, 25), Stage(3, 2, tideShrine, 28), Stage(3, 3, pearlDivers, 31), Stage(3, 4, stormMonks, 33),
-                Stage(3, 5, stoneFortress, 35), Stage(3, 6, harborBlockade, 37), Stage(3, 7, shogunsVanguard, 39),
-                Stage(3, 8, shogunGuard, 40, goro, 2, nami));
+                Stage(3, 1, coastRoad, 25, tiles: Tiles(Mine(stoneRidge, 3, 3), Mine(highGround, 2, 0), Mine(emberBrazier, 4, 3),
+                    Theirs(sacredSpring, 2, 0), Theirs(barricade, 3, 3))),
+                Stage(3, 2, tideShrine, 28, tiles: Tiles(Mine(emberBrazier, 3, 3), Mine(bloodAltar, 4, 3), Mine(highGround, 3, 0),
+                    Theirs(sacredSpring, 4, 0), Theirs(sacredSpring, 2, 0), Theirs(barricade, 3, 3))),
+                Stage(3, 3, pearlDivers, 31, tiles: Tiles(Mine(galePeak, 3, 3), Mine(emberBrazier, 2, 3), Mine(meditationStone, 3, 0),
+                    Mine(mudFlats, 5, 3), Theirs(sacredSpring, 3, 0), Theirs(mudFlats, 3, 3))),
+                Stage(3, 4, stormMonks, 33, tiles: Tiles(Mine(barricade, 3, 3), Mine(highGround, 2, 0), Mine(highGround, 4, 0),
+                    Mine(bloodAltar, 5, 3), Theirs(meditationStone, 3, 0), Theirs(meditationStone, 4, 0))),
+                Stage(3, 5, stoneFortress, 35, tiles: Tiles(Mine(emberBrazier, 3, 3), Mine(emberBrazier, 4, 3), Mine(galePeak, 2, 3),
+                    Mine(meditationStone, 3, 0), Theirs(stoneRidge, 3, 3), Theirs(stoneRidge, 3, 2), Theirs(barricade, 2, 3))),
+                Stage(3, 6, harborBlockade, 37, tiles: Tiles(Mine(stoneRidge, 3, 3), Mine(sacredSpring, 2, 0), Mine(bloodAltar, 4, 3),
+                    Mine(highGround, 4, 0), Theirs(sacredSpring, 4, 0), Theirs(barricade, 3, 3))),
+                Stage(3, 7, shogunsVanguard, 39, tiles: Tiles(Mine(mudFlats, 3, 3), Mine(galePeak, 2, 3), Mine(meditationStone, 2, 0),
+                    Mine(highGround, 4, 0), Theirs(barricade, 3, 3), Theirs(barricade, 4, 3), Theirs(highGround, 4, 0))),
+                Stage(3, 8, shogunGuard, 40, goro, 2, nami,
+                    Tiles(Mine(emberBrazier, 3, 3), Mine(stoneRidge, 2, 3), Mine(sacredSpring, 3, 0), Mine(bloodAltar, 4, 3),
+                        Mine(highGround, 5, 1), Theirs(bloodAltar, 2, 3), Theirs(emberBrazier, 3, 3), Theirs(meditationStone, 3, 0))));
 
             // Resources
             var gold = Resource("gold", "Gold", new Color(1f, 0.82f, 0.35f), "Earned in every fight. Recruits ninjas.");
@@ -557,6 +638,19 @@ namespace NinjaRealm.Core.Prototype
             });
         }
 
+
+        TileDefinition Tile(string id, string name, Color color, TileRows rows, string description, params TilePart[] parts) =>
+            sink.Provide<TileDefinition>("Tiles", "tile." + id, name, t => t.Configure(color, description, rows, parts));
+
+        static TilePart Good(TraitDefinition[] traits, string text, params PassiveEffect[] effects) => new TilePart(false, traits, text, effects);
+
+        static TilePart Bad(TraitDefinition[] traits, string text, params PassiveEffect[] effects) => new TilePart(true, traits, text, effects);
+
+        static BoardTile[] Tiles(params BoardTile[] tiles) => tiles;
+
+        static BoardTile Mine(TileDefinition tile, int column, int rowFromBack) => new BoardTile(tile, 0, column, rowFromBack);
+
+        static BoardTile Theirs(TileDefinition tile, int column, int rowFromBack) => new BoardTile(tile, 1, column, rowFromBack);
 
         LineupDefinition Lineup(string id, string name, string description, params LineupSlot[] slots) =>
             sink.Provide<LineupDefinition>("Lineups", "lineup." + id, name, l => l.Configure(description, slots));
